@@ -650,4 +650,4 @@ That evolution is intentional.
 
 # License
 
-Choose an appropriate open-source license before publishing the first release.
+This project is licensed under the MIT License.
