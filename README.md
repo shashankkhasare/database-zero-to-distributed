@@ -1,4 +1,4 @@
-# Database: Zero to Distributed
+﻿# Database: Zero to Distributed
 
 Build a distributed SQL database from first principles.
 
