@@ -2,7 +2,7 @@
 
 # Instructions for Coding Agents
 
-This repository is an educational implementation of a distributed SQL database built from first principles.
+This repository is an educational implementation of a distributed SQL database built from first principles in Rust.
 
 Agents working on this repository must optimize for teaching quality, conceptual clarity, and incremental evolution.
 
@@ -22,7 +22,7 @@ A later lesson may replace an earlier implementation with a better abstraction.
 
 Do not prematurely introduce future architecture because it appears cleaner.
 
-For example:
+Examples:
 
 If the current lesson teaches materialized execution, do not introduce Volcano iterators early.
 
@@ -30,19 +30,33 @@ If the current lesson teaches nested-loop joins, do not automatically replace th
 
 If distributed execution has not yet been introduced, do not create distributed abstractions.
 
+If synchronous networking still explains the concept clearly, do not introduce async Rust.
+
 The evolution of the implementation is part of the curriculum.
 
 ---
 
-# 2. Optimize for understandability
+# 2. This is a database course, not a Rust course
+
+Rust is the implementation language.
+
+Advanced Rust is not itself a goal.
+
+Prefer Rust that a competent programmer can read easily, even when a more sophisticated implementation would be more idiomatic or slightly faster.
+
+Introduce Rust concepts only when they solve a database problem encountered in the roadmap.
+
+---
+
+# 3. Optimize for understandability
 
 Prefer:
 
 ```text
 simple
 explicit
-verbose enough to understand
 easy to debug
+easy to explain
 ```
 
 over:
@@ -50,20 +64,51 @@ over:
 ```text
 clever
 generic
-abstract
-highly optimized
+highly abstract
 framework-heavy
+prematurely optimized
 ```
 
 A developer should be able to read the implementation alongside the lesson and understand why each piece exists.
 
 ---
 
-# 3. Avoid premature abstraction
+# 4. Avoid premature architecture
 
-Do not create generalized frameworks unless multiple lessons already require them.
+Do not create the final project layout at the beginning.
 
-Avoid patterns such as:
+An early lesson may legitimately contain only:
+
+```text
+src/
+├── main.rs
+├── row.rs
+└── operator.rs
+```
+
+Later lessons may introduce:
+
+```text
+sql/
+logical/
+optimizer/
+execution/
+distributed/
+storage/
+transaction/
+```
+
+Only create Cargo workspace crates when those boundaries have become useful.
+
+The repository structure itself should evolve with the curriculum.
+
+---
+
+# 5. Avoid premature abstraction
+
+Do not create generalized frameworks unless multiple existing features require them.
+
+Avoid structures such as:
 
 ```text
 AbstractOperatorFactoryRegistry
@@ -73,27 +118,182 @@ UniversalStorageAdapter
 
 unless the current architecture genuinely requires them.
 
-Prefer concrete code first.
+Prefer concrete implementations first.
 
-Refactor only after duplication or complexity becomes educationally relevant.
+Refactor after the limitation becomes visible.
 
 ---
 
-# 4. Keep the implementation small
+# 6. Prefer enums for plans and expressions
+
+Rust enums map naturally to database intermediate representations.
+
+Prefer structures conceptually similar to:
+
+```rust
+enum LogicalPlan {
+    Scan {
+        table: String,
+    },
+
+    Filter {
+        predicate: Expr,
+        input: Box<LogicalPlan>,
+    },
+
+    Project {
+        expressions: Vec<Expr>,
+        input: Box<LogicalPlan>,
+    },
+
+    Join {
+        left: Box<LogicalPlan>,
+        right: Box<LogicalPlan>,
+        condition: Expr,
+    },
+}
+```
+
+Likewise, expressions may use:
+
+```rust
+enum Expr {
+    Column(String),
+    Literal(Value),
+    Binary {
+        left: Box<Expr>,
+        op: BinaryOp,
+        right: Box<Expr>,
+    },
+}
+```
+
+Do not immediately replace these representations with deeply generic trait hierarchies.
+
+The query plan should remain visible in the type structure.
+
+---
+
+# 7. Introduce traits only when needed
+
+Do not create traits merely because they may eventually be useful.
+
+For example:
+
+```rust
+trait Operator
+trait Executor
+trait Planner
+trait StorageBackend
+```
+
+should appear only when multiple implementations exist or a lesson specifically motivates polymorphism.
+
+A `match` over an enum is often preferable in early lessons because the architecture is easier to see.
+
+---
+
+# 8. Start synchronous
+
+Early query-engine lessons should use synchronous execution.
+
+Expected progression:
+
+```text
+single thread
+ ↓
+iterators
+ ↓
+std::thread
+ ↓
+worker pool
+ ↓
+process boundaries
+ ↓
+networking
+ ↓
+async where justified
+```
+
+Do not introduce Tokio during early query execution.
+
+Async Rust should appear only when handling many concurrent network operations becomes an actual problem.
+
+---
+
+# 9. Distinguish parallelism from async I/O
+
+When parallel execution is introduced, begin with:
+
+```rust
+std::thread
+```
+
+The learner should first understand:
+
+```text
+parallel computation
+```
+
+before introducing:
+
+```text
+asynchronous network I/O
+```
+
+Do not hide this distinction behind an async runtime from the beginning.
+
+---
+
+# 10. Avoid unsafe Rust
+
+Safe Rust is the default.
+
+Do not introduce `unsafe` unless:
+
+1. the lesson specifically requires something that cannot reasonably be demonstrated otherwise, and
+2. the educational reason is explicitly documented.
+
+Pages, buffer pools, indexes, WAL, and query execution should initially use safe Rust.
+
+---
+
+# 11. Avoid lifetime-heavy APIs
+
+Prefer owned values or simple references where this improves clarity.
+
+An educational representation such as:
+
+```rust
+struct Row {
+    values: Vec<Value>,
+}
+```
+
+may be preferable to a highly optimized borrowed tuple representation.
+
+Do not introduce complicated lifetime relationships simply to eliminate small allocations.
+
+Optimization should be driven by a later lesson and measurements.
+
+---
+
+# 12. Keep the implementation small
 
 When adding functionality:
 
 - minimize new concepts
 - minimize dependencies
 - minimize indirection
-- avoid unnecessary classes
-- avoid unnecessary interfaces
+- avoid unnecessary traits
+- avoid unnecessary modules
+- avoid unnecessary generics
 
-A simple 80-line implementation is often better than a sophisticated 300-line implementation.
+A straightforward 80-line implementation may be better than a sophisticated 300-line implementation.
 
 ---
 
-# 5. Every lesson must have a visible outcome
+# 13. Every lesson must have a visible outcome
 
 A lesson should result in something runnable.
 
@@ -112,71 +312,165 @@ Avoid lessons that add only invisible infrastructure.
 
 ---
 
-# 6. Tests are mandatory
+# 14. Tests are mandatory
 
 Every meaningful feature must include tests.
 
 Tests should demonstrate the concept taught by the lesson.
 
-Prefer tests that are readable enough to appear in teaching material.
-
-For example:
+Prefer readable test names such as:
 
 ```text
-test_filter_removes_non_matching_rows
-test_hash_join_matches_rows_by_key
-test_partial_aggregation_combines_correctly
-test_transaction_recovers_after_crash
+filter_removes_non_matching_rows
+hash_join_matches_rows_by_key
+partial_aggregation_combines_results
+transaction_recovers_after_crash
 ```
 
 Avoid testing implementation details unless necessary.
 
 ---
 
-# 7. Preserve previous lessons
+# 15. Preserve previous lessons
 
 New lessons should not casually break previously implemented behavior.
 
 Before completing a task:
 
 ```text
-run existing tests
-run new tests
-run the lesson demo
+cargo fmt --check
+cargo clippy
+cargo test
 ```
 
-If an intentional architectural change alters prior behavior, document it clearly.
+Also run the lesson demo when one exists.
+
+If an intentional architectural change alters earlier behavior, document it clearly.
 
 ---
 
-# 8. One concept per lesson
+# 16. Rust tooling
+
+All committed Rust code should normally pass:
+
+```bash
+cargo fmt --check
+cargo clippy
+cargo test
+```
+
+Use reasonable Clippy guidance.
+
+Do not make educational code harder to understand solely to satisfy stylistic lint suggestions.
+
+---
+
+# 17. Error handling
+
+Avoid meaningless `.unwrap()` calls when a failure matters to the database concept.
+
+However, do not introduce large error-handling frameworks early.
+
+Begin with simple project-specific errors when needed.
+
+Example:
+
+```rust
+enum DbError {
+    Io(std::io::Error),
+    Parse(String),
+    InvalidColumn(String),
+}
+```
+
+Expand incrementally.
+
+---
+
+# 18. Dependencies
+
+Prefer the Rust standard library where practical.
+
+Before adding a crate, ask:
+
+> Does this crate support the lesson, or does it implement the lesson for us?
+
+Reasonable dependencies later may include:
+
+```text
+serde
+clap
+tracing
+tokio
+```
+
+when the corresponding need actually appears.
+
+Potentially inappropriate dependencies include libraries that already implement:
+
+```text
+query optimization
+distributed scheduling
+storage engines
+consensus
+MVCC
+transaction management
+```
+
+when those are the concepts being taught.
+
+---
+
+# 19. SQL parsing
+
+Do not assume a full SQL parser library is required from the beginning.
+
+The early course may deliberately implement a tiny parser to explain:
+
+```text
+SQL
+ ↓
+tokens
+ ↓
+AST
+ ↓
+logical plan
+```
+
+A larger SQL parser library may be introduced later if maintaining syntax becomes a distraction from database concepts.
+
+Do not make that choice prematurely.
+
+---
+
+# 20. One concept per lesson
 
 Do not silently bundle unrelated features.
 
-For example, if implementing hash joins, do not also:
+If implementing hash joins, do not also:
 
-- add cost-based optimization
-- introduce new storage APIs
-- redesign expression evaluation
+- introduce cost-based optimization
+- redesign storage
 - add distributed execution
+- introduce async Rust
 
-unless explicitly required by the lesson.
-
----
-
-# 9. Code shown in videos must be real
-
-Whenever possible, code presented in lessons or videos must come from the repository itself.
-
-Do not maintain a separate fake implementation solely for presentation.
-
-Examples and diagrams may simplify details, but executable code must remain the source of truth.
+unless explicitly required.
 
 ---
 
-# 10. Lesson structure
+# 21. Code shown in videos must be real
 
-Each lesson directory may contain:
+Whenever possible, code presented in lessons or videos must come directly from the repository.
+
+Do not maintain a fake presentation-only implementation.
+
+Examples and diagrams may simplify details, but executable code remains the source of truth.
+
+---
+
+# 22. Lesson structure
+
+A lesson directory may eventually contain:
 
 ```text
 lessons/NNN-title/
@@ -191,11 +485,13 @@ lessons/NNN-title/
 
 Not every lesson needs every file.
 
+Do not create unused structure in advance.
+
 ---
 
-# 11. Lesson metadata
+# 23. Lesson metadata
 
-A lesson specification should eventually support something conceptually similar to:
+A lesson specification may eventually look conceptually like:
 
 ```yaml
 id: 021
@@ -210,7 +506,7 @@ prerequisites:
   - 020-exchange
 
 demo:
-  command: ./run-demo.sh
+  command: cargo run --example shuffle
 
 scenes:
   - narration: >
@@ -223,13 +519,13 @@ scenes:
 
 Do not over-engineer this format early.
 
-Add fields only when the video pipeline needs them.
+Add fields only when the video-generation pipeline requires them.
 
 ---
 
-# 12. Video-generation constraints
+# 24. Video-generation constraints
 
-The repository may be used to programmatically generate tutorial videos.
+The repository is intended to support programmatic video generation.
 
 Therefore:
 
@@ -237,12 +533,28 @@ Therefore:
 - plans should have stable text representations
 - diagrams should be reproducible
 - demos should be scriptable
-- avoid relying on manual GUI interactions
-- commands should be executable non-interactively where possible
+- avoid manual GUI dependencies
+- commands should be non-interactive where possible
+- concurrency demos should stabilize ordering when ordering itself is irrelevant
 
 ---
 
-# 13. Architecture boundaries
+# 25. Determinism
+
+Keep outputs deterministic where practical.
+
+This matters because:
+
+- lessons may be rendered automatically
+- expected outputs may be version-controlled
+- diagrams may be generated from plans
+- tests should produce stable demonstrations
+
+When concurrency causes nondeterministic ordering, sort output for demos unless nondeterminism itself is the lesson.
+
+---
+
+# 26. Architecture direction
 
 The long-term conceptual architecture is:
 
@@ -264,15 +576,15 @@ Transaction Layer
 Storage Engine
 ```
 
-However, not all these layers should exist from the beginning.
+Not all layers should exist from the beginning.
 
-Create them incrementally as required by the roadmap.
+Create them when the roadmap reaches the problems they solve.
 
 ---
 
-# 14. Query operators
+# 27. Query operators
 
-Expected logical concepts eventually include:
+Expected logical concepts may eventually include:
 
 ```text
 Scan
@@ -287,7 +599,7 @@ Intersect
 Except
 ```
 
-Expected physical implementations may eventually include:
+Physical implementations may eventually include:
 
 ```text
 TableScan
@@ -296,34 +608,14 @@ NestedLoopJoin
 HashJoin
 MergeJoin
 HashAggregate
-SortAggregate
 ExternalSort
 ```
 
-Do not implement future operators unless requested.
+Do not implement future operators unless requested by the current lesson.
 
 ---
 
-# 15. Expressions
-
-Keep expressions distinct from relational operators.
-
-Expected expression concepts may include:
-
-```text
-ColumnRef
-Literal
-BinaryExpression
-Comparison
-BooleanExpression
-FunctionCall
-```
-
-Expression evaluation should remain understandable and testable.
-
----
-
-# 16. Distributed execution
+# 28. Distributed execution
 
 Eventually the system may contain:
 
@@ -347,17 +639,17 @@ HashExchange
 RoundRobinExchange
 ```
 
-When distributed functionality is introduced, make data movement explicit.
+Make data movement explicit.
 
-Do not hide shuffle behavior behind magical RPC calls.
+Do not hide shuffle behavior behind magical networking abstractions.
 
 The learner should be able to see why rows move.
 
 ---
 
-# 17. Storage engine
+# 29. Storage representation
 
-Storage functionality should evolve roughly from:
+Storage should evolve roughly from:
 
 ```text
 Bytes
@@ -377,17 +669,29 @@ WAL
 Transactions
 ```
 
-Do not introduce transaction machinery before storage exists.
+Prefer explicit byte-oriented representations.
+
+For example:
+
+```rust
+const PAGE_SIZE: usize = 4096;
+
+struct Page {
+    data: [u8; PAGE_SIZE],
+}
+```
+
+Do not hide page structure behind general-purpose serialization frameworks.
+
+Students should see how bytes become records, pages, and tables.
 
 ---
 
-# 18. Failure injection
+# 30. Failure injection
 
 Failures are part of the curriculum.
 
-Where practical, systems should support deliberate failure scenarios.
-
-Examples:
+Where practical, support deliberate failure scenarios such as:
 
 ```text
 kill worker
@@ -399,15 +703,15 @@ crash after WAL flush
 lose shuffle partition
 ```
 
-Failure tests should be deterministic when possible.
+Failure tests should be deterministic where possible.
 
 ---
 
-# 19. Observability
+# 31. Observability
 
 Educational visibility is important.
 
-Prefer exposing useful information such as:
+Prefer exposing:
 
 ```text
 logical plan
@@ -423,55 +727,24 @@ transaction state
 replication state
 ```
 
-Do not hide everything behind logging frameworks.
-
-Simple readable output is preferred.
+Simple readable output is preferable to hiding everything in sophisticated logging infrastructure.
 
 ---
 
-# 20. Dependencies
-
-Before adding a dependency, ask:
-
-> Does this dependency hide the concept this lesson is trying to teach?
-
-Acceptable examples may include:
-
-```text
-basic HTTP/RPC library
-serialization library
-testing framework
-CLI helper
-```
-
-Potentially harmful examples include libraries that already implement:
-
-```text
-query optimization
-distributed scheduling
-database storage
-consensus
-MVCC
-```
-
-when those are the concepts being taught.
-
----
-
-# 21. Performance
+# 32. Performance
 
 Correctness and clarity come before performance.
 
 Optimize only when:
 
-1. the lesson is specifically about performance, or
+1. the lesson is about performance, or
 2. the current implementation prevents the lesson from working.
 
 Performance improvements should preferably be motivated by measurements.
 
 ---
 
-# 22. Benchmark before optimizing
+# 33. Benchmark before optimizing
 
 When demonstrating an optimization:
 
@@ -483,21 +756,21 @@ make change
 measure again
 ```
 
-Keep benchmark data reproducible where possible.
+Keep benchmark inputs reproducible where possible.
 
 ---
 
-# 23. Do not rewrite large areas unnecessarily
+# 34. Avoid unrelated refactoring
 
 When implementing a lesson, make the smallest coherent change needed.
 
-Avoid opportunistic refactoring unrelated to the lesson.
+Do not opportunistically rewrite unrelated areas.
 
 Large refactors make it difficult for learners to understand what changed between episodes.
 
 ---
 
-# 24. Git history matters
+# 35. Git history matters
 
 The repository may use tags such as:
 
@@ -514,11 +787,11 @@ Each tagged state should ideally:
 - run its demo
 - match the corresponding lesson
 
-Agents should avoid changes that make historical lesson boundaries difficult to reconstruct.
+The evolution between tags is part of the learning material.
 
 ---
 
-# 25. Comments
+# 36. Comments
 
 Use comments to explain:
 
@@ -528,42 +801,41 @@ tradeoffs
 intentional simplifications
 ```
 
-Avoid comments that merely restate code.
-
 Good:
 
-```text
-We intentionally materialize the entire child relation here.
-Streaming execution is introduced in lesson 009.
+```rust
+// We intentionally materialize the entire child relation here.
+// Streaming execution is introduced in lesson 009.
 ```
 
 Less useful:
 
-```text
-# Loop through rows
-for row in rows:
+```rust
+// Loop through rows
+for row in rows {
 ```
 
 ---
 
-# 26. Educational simplifications
+# 37. Educational simplifications
 
 When taking shortcuts, document them explicitly.
 
 Example:
 
 ```text
-Production systems use more sophisticated cardinality estimation.
-For this lesson we assume uniform value distribution.
+Production systems use significantly more sophisticated
+cardinality estimation. For this lesson we assume a uniform
+distribution of values.
 ```
 
 Never present a teaching simplification as universally correct database behavior.
 
 ---
 
-# 27. Naming
+# 38. Naming
 
-Prefer domain names that correspond to concepts being taught.
+Prefer names corresponding directly to database concepts.
 
 Good:
 
@@ -578,7 +850,7 @@ BufferPool
 Transaction
 ```
 
-Avoid overly generic names such as:
+Avoid generic names such as:
 
 ```text
 Manager
@@ -592,21 +864,9 @@ unless their role is genuinely obvious.
 
 ---
 
-# 28. README updates
+# 39. Expected agent workflow
 
-When implementing a substantial lesson:
-
-- update the lesson documentation
-- update usage instructions if required
-- update architecture diagrams only if the architecture actually changed
-
-Do not rewrite the root README for every lesson.
-
----
-
-# 29. Expected agent workflow
-
-For a typical implementation task:
+For a typical task:
 
 ```text
 1. Read AGENTS.md
@@ -615,34 +875,38 @@ For a typical implementation task:
 4. Identify the smallest required change
 5. Implement it
 6. Add tests
-7. Add/update the executable demo
-8. Run existing tests
-9. Run new tests
-10. Report what changed and any deliberate simplifications
+7. Add or update the executable demo
+8. Run cargo fmt --check
+9. Run cargo clippy
+10. Run cargo test
+11. Run the lesson demo
+12. Report deliberate simplifications and tradeoffs
 ```
 
 ---
 
-# 30. Before completing a task
+# 40. Before completing a task
 
 Verify:
 
 ```text
-[ ] Does this teach the intended concept?
+[ ] Does this teach the intended database concept?
 [ ] Did we introduce anything from a future lesson unnecessarily?
-[ ] Is the implementation understandable?
+[ ] Is the Rust understandable?
+[ ] Did we avoid unnecessary traits/generics/lifetimes?
 [ ] Are tests included?
-[ ] Do old tests pass?
+[ ] Do previous tests pass?
 [ ] Is there a runnable demonstration?
 [ ] Are shortcuts documented?
 [ ] Did we avoid unrelated refactoring?
+[ ] Is output deterministic enough for video generation?
 ```
 
 ---
 
-# 31. When uncertain
+# 41. When uncertain
 
-Prefer the implementation that makes the concept easier to teach.
+Prefer the implementation that makes the database concept easier to teach.
 
 The primary product of this repository is not the database binary.
 

@@ -2,13 +2,15 @@
 
 Build a distributed SQL database from first principles.
 
-This project is a tutorial series and working codebase that starts with the smallest possible query engine and gradually evolves into a distributed SQL database with its own storage engine, transactions, replication, and ACID guarantees.
+This project is a tutorial series and working codebase that starts with the smallest possible query engine and gradually evolves into a distributed SQL database with its own storage engine, transactions, replication, consensus, and ACID guarantees.
 
 The goal is not to build a production database.
 
 The goal is to understand how databases work by building one step by step.
 
-## The idea
+---
+
+# The idea
 
 We start with something simple:
 
@@ -18,7 +20,7 @@ FROM employees
 WHERE salary > 50000;
 ```
 
-Then we ask:
+Then ask:
 
 > What would it take to execute this ourselves?
 
@@ -38,7 +40,7 @@ Physical Plan
 Execution Engine
 ```
 
-Then we ask:
+Then:
 
 > What if the data is too large for one machine?
 
@@ -131,6 +133,71 @@ Clarity is more important than production-grade performance.
 
 ---
 
+# Why Rust?
+
+The database is implemented in **Rust**.
+
+Rust gives us:
+
+- predictable performance
+- explicit memory ownership
+- strong type modeling for query plans
+- low-level control over pages and bytes
+- safe concurrency primitives
+- a natural path from single-node execution to distributed systems
+- excellent tooling through Cargo
+
+But this is a **database course, not a Rust course**.
+
+We intentionally use straightforward Rust and introduce language features only when the database requires them.
+
+The project begins with:
+
+```text
+Stable Rust
+Single process
+Single thread
+Synchronous execution
+Safe Rust
+Minimal dependencies
+```
+
+and evolves gradually toward:
+
+```text
+Iterators
+Threads
+Worker pools
+Processes
+Networking
+Async I/O
+Distributed workers
+```
+
+We deliberately avoid introducing async Rust, complicated lifetime patterns, unsafe code, or heavy frameworks before they solve a real problem.
+
+The progression should mirror the database architecture:
+
+```text
+Simple Rust
+    ↓
+Single-threaded query engine
+    ↓
+Iterator execution
+    ↓
+Parallel execution
+    ↓
+Networking
+    ↓
+Distributed execution
+    ↓
+Storage internals
+    ↓
+Concurrency control
+```
+
+---
+
 # What we will build
 
 The project has two major systems.
@@ -218,23 +285,23 @@ Distributed Transactions
 
 We will implement concepts including:
 
-- Record encoding
-- Slotted pages
-- Heap files
-- Buffer pools
+- record encoding
+- slotted pages
+- heap files
+- buffer pools
 - B+ trees
-- Write-ahead logging
-- Crash recovery
-- Locking
+- write-ahead logging
+- crash recovery
+- locking
 - MVCC
-- Isolation levels
-- Replication
-- Leader election
+- isolation levels
+- replication
+- leader election
 - Raft
-- Sharding
-- Two-phase commit
-- Distributed snapshots
-- Serializable transactions
+- sharding
+- two-phase commit
+- distributed snapshots
+- serializable transactions
 
 ---
 
@@ -276,47 +343,70 @@ We will implement concepts including:
 
 # Repository structure
 
+The repository structure evolves with the lessons.
+
+We intentionally do **not** create the final architecture on day one.
+
+An early version may be:
+
 ```text
 database-zero-to-distributed/
 │
+├── Cargo.toml
 ├── README.md
 ├── ROADMAP.md
 ├── AGENTS.md
 │
-├── engine/
-│   ├── parser/
-│   ├── logical/
-│   ├── optimizer/
-│   ├── physical/
+├── src/
+│   ├── main.rs
+│   ├── row.rs
+│   └── operator.rs
+│
+├── tests/
+├── examples/
+├── lessons/
+└── video/
+```
+
+As the database grows, boundaries may emerge:
+
+```text
+src/
+├── sql/
+├── logical/
+├── optimizer/
+├── physical/
+├── execution/
+├── distributed/
+├── storage/
+└── transaction/
+```
+
+Eventually, if those boundaries become useful, the repository may evolve into a Cargo workspace:
+
+```text
+database-zero-to-distributed/
+│
+├── Cargo.toml
+├── Cargo.lock
+│
+├── crates/
+│   ├── sql/
+│   ├── query/
 │   ├── execution/
 │   ├── distributed/
 │   ├── storage/
 │   └── transaction/
 │
-├── tests/
-│
-├── examples/
-│   ├── queries/
-│   ├── data/
-│   └── plans/
-│
 ├── lessons/
-│   ├── 001-smallest-query-engine/
-│   ├── 002-relational-algebra/
-│   └── ...
-│
+├── examples/
+├── tests/
 ├── video/
-│   ├── scenes/
-│   ├── renderer/
-│   ├── tts/
-│   └── assets/
-│
 ├── benchmarks/
-│
 └── tools/
 ```
 
-The exact directory structure may evolve as the project grows.
+Crates should be extracted because the codebase needs them, not because the final architecture looks cleaner that way.
 
 ---
 
@@ -324,7 +414,7 @@ The exact directory structure may evolve as the project grows.
 
 Every lesson should correspond to a reproducible state of the database.
 
-Example:
+Example tags:
 
 ```text
 lesson-001
@@ -382,9 +472,81 @@ lesson specification
          episode.mp4
 ```
 
-The goal is for the repository to remain the source of truth for both the code and the videos.
+The repository remains the source of truth for both the implementation and the videos.
 
-Code shown in the videos should come from the actual repository whenever possible.
+Code shown in videos should come from the actual repository whenever possible.
+
+---
+
+# Dependency philosophy
+
+Prefer the Rust standard library whenever practical.
+
+Dependencies are acceptable when they support the implementation without hiding the database concept being taught.
+
+Reasonable dependencies may eventually include:
+
+- SQL parsing support
+- serialization
+- CLI handling
+- tracing/logging
+- networking/runtime support
+- testing utilities
+
+Avoid libraries that implement the core concept of the current lesson.
+
+For example:
+
+- do not use a query optimizer while teaching query optimization
+- do not use a storage engine while teaching storage
+- do not use a consensus library while teaching Raft
+- do not use a transaction manager while teaching transactions
+
+Before adding a crate, ask:
+
+> Does this crate support the lesson, or does it implement the lesson for us?
+
+---
+
+# Rust progression
+
+Rust itself should evolve with the database.
+
+Early lessons should mainly require:
+
+```text
+struct
+enum
+Vec<T>
+Option<T>
+Result<T, E>
+match
+Box<T>
+Iterator
+```
+
+Parallel execution may introduce:
+
+```text
+std::thread
+channels
+Arc
+Mutex
+RwLock
+```
+
+Distributed execution may introduce:
+
+```text
+TCP
+HTTP or RPC
+serialization
+multiple processes
+```
+
+Async Rust should appear only when concurrent network I/O creates a concrete need for it.
+
+We should not jump directly to Tokio simply because the final system is distributed.
 
 ---
 
@@ -400,6 +562,9 @@ Code shown in the videos should come from the actual repository whenever possibl
 8. Optimize for understanding before performance.
 9. Explain why an implementation changes, not only how.
 10. Keep the complete system small enough to reason about.
+11. Prefer safe Rust.
+12. Introduce advanced Rust only when the database requires it.
+13. Let the repository architecture evolve with the curriculum.
 
 ---
 
@@ -412,8 +577,9 @@ This is not intended to become:
 - a highly optimized OLAP engine
 - a full ANSI SQL implementation
 - a database framework
+- a showcase of advanced Rust type-system techniques
 
-Whenever production-grade correctness and educational simplicity conflict, this project normally chooses educational simplicity and documents the tradeoff.
+Whenever production-grade sophistication and educational simplicity conflict, this project normally chooses educational simplicity and documents the tradeoff.
 
 ---
 
@@ -428,28 +594,47 @@ This series is aimed at developers who understand programming but want a deeper 
 - storage engines
 - transaction processing
 
-You should not need prior database-internals experience.
+Basic programming experience is assumed.
 
-We will derive the important concepts as we encounter the problems they solve.
+Advanced Rust knowledge is not.
+
+Rust concepts are introduced as they become necessary.
 
 ---
 
 # Roadmap
 
-The project is divided into several major arcs:
+The project is divided into major arcs:
 
 ```text
 Season 1 — Build a Query Engine
-Season 2 — Make It Fast
-Season 3 — Make It Parallel
-Season 4 — Make It Distributed
-Season 5 — Build a Storage Engine
-Season 6 — Transactions and ACID
-Season 7 — Replication and Consensus
-Season 8 — Distributed ACID
+Season 2 — How Query Engines Execute
+Season 3 — Query Optimization
+Season 4 — Parallel Execution
+Season 5 — Distributed Query Execution
+Season 6 — Build a Storage Engine
+Season 7 — Transactions and ACID
+Season 8 — Distributed Storage
+Season 9 — Sharding
+Season 10 — Distributed Transactions
+Season 11 — Bring Everything Together
 ```
 
-See [ROADMAP.md](ROADMAP.md) for the full lesson plan.
+See `ROADMAP.md` for the full lesson plan.
+
+---
+
+# Development
+
+The standard development loop should eventually be:
+
+```bash
+cargo fmt --check
+cargo clippy
+cargo test
+```
+
+Individual lessons should also provide deterministic runnable demos wherever possible.
 
 ---
 
@@ -457,7 +642,7 @@ See [ROADMAP.md](ROADMAP.md) for the full lesson plan.
 
 This project is being built incrementally.
 
-Expect APIs, directory structure, and implementations to evolve as the tutorial progresses.
+Expect APIs, directory structure, Rust abstractions, and implementations to evolve as the tutorial progresses.
 
 That evolution is intentional.
 

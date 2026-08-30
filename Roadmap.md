@@ -2,7 +2,11 @@
 
 # Database: Zero to Distributed
 
-This roadmap describes the intended learning journey.
+Implementation language: **Rust**
+
+The series assumes general programming knowledge but does not assume advanced Rust expertise.
+
+Rust concepts are introduced only when the database requires them.
 
 The exact lesson boundaries may evolve while building the course.
 
@@ -12,11 +16,46 @@ Each lesson should exist because the previous implementation exposes a problem w
 
 ---
 
+# 000 — Enough Rust to Build a Database
+
+Optional introductory lesson.
+
+This is not a general Rust tutorial.
+
+Cover only the concepts needed to understand the first part of the database:
+
+- `struct`
+- `enum`
+- `Vec<T>`
+- `Option<T>`
+- `Result<T, E>`
+- `match`
+- `Box<T>`
+- basic ownership
+- basic borrowing
+- iterators
+
+Avoid:
+
+- async
+- complex lifetimes
+- macros
+- unsafe
+- advanced trait patterns
+
+The goal is simply:
+
+> Enough Rust to read and modify the database.
+
+---
+
 # Season 1 — Build the Smallest Query Engine
 
 ## 001 — The Smallest Query Engine
 
 Build a query engine before building SQL.
+
+Start with simple rows held in memory or loaded from CSV.
 
 Implement:
 
@@ -28,21 +67,27 @@ Filter
 Project
 ```
 
-Use a simple CSV file as the table.
+Example:
 
-Goal:
-
-```text
-plan = Project(
-    ["name"],
-    Filter(
-        salary > 50000,
-        Scan("employees.csv")
-    )
-)
+```rust
+let plan = Plan::Project {
+    columns: vec!["name".into()],
+    input: Box::new(
+        Plan::Filter {
+            predicate: ...,
+            input: Box::new(
+                Plan::Scan {
+                    table: "employees.csv".into()
+                }
+            ),
+        }
+    ),
+};
 ```
 
 Execute the plan and produce rows.
+
+Keep the implementation single-threaded and synchronous.
 
 ---
 
@@ -69,6 +114,8 @@ Filter(salary > 50000)
 Scan(employees)
 ```
 
+Show how Rust enums naturally represent the tree.
+
 ---
 
 ## 003 — SQL Is Just a Frontend
@@ -91,6 +138,8 @@ Logical Plan
 
 Support a deliberately tiny SQL subset.
 
+Do not attempt full ANSI SQL.
+
 ---
 
 ## 004 — Binding and Expressions
@@ -103,27 +152,31 @@ Implement:
 - literals
 - comparison expressions
 - boolean expressions
-- type checking
+- basic type checking
 
 Explain why parsing alone is not enough.
+
+Introduce a simple expression enum.
 
 ---
 
 ## 005 — Joins
 
-Start with the simplest possible implementation:
+Start with:
 
 ```text
 NestedLoopJoin
 ```
 
-Then introduce:
+Then expose its limitations.
+
+Introduce:
 
 ```text
 HashJoin
 ```
 
-Explore why physical algorithms matter.
+Explore why logical operations and physical algorithms are different concepts.
 
 ---
 
@@ -151,7 +204,7 @@ Implement:
 - LIMIT
 - Top-K
 
-Introduce the idea of blocking operators.
+Introduce blocking operators.
 
 ---
 
@@ -169,23 +222,27 @@ computes output
 materializes result
 ```
 
-Use temporary files or in-memory relations.
+Start with in-memory relations.
 
-This gives us an easy-to-understand baseline.
+Optionally introduce temporary files.
 
 ---
 
-## 009 — Stop Writing Everything to Disk
+## 009 — Stop Materializing Everything
 
 Introduce pipelining.
 
-Build an iterator interface:
+Build an iterator-style executor.
+
+Conceptually:
 
 ```text
 open()
 next()
 close()
 ```
+
+or an idiomatic but still understandable Rust iterator representation.
 
 Introduce the Volcano execution model.
 
@@ -194,8 +251,10 @@ Compare:
 ```text
 materialization
 vs
-streaming execution
+streaming
 ```
+
+Avoid lifetime-heavy designs.
 
 ---
 
@@ -233,7 +292,7 @@ And:
 Filter(id = 123)
 ```
 
-can eventually become:
+may eventually become:
 
 ```text
 TableScan + Filter
@@ -285,9 +344,8 @@ Estimate:
 - scan cost
 - filter cost
 - join cost
-- network cost later
 
-Show why optimization requires estimates rather than rules alone.
+Network cost will be added later.
 
 ---
 
@@ -307,15 +365,21 @@ A JOIN (B JOIN C)
 
 can have dramatically different costs.
 
-Implement a basic join-ordering algorithm.
+Implement a basic join-ordering strategy.
 
 ---
 
 # Season 4 — Parallel Execution
 
+Until this point, execution should remain synchronous and largely single-threaded.
+
+Concurrency is introduced here because the database now has a problem that benefits from it.
+
+---
+
 ## 015 — Split the Table Into Partitions
 
-Take one large table and divide it into multiple partitions.
+Take one large table and divide it into partitions.
 
 Execute:
 
@@ -328,6 +392,16 @@ Scan P4
 
 concurrently.
 
+Start with:
+
+```rust
+std::thread
+```
+
+Do not introduce async Rust.
+
+The goal is to distinguish CPU/data parallelism from asynchronous networking.
+
 ---
 
 ## 016 — The Plan Becomes a DAG
@@ -336,10 +410,11 @@ Represent computation dependencies explicitly.
 
 Introduce:
 
-- DAG
+- DAGs
 - dependency tracking
 - ready nodes
 - topological execution
+- shared subplans
 
 ---
 
@@ -363,6 +438,9 @@ Build:
 - ready queue
 - worker pool
 - completion tracking
+- channels
+
+Use simple Rust concurrency primitives.
 
 ---
 
@@ -370,17 +448,20 @@ Build:
 
 ## 018 — Our First Multi-Node Query
 
-Move workers onto separate processes or machines.
+Move workers into separate processes.
 
 Introduce:
 
 - coordinator
 - workers
-- RPC
+- TCP or simple RPC
+- serialization
 - remote tasks
 - heartbeats
 
 Execute a distributed scan.
+
+Stay synchronous initially if that keeps the implementation clearer.
 
 ---
 
@@ -419,6 +500,8 @@ HashExchange
 RoundRobinExchange
 ```
 
+Make data movement visible in the physical plan.
+
 ---
 
 ## 021 — Build a Shuffle
@@ -429,15 +512,15 @@ Implement:
 hash(key) % partitions
 ```
 
-Send rows to their destination partitions.
+Send rows to destination partitions.
 
 Introduce:
 
 - partition writers
 - partition readers
+- buffering
 - network transfer
 - shuffle files
-- buffering
 
 ---
 
@@ -465,7 +548,7 @@ Explain why many aggregates are composable.
 
 ## 023 — Distributed Hash Join
 
-Partition both sides using the join key.
+Partition both sides by the join key.
 
 ```text
 Orders
@@ -497,9 +580,9 @@ Small Table
 W1  W2  W3   W4
 ```
 
-Join it locally against partitions of the large table.
+Join locally against partitions of the large table.
 
-Add planner logic for choosing broadcast vs shuffle.
+Add planner logic for choosing broadcast versus shuffle.
 
 ---
 
@@ -529,7 +612,31 @@ FinalAggregate
 
 ---
 
-## 026 — Failures Are Normal
+## 026 — When Synchronous Networking Stops Scaling
+
+Create enough concurrent worker communication that the synchronous model becomes awkward.
+
+Only now introduce async Rust if justified.
+
+Possible topics:
+
+- `async` / `await`
+- Tokio
+- tasks
+- async TCP
+- concurrent RPC
+
+The lesson should answer:
+
+> Why do we need async?
+
+rather than:
+
+> How does Tokio work?
+
+---
+
+## 027 — Failures Are Normal
 
 Kill a worker during a query.
 
@@ -542,7 +649,7 @@ Implement:
 
 ---
 
-## 027 — Lost Shuffle Data
+## 028 — Lost Shuffle Data
 
 Show why simply retrying a downstream task may not be sufficient.
 
@@ -550,17 +657,11 @@ Introduce shuffle lineage and recomputation.
 
 ---
 
-## 028 — Data Skew
+## 029 — Data Skew
 
-Create a hot key:
+Create a hot key representing a large percentage of the dataset.
 
-```text
-customer_id = 42
-```
-
-representing a large percentage of the dataset.
-
-Observe:
+Observe something like:
 
 ```text
 Worker 1: 4 GB
@@ -577,7 +678,7 @@ Introduce:
 
 ---
 
-## 029 — Memory Is Finite
+## 030 — Memory Is Finite
 
 Set a memory limit.
 
@@ -587,11 +688,11 @@ Break:
 - hash aggregation
 - sort
 
-Introduce memory accounting.
+Introduce explicit memory accounting.
 
 ---
 
-## 030 — Spill to Disk
+## 031 — Spill to Disk
 
 Implement:
 
@@ -599,11 +700,11 @@ Implement:
 - partitioned hash join
 - aggregation spill
 
-Explain the difference between deliberate materialization and emergency spill.
+Explain the difference between deliberate materialization and spill.
 
 ---
 
-## 031 — What Did We Build?
+## 032 — What Did We Build?
 
 Compare the concepts we derived with systems such as:
 
@@ -613,20 +714,22 @@ Compare the concepts we derived with systems such as:
 - ClickHouse
 - MPP databases
 
-Do not focus on implementation equivalence.
-
-Focus on recognizing the ideas.
+Focus on recognizing ideas, not claiming implementation equivalence.
 
 ---
 
 # Season 6 — Build a Storage Engine
 
-## 032 — A Database Starts With Bytes
+## 033 — A Database Starts With Bytes
 
 Start with:
 
-```python
-page = bytearray(4096)
+```rust
+const PAGE_SIZE: usize = 4096;
+
+struct Page {
+    data: [u8; PAGE_SIZE],
+}
 ```
 
 Ask:
@@ -636,11 +739,14 @@ Ask:
 Introduce:
 
 - fixed-size pages
+- byte layout
 - record encoding
+
+Use safe Rust.
 
 ---
 
-## 033 — Slotted Pages
+## 034 — Slotted Pages
 
 Support variable-sized records.
 
@@ -660,9 +766,11 @@ Support:
 - delete
 - compact
 
+Avoid serialization frameworks that hide the byte layout.
+
 ---
 
-## 034 — Heap Files
+## 035 — Heap Files
 
 Combine pages into a table.
 
@@ -675,7 +783,7 @@ Introduce:
 
 ---
 
-## 035 — The Buffer Pool
+## 036 — The Buffer Pool
 
 Observe repeated disk reads.
 
@@ -692,11 +800,11 @@ Implement:
 - dirty pages
 - eviction
 
-Start with a simple replacement strategy.
+Introduce simple synchronization only if concurrent access now requires it.
 
 ---
 
-## 036 — Build a B+ Tree
+## 037 — Build a B+ Tree
 
 Demonstrate why:
 
@@ -716,9 +824,9 @@ Build:
 
 ---
 
-## 037 — Connect Query Execution to Storage
+## 038 — Connect Query Execution to Storage
 
-Replace file-based scans with:
+Replace simple file-based scans with:
 
 ```text
 TableScan
@@ -731,7 +839,7 @@ Allow the physical planner to choose between them.
 
 # Season 7 — Transactions and ACID
 
-## 038 — Break the Database
+## 039 — Break the Database
 
 Create failures:
 
@@ -745,7 +853,7 @@ Ask:
 
 ---
 
-## 039 — Write-Ahead Logging
+## 040 — Write-Ahead Logging
 
 Introduce WAL from the crash problem.
 
@@ -754,11 +862,11 @@ Implement:
 - log records
 - log sequence numbers
 - commit records
-- flush-before-data rule
+- flush-before-data
 
 ---
 
-## 040 — Crash Recovery
+## 041 — Crash Recovery
 
 Crash the process deliberately.
 
@@ -776,7 +884,7 @@ Introduce checkpoints.
 
 ---
 
-## 041 — Concurrency Control With Locks
+## 042 — Concurrency Control With Locks
 
 Implement:
 
@@ -784,27 +892,37 @@ Implement:
 - exclusive locks
 - lock manager
 
-Then create a deadlock.
+Rust concepts may now include:
+
+```text
+Arc
+Mutex
+RwLock
+```
+
+Introduce them because shared database state requires synchronization.
 
 ---
 
-## 042 — Deadlocks
+## 043 — Deadlocks
+
+Create a real deadlock.
 
 Implement either:
 
-- detection
+- deadlock detection
 
-or:
+or initially:
 
 - timeout-based resolution
 
-Explain wait-for graphs.
+Introduce wait-for graphs.
 
 ---
 
-## 043 — MVCC
+## 044 — MVCC
 
-Replace the idea of readers blocking writers.
+Explore why readers and writers should not necessarily block each other.
 
 Introduce:
 
@@ -817,7 +935,7 @@ visibility
 
 ---
 
-## 044 — Isolation Levels
+## 045 — Isolation Levels
 
 Create anomalies rather than starting with definitions.
 
@@ -838,9 +956,9 @@ Then introduce:
 
 ---
 
-## 045 — ACID, Finally
+## 046 — ACID, Finally
 
-Only now explicitly bring the pieces together.
+Bring the pieces together:
 
 ```text
 Atomicity
@@ -855,7 +973,7 @@ Map each guarantee to mechanisms we built.
 
 # Season 8 — Distributed Storage
 
-## 046 — Replication
+## 047 — Replication
 
 Our storage engine works.
 
@@ -867,7 +985,7 @@ Implement a simple primary-replica model.
 
 ---
 
-## 047 — Replication Lag
+## 048 — Replication Lag
 
 Show why asynchronous replication can lose acknowledged writes.
 
@@ -875,7 +993,7 @@ Introduce synchronous replication and durability tradeoffs.
 
 ---
 
-## 048 — The Primary Dies
+## 049 — The Primary Dies
 
 Ask:
 
@@ -890,9 +1008,9 @@ Introduce:
 
 ---
 
-## 049 — Build Raft
+## 050 — Build Raft
 
-Implement a minimal form of:
+Implement a minimal educational form of:
 
 - RequestVote
 - AppendEntries
@@ -900,11 +1018,11 @@ Implement a minimal form of:
 - commit index
 - leader election
 
-Keep the implementation educational.
+Do not use an existing Raft implementation.
 
 ---
 
-## 050 — Strongly Consistent Replicated Storage
+## 051 — Strongly Consistent Replicated Storage
 
 Connect the consensus log to storage operations.
 
@@ -928,7 +1046,7 @@ storage
 
 # Season 9 — Sharding
 
-## 051 — One Node Cannot Hold Everything
+## 052 — One Node Cannot Hold Everything
 
 Introduce sharding.
 
@@ -940,7 +1058,7 @@ hash(key) % N
 
 ---
 
-## 052 — Range Sharding
+## 053 — Range Sharding
 
 Compare:
 
@@ -959,7 +1077,7 @@ Explore:
 
 ---
 
-## 053 — Routing
+## 054 — Routing
 
 Build a shard map.
 
@@ -967,7 +1085,7 @@ Route requests to the correct shard.
 
 ---
 
-## 054 — Rebalancing
+## 055 — Rebalancing
 
 Add a node.
 
@@ -979,12 +1097,12 @@ Handle requests while ownership changes.
 
 # Season 10 — Distributed Transactions
 
-## 055 — One Transaction, Two Shards
+## 056 — One Transaction, Two Shards
 
 Create:
 
 ```text
-Transfer ₹100
+Transfer 100 units
 
 Shard A:
 account A -= 100
@@ -997,7 +1115,7 @@ Crash between operations.
 
 ---
 
-## 056 — Two-Phase Commit
+## 057 — Two-Phase Commit
 
 Derive:
 
@@ -1011,7 +1129,7 @@ Implement a basic coordinator.
 
 ---
 
-## 057 — Coordinator Failure
+## 058 — Coordinator Failure
 
 Crash the coordinator after participants prepare.
 
@@ -1025,15 +1143,15 @@ Explore why distributed transactions are difficult.
 
 ---
 
-## 058 — Distributed MVCC
+## 059 — Distributed MVCC
 
-Introduce timestamps that span shards.
+Introduce timestamps spanning shards.
 
 Build distributed snapshot reads.
 
 ---
 
-## 059 — Serializable Distributed Transactions
+## 060 — Serializable Distributed Transactions
 
 Explore:
 
@@ -1042,13 +1160,13 @@ Explore:
 - distributed conflicts
 - serializable execution
 
-Keep the treatment conceptual and implementation-focused.
+Keep the treatment implementation-focused.
 
 ---
 
 # Season 11 — Bring Everything Together
 
-## 060 — Distributed SQL Over Distributed Storage
+## 061 — Distributed SQL Over Distributed Storage
 
 Connect:
 
@@ -1062,7 +1180,7 @@ Build the integrated architecture.
 
 ---
 
-## 061 — One SQL Query, End to End
+## 062 — One SQL Query, End to End
 
 Take a query such as:
 
@@ -1104,14 +1222,14 @@ Join
  ↓
 Aggregation
  ↓
-Transaction / Snapshot
+Snapshot
  ↓
 Result
 ```
 
 ---
 
-## 062 — One Transaction, End to End
+## 063 — One Transaction, End to End
 
 Follow a distributed write through:
 
@@ -1135,7 +1253,7 @@ Commit
 
 ---
 
-## 063 — Benchmark It
+## 064 — Benchmark It
 
 Build a small repeatable benchmark suite inspired by analytical and transactional workloads.
 
@@ -1148,11 +1266,11 @@ Measure:
 - storage latency
 - transaction throughput
 - replication cost
-- failure recovery
+- recovery time
 
 ---
 
-## 064 — Break Everything
+## 065 — Break Everything
 
 Run failure experiments:
 
@@ -1169,7 +1287,7 @@ Observe which guarantees survive.
 
 ---
 
-## 065 — Where Real Databases Go Further
+## 066 — Where Real Databases Go Further
 
 Use our database as a mental model for understanding real systems.
 
