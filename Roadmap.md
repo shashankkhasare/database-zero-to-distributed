@@ -14,6 +14,10 @@ The objective is not to cover database topics encyclopedically.
 
 Each lesson should exist because the previous implementation exposes a problem worth solving.
 
+Each completed lesson normally produces a reproducible implementation, a book
+chapter, a runnable demo, concept-focused tests, and a generated video episode.
+See `BOOK.md` for the manuscript standard and `TODO.md` for current progress.
+
 ---
 
 # 000 — Enough Rust to Build a Database

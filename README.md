@@ -354,7 +354,9 @@ database-zero-to-distributed/
 │
 ├── Cargo.toml
 ├── README.md
-├── ROADMAP.md
+├── Roadmap.md
+├── BOOK.md
+├── TODO.md
 ├── AGENTS.md
 │
 ├── src/
@@ -432,6 +434,22 @@ git checkout lesson-018
 and see exactly the implementation shown in that lesson.
 
 The evolution of the codebase is part of the curriculum.
+
+---
+
+# The book
+
+This project will also produce a complete executable book that teaches a
+complex system by building, running, testing, and breaking the real
+implementation beside the text.
+
+The book is not a transcript of the videos. It is a standalone technical
+narrative in which each chapter explains a problem, derives one database
+concept, builds it in the real repository, tests it, runs it, and exposes the
+next limitation.
+
+See [`BOOK.md`](BOOK.md) for the writing and chapter contract. See
+[`TODO.md`](TODO.md) for current implementation, book, and video progress.
 
 ---
 
@@ -620,7 +638,8 @@ Season 10 — Distributed Transactions
 Season 11 — Bring Everything Together
 ```
 
-See `ROADMAP.md` for the full lesson plan.
+See [`Roadmap.md`](Roadmap.md) for the full lesson plan and
+[`TODO.md`](TODO.md) for current progress.
 
 ---
 

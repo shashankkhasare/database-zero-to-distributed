@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 # Instructions for Coding Agents
 
@@ -7,6 +7,52 @@ This repository is an educational implementation of a distributed SQL database b
 Agents working on this repository must optimize for teaching quality, conceptual clarity, and incremental evolution.
 
 Production-grade sophistication is not the primary objective.
+
+---
+
+# 0. Session bootstrap and project memory
+
+The repository documentation is the durable memory for work that spans many AI
+agent sessions.
+
+At the beginning of a new session, read the documents relevant to the task in
+this order:
+
+1. `AGENTS.md` — non-negotiable implementation and teaching constraints
+2. `TODO.md` — current progress, active milestone, and verified completion state
+3. `Roadmap.md` — curriculum order and the problem each lesson should expose
+4. `BOOK.md` — chapter contract, writing standards, and web-book direction
+5. `README.md` — project vision and public overview
+
+For a narrowly scoped task, inspect the relevant sections rather than assuming
+the entire long-term architecture is already required. Before implementing a
+lesson, read that lesson's roadmap section and its current checklist in
+`TODO.md`.
+
+Treat these files as distinct sources of truth:
+
+- `AGENTS.md` governs how work is performed.
+- `Roadmap.md` governs why concepts appear and in what order.
+- `BOOK.md` governs how the written and web-book experience is produced.
+- `TODO.md` records what has actually been completed and what is active next.
+- The Rust implementation, tests, and demos remain the source of truth for
+  executable behavior.
+
+Keep the documentation synchronized when work changes project status or
+teaching intent. Check a `TODO.md` item only after its outcome exists and has
+been verified. Never mark future work complete based only on a plan, draft, or
+partial implementation.
+
+Before ending a substantial session:
+
+1. update only the checklist items whose outcomes were verified
+2. record any deliberate simplifications or changed decisions in the relevant
+   document
+3. leave the active milestone clear enough for a fresh agent to resume without
+   relying on chat history
+4. report validation performed and any remaining blockers
+
+Do not use chat history as the only record of an important project decision.
 
 ---
 
