@@ -32,20 +32,20 @@ not design distant lessons prematurely.
 
 Each lesson is complete only when all applicable items are satisfied:
 
-- [ ] The lesson starts from a visible limitation or question
-- [ ] The smallest coherent implementation is complete
-- [ ] Concept-focused tests are included
-- [ ] Previous tests still pass
-- [ ] A deterministic runnable demo exists
-- [ ] `cargo fmt --check` passes
-- [ ] `cargo clippy` passes
-- [ ] `cargo test` passes
+- [x] The lesson starts from a visible limitation or question
+- [x] The smallest coherent implementation is complete
+- [x] Concept-focused tests are included
+- [x] Previous tests still pass
+- [x] A deterministic runnable demo exists
+- [x] `cargo fmt --check` passes
+- [x] `cargo clippy` passes
+- [x] `cargo test` passes
 - [ ] The book chapter is complete and matches the code
-- [ ] Diagrams and expected output are reproducible
+- [x] Diagrams and expected output are reproducible
 - [ ] The video lesson definition is complete
 - [ ] Narration and pronunciation have been reviewed
 - [ ] The generated episode has been rendered and checked
-- [ ] Educational simplifications and tradeoffs are documented
+- [x] Educational simplifications and tradeoffs are documented
 - [ ] The completed state is tagged
 
 These boxes describe the shared completion standard. Lesson milestone boxes
@@ -57,39 +57,39 @@ below should be checked only after this standard has been applied.
 
 ## Learning outcome
 
-- [ ] State the question the lesson answers: how can we execute a query without SQL?
-- [ ] Show the target `Scan → Filter → Project` result before discussing architecture
-- [ ] Keep execution synchronous, single-threaded, and materialized
+- [x] State the question the lesson answers: how can we execute a query without SQL?
+- [x] Show the target `Scan → Filter → Project` result before discussing architecture
+- [x] Keep execution synchronous, single-threaded, and materialized
 
 ## Implementation
 
-- [ ] Initialize the smallest useful Cargo binary project
-- [ ] Represent a row with an intentionally simple owned value structure
-- [ ] Add an in-memory employees relation for the demo
-- [ ] Represent `Scan`, `Filter`, and `Project` directly in a plan enum
-- [ ] Execute the plan recursively
-- [ ] Support the one predicate needed by the lesson
-- [ ] Print deterministic result rows
-- [ ] Avoid traits, iterators, SQL parsing, async, and future module structure
+- [x] Initialize the smallest useful Cargo binary project
+- [x] Represent a row with an intentionally simple owned value structure
+- [x] Add an in-memory employees relation for the demo
+- [x] Represent `Scan`, `Filter`, and `Project` directly in a plan enum
+- [x] Execute the plan recursively
+- [x] Support the one predicate needed by the lesson
+- [x] Print deterministic result rows
+- [x] Avoid traits, iterators, SQL parsing, async, and future module structure
 
 ## Tests and demo
 
-- [ ] Test that scan returns the source rows
-- [ ] Test that filter removes non-matching rows
-- [ ] Test that project keeps only requested columns
-- [ ] Test the complete `Scan → Filter → Project` plan
-- [ ] Add one deterministic demo command
-- [ ] Record the expected demo output
-- [ ] Run formatting, Clippy, and all tests
+- [x] Test that scan returns the source rows
+- [x] Test that filter removes non-matching rows
+- [x] Test that project keeps only requested columns
+- [x] Test the complete `Scan → Filter → Project` plan
+- [x] Add one deterministic demo command
+- [x] Record the expected demo output
+- [x] Run formatting, Clippy, and all tests
 
 ## Book chapter
 
-- [ ] Explain rows and relations using the demo data
-- [ ] Motivate each operator from the example query
-- [ ] Explain why an enum makes the plan tree visible
-- [ ] Walk through recursive materialized execution
-- [ ] Explain intentional limitations
-- [ ] End with the relational-algebra tree recognized in lesson 002
+- [x] Explain rows and relations using the demo data
+- [x] Motivate each operator from the example query
+- [x] Explain why an enum makes the plan tree visible
+- [x] Walk through recursive materialized execution
+- [x] Explain intentional limitations
+- [x] End with the relational-algebra tree recognized in lesson 002
 
 ## Video episode
 
@@ -212,6 +212,12 @@ below should be checked only after this standard has been applied.
 # Book production
 
 - [ ] Write and review the first chapter in plain Markdown
+- [ ] Define the smallest useful frontmatter and welcome section
+- [ ] Write the welcome material that explains why we are building a database
+- [ ] Explain how to read the book and follow the evolving repository
+- [ ] Give readers a high-level map of the system without teaching future layers early
+- [ ] Add welcome entries to `book/contents.md` only when their manuscripts exist
+- [x] Define the guided, conversational narration style
 - [x] Define the desired editorial web-book experience
 - [x] Document the web-book visual and interaction direction
 - [ ] Select permissively licensed serif, sans-serif, and monospace typefaces

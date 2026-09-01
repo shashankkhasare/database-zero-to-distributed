@@ -127,6 +127,139 @@ End with the unresolved problem that motivates the following chapter.
 
 ---
 
+# Narration style
+
+The book should read like an experienced programmer building the system beside
+the reader. It should be conversational and energetic without becoming casual
+about correctness. The prose must have its own voice; use the principles below
+rather than imitating another author sentence by sentence.
+
+## Speak collaboratively
+
+Use **we** for the shared investigation and implementation:
+
+> We can execute the filter now, but first we need something it can filter.
+
+Use **you** sparingly for actions the reader performs or observations they can
+verify:
+
+> Run the program again. You should see two rows this time.
+
+Avoid distant textbook phrasing such as “the student will now implement.” The
+reader should feel accompanied through the work.
+
+## Lead with something concrete
+
+Open a section with behavior, data, output, a question, or a small failure. Do
+not begin with a formal definition when the reader has nothing concrete to
+attach it to.
+
+Use this order:
+
+```text
+concrete example
+      ↓
+plain-language explanation
+      ↓
+technical term
+      ↓
+representation in code
+```
+
+For example, first describe keeping rows whose salary is high enough. Then name
+that operation a filter and its true-or-false condition a predicate.
+
+## Build in small visible steps
+
+A chapter should alternate between explanation and small code changes. For each
+change:
+
+1. state the immediate goal
+2. name the real repository file and whether it is created or changed
+3. show the smallest meaningful code fragment
+4. explain what the fragment does and why it has this shape
+5. run or test it as soon as it produces observable behavior
+6. connect the result to the next small problem
+
+Use editorial labels such as:
+
+```text
+src/row.rs — create this file
+src/plan.rs — add to Plan::execute()
+src/main.rs — replace the demo plan
+```
+
+These labels describe intent rather than brittle line numbers. The complete
+repository state remains authoritative.
+
+## Explain code after showing it
+
+Do not drop a large listing and expect the reader to decode it. Immediately
+unpack new fields, enum variants, control flow, and important Rust syntax.
+
+Explain only the Rust needed for the database idea at hand. A short explanation
+of why `Box<Plan>` gives a recursive enum a known size is useful. A general
+survey of smart pointers is not.
+
+When code uses a familiar-looking operation in a subtle way, walk through one
+real input by hand.
+
+## Keep a runnable rhythm
+
+The reader should never travel far without a checkpoint. Use short transitions
+such as:
+
+> That is enough machinery to try it. Run the program.
+
+Every checkpoint should include the exact command and stable expected output.
+After the output, explain what it proves and what it does not prove.
+
+## Introduce vocabulary gently
+
+Assume general programming experience but no database expertise and no advanced
+Rust knowledge.
+
+At first use:
+
+- explain the idea in ordinary language
+- give the technical term
+- use that term consistently afterward
+
+Do not stack several undefined terms in one sentence. If a term is not needed
+again, prefer plain language instead of adding vocabulary merely for
+completeness.
+
+## Use personality with restraint
+
+Light humor, analogy, and opinion can make dense material easier to remember.
+They should arise naturally from the work and remain short. Never let a joke
+interrupt a crucial explanation, belittle the reader, or make an important
+guarantee sound optional.
+
+Prefer concrete observations over exaggerated claims. It is fine to admit when
+an implementation is repetitive, naive, or temporarily awkward—as long as the
+chapter explains why that choice helps us learn.
+
+## Separate the main path from side paths
+
+Keep the central build moving forward. Historical context, alternative designs,
+production differences, and Rust details that are useful but nonessential
+belong in the established design, production, or Rust notes.
+
+The reader should be able to skip an aside without losing the steps required to
+run the chapter.
+
+## Finish with play and momentum
+
+After the main implementation works, offer a few focused experiments or
+challenges. They should reinforce the current concept rather than silently
+introduce the next lesson.
+
+End by revealing a limitation or unanswered question. The transition should
+make the next chapter feel necessary, not merely next in a list.
+
+---
+
 # Code-listing policy
 
 The repository is the canonical source for code. Chapters may quote the parts
