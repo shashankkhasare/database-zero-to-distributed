@@ -96,10 +96,12 @@ below should be checked only after this standard has been applied.
 
 - [x] Define the video source, intermediate, and final-artifact locations
 - [x] Define the reusable video-pipeline execution plan
-- [ ] Create the minimum lesson 001 directory and source files
-- [ ] Define the minimum lesson metadata required by the first episode
+- [x] Create the minimum lesson 001 directory and source files
+- [x] Define the minimum lesson metadata required by the first episode
+- [x] Draft the complete scene-by-scene narration for lesson 001
+- [x] Review the complete lesson 001 narration
 - [ ] Create reproducible plan and row visuals
-- [ ] Prototype narration generation with `kokoro-js`
+- [x] Prototype narration generation with `kokoro-js`
 - [ ] Verify pronunciation of all database and Rust terms
 - [ ] Render the first episode with deterministic inputs
 - [ ] Verify audio, captions, code, diagrams, and final encoding
@@ -248,12 +250,16 @@ below should be checked only after this standard has been applied.
 
 - [x] Document the shared scripts, lesson sources, and generated-artifact structure
 - [x] Define the intended non-interactive video command interface
-- [ ] Add `build/` and `dist/videos/` to `.gitignore`
-- [ ] Create only the shared script directories required by the first prototype
-- [ ] Create a small `kokoro-js` narration proof of concept
-- [ ] Pin the model revision, voice, speed, and audio format
+- [x] Choose browser-native HTML, CSS, SVG, and JavaScript for the first scene prototype
+- [ ] Implement reusable browser visual components and programmatic scene modules
+- [ ] Select the smallest headless-browser renderer after testing one real scene
+- [x] Add `build/` and `dist/videos/` to `.gitignore`
+- [x] Create only the shared script directories required by the first prototype
+- [x] Create a small `kokoro-js` narration proof of concept
+- [x] Approve `af_heart`, speed 1.0, and mono 24 kHz WAV as the initial audio settings
+- [ ] Pin the exact Kokoro model revision used for reproducible generation
 - [ ] Define pronunciation overrides for technical vocabulary
-- [ ] Cache model assets in a documented, reproducible location
+- [x] Cache model assets in a documented, reproducible location
 - [ ] Choose a renderer using the lesson 001 prototype
 - [ ] Generate captions from narration timing
 - [ ] Compose narration, visuals, and captions with FFmpeg

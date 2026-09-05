@@ -1,0 +1,9 @@
+Project
+|-- columns: ["name"]
+`-- input
+    `-- Filter
+        |-- column: "salary"
+        |-- greater_than: 50,000
+        `-- input
+            `-- Scan
+                `-- rows: employees

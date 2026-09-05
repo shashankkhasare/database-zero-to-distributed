@@ -1,0 +1,26 @@
+id: "001"
+title: The Smallest Query Engine
+chapter: book/001-smallest-query-engine.md
+narration: lessons/001-smallest-query-engine/narration.md
+demo: cargo run --quiet
+expected_output: lessons/001-smallest-query-engine/expected-output.txt
+
+audio:
+  model: onnx-community/Kokoro-82M-v1.0-ONNX
+  dtype: q8
+  device: cpu
+  voice: af_heart
+  speed: 1.0
+  format: wav
+  sample_rate: 24000
+  channels: 1
+
+scenes:
+  - question-and-result
+  - core-idea
+  - rows-and-values
+  - plan-structure
+  - execute-the-plan
+  - run-the-query
+  - materialized-execution
+  - relational-algebra
