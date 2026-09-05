@@ -20,9 +20,11 @@ See `BOOK.md` for the manuscript standard and `TODO.md` for current progress.
 
 ---
 
-# 000 — Enough Rust to Build a Database
+# Appendix A: Enough Rust to Build a Database
 
-Optional introductory lesson.
+Optional reference. This is an appendix rather than lesson 000, so readers can
+begin building the query engine immediately and consult Rust explanations when
+they need them.
 
 This is not a general Rust tutorial.
 
@@ -37,7 +39,10 @@ Cover only the concepts needed to understand the first part of the database:
 - `Box<T>`
 - basic ownership
 - basic borrowing
-- iterators
+- loops
+- methods and `impl`
+- modules, tests, and Cargo
+- reading compiler errors
 
 Avoid:
 

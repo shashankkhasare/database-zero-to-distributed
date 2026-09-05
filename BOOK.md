@@ -134,6 +134,38 @@ the reader. It should be conversational and energetic without becoming casual
 about correctness. The prose must have its own voice; use the principles below
 rather than imitating another author sentence by sentence.
 
+## Assume curiosity, not a computer-science education
+
+Assume the reader has written or modified a small program and understands basic
+ideas such as variables, functions, conditions, and lists. Do not assume a
+computer-science degree, database coursework, or systems-programming
+experience. Readers who are new to Rust can use Appendix A as a reference.
+
+Keep the main narrative focused on database ideas. Use straightforward Rust,
+but do not interrupt a chapter to teach syntax such as `Vec`, `match`, `Box`,
+borrowing, method calls, or test macros. Explain a Rust choice only when it
+changes the reader's understanding of the database representation or behavior.
+
+Use familiar examples before formal models. A relation begins as a table; a
+predicate begins as a yes-or-no question about one row; recursion begins as one
+plan asking its smaller input plan to run. Introduce the formal term only after
+the ordinary explanation is secure.
+
+The book is not a complete Rust tutorial. Link to the relevant appendix section
+when language background would otherwise interrupt the database story.
+
+## Use the Rust appendix as a reference
+
+Appendix A, **Enough Rust to Build a Database**, is optional reference material.
+It should collect the small set of Rust concepts used throughout the project
+without becoming a course that readers must finish before chapter 1. Organize
+it around code from this database rather than unrelated language exercises.
+
+Main chapters should identify project-specific operations when confusion with a
+standard Rust feature is likely, but their purpose and database behavior matter
+more than their syntax. Keep the appendix practical, incremental, and free of
+advanced Rust that the current implementation does not use.
+
 ## Speak collaboratively
 
 Use **we** for the shared investigation and implementation:
@@ -147,6 +179,25 @@ verify:
 
 Avoid distant textbook phrasing such as “the student will now implement.” The
 reader should feel accompanied through the work.
+
+## Shape paragraphs for human reading
+
+Each paragraph should carry one clear idea. Aim for roughly 55–60 words in the
+main explanatory prose when the idea naturally supports that length. Treat it
+as a reading rhythm, not a quota.
+
+Use a shorter paragraph for a question, transition, conclusion, moment of
+emphasis, or introduction to code. A short sentence can give the reader room to
+pause before the next concept.
+
+When a prose paragraph grows beyond roughly 70 words, look for a natural split.
+Do not split code, lists, quotations, or asides merely to satisfy a word count.
+Never add filler to lengthen a paragraph or compress an explanation until it
+becomes harder to understand.
+
+Vary paragraph length deliberately. A page made entirely of equal-sized blocks
+feels mechanical; a page with only one-line fragments feels breathless. The
+goal is a calm rhythm that makes technical reasoning easy to follow.
 
 ## Lead with something concrete
 
@@ -184,9 +235,9 @@ change:
 Use editorial labels such as:
 
 ```text
-src/row.rs — create this file
-src/plan.rs — add to Plan::execute()
-src/main.rs — replace the demo plan
+src/row.rs: create this file
+src/plan.rs: add to Plan::execute()
+src/main.rs: replace the demo plan
 ```
 
 These labels describe intent rather than brittle line numbers. The complete
@@ -237,8 +288,12 @@ interrupt a crucial explanation, belittle the reader, or make an important
 guarantee sound optional.
 
 Prefer concrete observations over exaggerated claims. It is fine to admit when
-an implementation is repetitive, naive, or temporarily awkward—as long as the
+an implementation is repetitive, naive, or temporarily awkward, as long as the
 chapter explains why that choice helps us learn.
+
+Do not use em dashes in manuscript prose, headings, labels, notes, or contents.
+Use a period, comma, colon, or parentheses according to the relationship
+between the ideas.
 
 ## Separate the main path from side paths
 
@@ -269,10 +324,17 @@ implementation.
 Code listings should:
 
 - name the source file they come from
+- include enough unchanged surrounding code to show where an edit belongs
+- use a nearby type, function, match arm, or closing brace as a placement anchor
 - stay short enough to discuss meaningfully
 - omit unrelated details explicitly when shortened
 - compile in their complete repository context
 - avoid line numbers that become stale unless generated automatically
+
+Do not present a bare method signature or isolated closing brace when the reader
+could reasonably wonder where it belongs. Mark omitted existing code clearly,
+and explain temporary placeholders when an incremental snippet is not yet the
+final implementation.
 
 When a chapter requires the reader to make several edits, the tagged lesson
 state remains the final reference implementation.
@@ -288,6 +350,16 @@ stable labels that agree with the implementation.
 Generated output used by the book must be deterministic unless nondeterminism
 is itself the lesson. Concurrent results should be sorted for presentation when
 their order has no meaning.
+
+Query-plan diagrams place the final operation, called the root, at the top and
+data sources at the bottom. Rows flow upward from the sources toward the result.
+Early chapters should draw upward arrows explicitly while the reader learns the
+convention. Later chapters may use plain connecting lines after reminding the
+reader that the same bottom-to-top data flow is implied.
+
+When a diagram shows control calls instead of row movement, label that direction
+separately. Do not use one unlabeled arrow to mean both “ask the child to run”
+and “return rows to the parent.”
 
 ---
 

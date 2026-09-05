@@ -22,7 +22,7 @@ not design distant lessons prematurely.
 - [x] Install and verify Node.js, FFmpeg, and FFprobe
 - [x] Add `kokoro-js` as the initial local narration engine
 - [ ] Add a full `LICENSE` file
-- [ ] Decide whether lesson 000 will be published or remain optional reference
+- [x] Publish Rust orientation as optional Appendix A instead of lesson 000
 - [ ] Decide the repository tagging convention for completed lessons
 - [ ] Define the smallest lesson directory only when lesson 001 needs it
 
@@ -40,7 +40,7 @@ Each lesson is complete only when all applicable items are satisfied:
 - [x] `cargo fmt --check` passes
 - [x] `cargo clippy` passes
 - [x] `cargo test` passes
-- [ ] The book chapter is complete and matches the code
+- [x] The book chapter is complete and matches the code
 - [x] Diagrams and expected output are reproducible
 - [ ] The video lesson definition is complete
 - [ ] Narration and pronunciation have been reviewed
@@ -70,7 +70,7 @@ below should be checked only after this standard has been applied.
 - [x] Execute the plan recursively
 - [x] Support the one predicate needed by the lesson
 - [x] Print deterministic result rows
-- [x] Avoid traits, iterators, SQL parsing, async, and future module structure
+- [x] Avoid custom execution traits, iterators, SQL parsing, async, and future module structure
 
 ## Tests and demo
 
@@ -85,6 +85,7 @@ below should be checked only after this standard has been applied.
 ## Book chapter
 
 - [x] Explain rows and relations using the demo data
+- [x] Keep Rust instruction in Appendix A and database reasoning in the chapter
 - [x] Motivate each operator from the example query
 - [x] Explain why an enum makes the plan tree visible
 - [x] Walk through recursive materialized execution
@@ -103,10 +104,6 @@ below should be checked only after this standard has been applied.
 ---
 
 # Curriculum milestones
-
-## Season 0 — Rust orientation
-
-- [ ] 000 — Enough Rust to Build a Database
 
 ## Season 1 — Build the Smallest Query Engine
 
@@ -211,7 +208,12 @@ below should be checked only after this standard has been applied.
 
 # Book production
 
-- [ ] Write and review the first chapter in plain Markdown
+- [x] Write and review the first chapter in plain Markdown
+- [x] Add Appendix A to the roadmap and manuscript contents
+- [x] Define Appendix A's reader contract and topic structure
+- [x] Draft Appendix A using real code from the implemented chapters
+- [x] Review Appendix A for concepts not yet used by the database
+- [ ] Add links from chapters to relevant appendix sections where useful
 - [ ] Define the smallest useful frontmatter and welcome section
 - [ ] Write the welcome material that explains why we are building a database
 - [ ] Explain how to read the book and follow the evolving repository
