@@ -55,7 +55,8 @@ The video favors pacing, motion, and visual intuition. Both use the repository
 implementation as their source of truth.
 
 `Roadmap.md` defines the order of concepts. `TODO.md` tracks implementation and
-publication progress. This file defines the standard expected from the book.
+publication progress. This file defines the standard expected from the book,
+while `VIDEO.md` defines the shared video-production workflow.
 
 ---
 

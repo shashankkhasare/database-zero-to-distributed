@@ -94,6 +94,9 @@ below should be checked only after this standard has been applied.
 
 ## Video episode
 
+- [x] Define the video source, intermediate, and final-artifact locations
+- [x] Define the reusable video-pipeline execution plan
+- [ ] Create the minimum lesson 001 directory and source files
 - [ ] Define the minimum lesson metadata required by the first episode
 - [ ] Create reproducible plan and row visuals
 - [ ] Prototype narration generation with `kokoro-js`
@@ -243,6 +246,10 @@ below should be checked only after this standard has been applied.
 
 # Video pipeline
 
+- [x] Document the shared scripts, lesson sources, and generated-artifact structure
+- [x] Define the intended non-interactive video command interface
+- [ ] Add `build/` and `dist/videos/` to `.gitignore`
+- [ ] Create only the shared script directories required by the first prototype
 - [ ] Create a small `kokoro-js` narration proof of concept
 - [ ] Pin the model revision, voice, speed, and audio format
 - [ ] Define pronunciation overrides for technical vocabulary

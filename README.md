@@ -639,7 +639,9 @@ Season 11 — Bring Everything Together
 ```
 
 See [`Roadmap.md`](Roadmap.md) for the full lesson plan and
-[`TODO.md`](TODO.md) for current progress.
+[`TODO.md`](TODO.md) for current progress. [`BOOK.md`](BOOK.md) defines the
+written-book contract, and [`VIDEO.md`](VIDEO.md) defines how lesson sources
+become generated episodes.
 
 ---
 
