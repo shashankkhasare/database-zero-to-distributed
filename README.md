@@ -448,6 +448,9 @@ narrative in which each chapter explains a problem, derives one database
 concept, builds it in the real repository, tests it, runs it, and exposes the
 next limitation.
 
+Read the published web book at
+[shashankkhasare.github.io/database-zero-to-distributed](https://shashankkhasare.github.io/database-zero-to-distributed/).
+
 See [`BOOK.md`](BOOK.md) for the writing and chapter contract. See
 [`TODO.md`](TODO.md) for current implementation, book, and video progress.
 

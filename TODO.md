@@ -279,6 +279,7 @@ below should be checked only after this standard has been applied.
 - [ ] Make diagrams reusable by the book and video pipeline where practical
 - [x] Add deterministic book-build verification
 - [x] Add a pinned mdBook build and GitHub Pages deployment workflow
+- [x] Deploy the mdBook output publicly through GitHub Pages
 - [ ] Define technical-review and copy-edit workflows
 - [ ] Produce a complete draft of every implemented chapter
 - [ ] Render and inspect the complete book
