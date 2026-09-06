@@ -18,3 +18,14 @@ eventually contain.
 
 The complete writing and web-book contract lives in [`../BOOK.md`](../BOOK.md).
 Current progress lives in [`../TODO.md`](../TODO.md).
+
+## Render locally
+
+Install mdBook 0.5.4, then run:
+
+```bash
+mdbook build
+```
+
+The generated site is written to `build/book/`. Use `mdbook serve` while
+editing to rebuild the site and preview it in a browser.

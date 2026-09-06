@@ -273,10 +273,11 @@ below should be checked only after this standard has been applied.
 - [ ] Test keyboard navigation, focus visibility, contrast, and reduced motion
 - [ ] Verify that prose and code remain usable with JavaScript disabled
 - [ ] Evaluate HTML, EPUB, and PDF requirements using the real first chapter
-- [ ] Select a book renderer only after that evaluation
+- [x] Select mdBook as the first HTML book renderer
 - [ ] Make code references verifiable against lesson tags
 - [ ] Make diagrams reusable by the book and video pipeline where practical
-- [ ] Add deterministic book-build verification
+- [x] Add deterministic book-build verification
+- [x] Add a pinned mdBook build and GitHub Pages deployment workflow
 - [ ] Define technical-review and copy-edit workflows
 - [ ] Produce a complete draft of every implemented chapter
 - [ ] Render and inspect the complete book

@@ -1,0 +1,120 @@
+:root {
+  --content-max-width: 740px;
+  --page: #f4efe5;
+  --paper: #fffdf7;
+  --ink: #292923;
+  --muted-ink: #66645b;
+  --accent: #266f6a;
+  --rule: #d9cfbd;
+}
+
+html.light,
+html.rust {
+  --bg: var(--page);
+  --fg: var(--ink);
+  --sidebar-bg: #ebe4d7;
+  --sidebar-fg: #34342e;
+  --sidebar-active: var(--accent);
+  --links: #176963;
+  --quote-bg: #eee8dc;
+  --quote-border: #bf8b3e;
+  --table-border-color: var(--rule);
+  --table-header-bg: #e8e0d2;
+  --table-alternate-bg: #faf6ee;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.72;
+}
+
+.content main {
+  max-width: var(--content-max-width);
+  padding: 3.5rem 3rem 6rem;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px rgba(82, 69, 48, 0.06), 0 18px 60px rgba(69, 54, 32, 0.08);
+}
+
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.18;
+}
+
+h1 {
+  margin-bottom: 2.2rem;
+  font-size: 2.65rem;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  margin-top: 3.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+
+p,
+li {
+  font-size: 1.08rem;
+}
+
+a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+code,
+pre {
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+}
+
+pre {
+  margin: 1.8rem -1.2rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid rgba(92, 121, 116, 0.28);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+
+blockquote {
+  margin: 2rem 0;
+  padding: 0.2rem 1.25rem;
+  border-left-width: 4px;
+  font-style: normal;
+}
+
+.sidebar,
+.menu-title,
+.nav-chapters,
+.mobile-nav-chapters,
+.icon-button {
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+@media (max-width: 800px) {
+  .content main {
+    padding: 2.2rem 1.35rem 4rem;
+    box-shadow: none;
+  }
+
+  h1 {
+    font-size: 2.15rem;
+  }
+
+  pre {
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

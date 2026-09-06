@@ -5,7 +5,8 @@
 1. [The Smallest Query Engine](001-smallest-query-engine.md)
 
 Later chapters will be added when their implementation begins. The full
-curriculum is maintained in [`../Roadmap.md`](../Roadmap.md).
+curriculum is maintained in
+[`Roadmap.md`](https://github.com/shashankkhasare/database-zero-to-distributed/blob/master/Roadmap.md).
 
 # Appendices
 

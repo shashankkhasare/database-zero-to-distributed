@@ -1,0 +1,21 @@
+[book]
+title = "Database: Zero to Distributed"
+authors = ["Shashank Khasare"]
+description = "Build a distributed SQL database from first principles in Rust."
+language = "en"
+src = "book"
+
+[build]
+build-dir = "build/book"
+
+[output.html]
+additional-css = ["book/theme/custom.css"]
+default-theme = "light"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/shashankkhasare/database-zero-to-distributed"
+edit-url-template = "https://github.com/shashankkhasare/database-zero-to-distributed/edit/master/book/{path}"
+site-url = "/database-zero-to-distributed/"
+
+[output.html.fold]
+enable = false
+level = 0
