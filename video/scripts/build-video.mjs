@@ -26,6 +26,7 @@ if (clean) {
 await runScript("generate-audio.mjs", [lessonId]);
 await runScript("compose-audio.mjs", [lessonId]);
 await runScript("generate-captions.mjs", [lessonId]);
+if (lesson.music) await runScript("generate-music.mjs", [lessonId]);
 await runScript("render-preview.mjs", [lessonId, String(fps)]);
 await runScript("compose-final.mjs", [lessonId]);
 await runScript("verify-video.mjs", [lessonId]);

@@ -118,10 +118,12 @@ below should be checked only after this standard has been applied.
 - [x] Add the original project ident and lesson-title opening scene
 - [x] Add a lesson end card that previews the next lesson
 - [x] Decide that music is limited to the opening ident and closing lesson card
-- [ ] Create and review an original opening and closing musical theme
-- [ ] Record music provenance and licensing in `ASSETS.md`
-- [ ] Add explicit music paths, levels, and fades to the lesson manifest
-- [ ] Mix and verify ident and outro music without rerendering visual frames
+- [x] Create an original opening and closing musical theme
+- [x] Review the opening and closing theme in the final episode
+- [x] Review the revised animated ident and next-lesson outro
+- [x] Record music provenance and licensing in `ASSETS.md`
+- [x] Add explicit music paths, levels, and fades to the lesson manifest
+- [x] Mix and verify ident and outro music without rerendering visual frames
 - [x] Center scene compositions inside a shared title and caption-safe layout
 - [x] Correct overlapping and stale visual states found in the first preview
 - [x] Show plan nodes feeding rows upward without reversing their relationship

@@ -25,6 +25,20 @@ video:
   output: dist/videos/001-smallest-query-engine.mp4
   caption_language: eng
 
+music:
+  module: video/music/001-theme.mjs
+  sample_rate: 24000
+  ident:
+    file: build/video/001/music/ident.wav
+    gain_db: -18
+    fade_in: 0.25
+    fade_out: 0.8
+  outro:
+    file: build/video/001/music/outro.wav
+    gain_db: -17
+    fade_in: 0.4
+    fade_out: 1.2
+
 review:
   checkpoints: [20, 34, 53, 75, 120, 145, 160, 173, 208, 220, 260, 268, 283, 348, 457, 466, 480, 504, 514, 527, 563.8]
 

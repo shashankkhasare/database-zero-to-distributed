@@ -210,17 +210,22 @@ scenes remain narration-only so music does not compete with technical
 explanations. The opening and closing may share a short musical theme, with
 gentle fades at both boundaries and no abrupt cut into narration.
 
+The ident begins with a visual idea, assembles the series mark, and reveals the
+lesson title in that order. The outro transforms the lesson's final idea into
+the next-lesson card. These transitions use an original visual and musical
+identity rather than copying another publication's branding.
+
 Prefer an original, reproducible sonic logo before subscribing to an external
 music generator. If an externally generated track is adopted, preserve its
 original download, creation record, prompt, service terms, and proof of the
 commercial-use entitlement. Record its licensing separately from the MIT code
 license in `ASSETS.md`; do not imply that the music is distributed under MIT.
 
-Music is a durable source asset, not a generated build artifact. Once a theme
-has been selected, index its path and mix settings in `lesson.yaml`. Keep volume
-and fade parameters explicit so final audio can be reproduced. Mix ident and
-outro music during composition; changing music must not require visual frames
-to be rendered again.
+Music must have a durable source, either a committed asset or a deterministic
+generator. Generated WAV files remain build artifacts. Index the source,
+generated paths, levels, and fades in `lesson.yaml` so final audio can be
+reproduced. Mix ident and outro music during composition; changing music must
+not require visual frames to be rendered again.
 
 # Source and artifact ownership
 
@@ -424,6 +429,7 @@ Individual stages remain available for development:
 ```bash
 npm run video:audio -- 001
 npm run video:audio-review -- 001
+npm run video:music -- 001
 npm run video:captions -- 001
 npm run video:validate-sources -- 001
 npm run video:review -- 001
