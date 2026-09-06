@@ -3,3 +3,4 @@ target/
 build/
 dist/videos/
 .cache/
+debug.log

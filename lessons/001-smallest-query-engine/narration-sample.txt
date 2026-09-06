@@ -1,1 +1,0 @@
-A database begins with a question. How can it read a table, keep the rows we want, and return only the columns we asked for?

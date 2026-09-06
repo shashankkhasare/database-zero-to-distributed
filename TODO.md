@@ -100,11 +100,46 @@ below should be checked only after this standard has been applied.
 - [x] Define the minimum lesson metadata required by the first episode
 - [x] Draft the complete scene-by-scene narration for lesson 001
 - [x] Review the complete lesson 001 narration
-- [ ] Create reproducible plan and row visuals
+- [x] Split narration into stable beats and generate the audio timing manifest
+- [x] Compose and verify a joined lesson 001 narration review file
+- [x] Review the joined narration for voice, pace, pauses, and pronunciation
+- [x] Draft the reviewable scene plan for the lesson 001 core-idea prototype
+- [x] Review the core-idea scene plan
+- [x] Implement and render the synchronized core-idea scene prototype
+- [x] Review the synchronized core-idea scene prototype
+- [x] Draft the remaining lesson 001 scene plans
+- [x] Implement all lesson 001 scene modules
+- [x] Prefix lesson-specific scene modules with the three-digit lesson ID
+- [x] Prefix lesson-specific visual components with the three-digit lesson ID
+- [x] Move lesson 001 editorial checkpoints from shared scripts into its manifest
+- [x] Require explicit lesson IDs in shared video commands
+- [x] Render and inspect representative frames from every lesson 001 scene
+- [x] Review the complete lesson 001 preview and record timestamped corrections
+- [x] Add the original project ident and lesson-title opening scene
+- [x] Add a lesson end card that previews the next lesson
+- [x] Decide that music is limited to the opening ident and closing lesson card
+- [ ] Create and review an original opening and closing musical theme
+- [ ] Record music provenance and licensing in `ASSETS.md`
+- [ ] Add explicit music paths, levels, and fades to the lesson manifest
+- [ ] Mix and verify ident and outro music without rerendering visual frames
+- [x] Center scene compositions inside a shared title and caption-safe layout
+- [x] Correct overlapping and stale visual states found in the first preview
+- [x] Show plan nodes feeding rows upward without reversing their relationship
+- [ ] Drive scene transitions from generated narration-beat boundaries
+- [x] Split and validate captions as single-line phrase-level cues
+- [x] Verify one clean command rebuilds lesson 001 from repository sources
+- [ ] Commit all video sources and verify the build from a clean checkout
+- [x] Pin the Kokoro model repository to an immutable revision
+- [x] Bound delivery-render disk use by deleting encoded PNG sequences
+- [x] Add final MP4 composition with an embedded selectable caption track
+- [x] Verify the final container, streams, dimensions, frame rate, and duration
+- [x] Review beat-boundary and reported-timestamp contact sheets for every scene
+- [ ] Review corrected short previews for every lesson 001 scene
+- [x] Create reproducible plan and row visuals
 - [x] Prototype narration generation with `kokoro-js`
-- [ ] Verify pronunciation of all database and Rust terms
-- [ ] Render the first episode with deterministic inputs
-- [ ] Verify audio, captions, code, diagrams, and final encoding
+- [x] Verify pronunciation of all database and Rust terms in lesson 001
+- [x] Render the first episode with deterministic inputs
+- [x] Verify audio, captions, code, diagrams, and final encoding
 
 ---
 
@@ -251,8 +286,8 @@ below should be checked only after this standard has been applied.
 - [x] Document the shared scripts, lesson sources, and generated-artifact structure
 - [x] Define the intended non-interactive video command interface
 - [x] Choose browser-native HTML, CSS, SVG, and JavaScript for the first scene prototype
-- [ ] Implement reusable browser visual components and programmatic scene modules
-- [ ] Select the smallest headless-browser renderer after testing one real scene
+- [x] Implement the first reusable browser visual components and programmatic scene module
+- [x] Select Playwright after testing it with the core-idea scene
 - [x] Add `build/` and `dist/videos/` to `.gitignore`
 - [x] Create only the shared script directories required by the first prototype
 - [x] Create a small `kokoro-js` narration proof of concept
@@ -260,11 +295,20 @@ below should be checked only after this standard has been applied.
 - [ ] Pin the exact Kokoro model revision used for reproducible generation
 - [ ] Define pronunciation overrides for technical vocabulary
 - [x] Cache model assets in a documented, reproducible location
-- [ ] Choose a renderer using the lesson 001 prototype
-- [ ] Generate captions from narration timing
+- [x] Choose Playwright as the renderer using the lesson 001 prototype
+- [x] Generate initial captions from narration timing
 - [ ] Compose narration, visuals, and captions with FFmpeg
 - [ ] Verify final media with FFprobe
-- [ ] Make repeated renders deterministic enough for review
+- [x] Verify identical repeated frame capture at the same scene timestamp
+- [ ] Define shared title, content, and single-line caption-safe regions
+- [ ] Add automatic safe-area and unexpected-overlap validation
+- [ ] Derive all scene transitions from narration beats
+- [x] Derive review timestamps from narration beats and editorial checkpoints
+- [x] Generate per-scene contact sheets before full-frame rendering
+- [x] Fingerprint scene sources, timing, dimensions, and frame rate for safe reuse
+- [ ] Render independent frame ranges with parallel browser workers
+- [x] Limit deterministic double capture to review checkpoints
+- [ ] Support optional NVENC encoding for disposable review previews
 - [ ] Document the complete non-interactive render command
 
 ---

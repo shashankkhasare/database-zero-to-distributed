@@ -3,11 +3,28 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.14.0"
+  },
   "scripts": {
-    "video:audio": "node video/scripts/generate-audio.mjs"
+    "video:audio": "node video/scripts/generate-audio.mjs",
+    "video:audio-review": "node video/scripts/compose-audio.mjs",
+    "video:captions": "node video/scripts/generate-captions.mjs",
+    "video:validate-sources": "node video/scripts/validate-video-sources.mjs",
+    "video:frames": "node video/scripts/render-scenes.mjs",
+    "video:review": "node video/scripts/review-scenes.mjs",
+    "video:scene-preview": "node video/scripts/compose-scene-preview.mjs",
+    "video:preview": "node video/scripts/render-preview.mjs",
+    "video:compose": "node video/scripts/compose-final.mjs",
+    "video:verify": "node video/scripts/verify-video.mjs",
+    "video:render": "node video/scripts/build-video.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
-    "kokoro-js": "1.2.1"
+    "kokoro-js": "1.2.1",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }

@@ -2,11 +2,14 @@ id: "001"
 title: The Smallest Query Engine
 chapter: book/001-smallest-query-engine.md
 narration: lessons/001-smallest-query-engine/narration.md
+narration_beats: lessons/001-smallest-query-engine/narration-beats.json
+scene_plan: lessons/001-smallest-query-engine/scenes.md
 demo: cargo run --quiet
 expected_output: lessons/001-smallest-query-engine/expected-output.txt
 
 audio:
   model: onnx-community/Kokoro-82M-v1.0-ONNX
+  revision: 1939ad2a8e416c0acfeecc08a694d14ef25f2231
   dtype: q8
   device: cpu
   voice: af_heart
@@ -15,12 +18,40 @@ audio:
   sample_rate: 24000
   channels: 1
 
+video:
+  width: 1920
+  height: 1080
+  fps: 30
+  output: dist/videos/001-smallest-query-engine.mp4
+  caption_language: eng
+
+review:
+  checkpoints: [20, 34, 53, 75, 120, 145, 160, 173, 208, 220, 260, 268, 283, 348, 457, 466, 480, 504, 514, 527, 563.8]
+
+ident:
+  id: project-ident
+  module: video/scenes/001-project-ident.mjs
+  duration: 5.0
+
+outro:
+  id: lesson-outro
+  module: video/scenes/001-lesson-outro.mjs
+  duration: 7.0
+
 scenes:
-  - question-and-result
-  - core-idea
-  - rows-and-values
-  - plan-structure
-  - execute-the-plan
-  - run-the-query
-  - materialized-execution
-  - relational-algebra
+  - id: question-and-result
+    module: video/scenes/001-question-and-result.mjs
+  - id: core-idea
+    module: video/scenes/001-core-idea.mjs
+  - id: rows-and-values
+    module: video/scenes/001-rows-and-values.mjs
+  - id: plan-structure
+    module: video/scenes/001-plan-structure.mjs
+  - id: execute-the-plan
+    module: video/scenes/001-execute-the-plan.mjs
+  - id: run-the-query
+    module: video/scenes/001-run-the-query.mjs
+  - id: materialized-execution
+    module: video/scenes/001-materialized-execution.mjs
+  - id: relational-algebra
+    module: video/scenes/001-relational-algebra.mjs
