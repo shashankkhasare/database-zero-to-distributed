@@ -251,6 +251,10 @@ below should be checked only after this standard has been applied.
 
 # Book production
 
+- [x] Define and version an original database illustration style
+- [ ] Generate and review the lesson 001 opening illustration
+- [ ] Add the approved opening illustration and epigraph to chapter 001
+
 - [x] Write and review the first chapter in plain Markdown
 - [x] Add Appendix A to the roadmap and manuscript contents
 - [x] Define Appendix A's reader contract and topic structure

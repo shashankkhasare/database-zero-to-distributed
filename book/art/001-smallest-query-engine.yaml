@@ -1,0 +1,30 @@
+lesson: "001"
+style: book/art/STYLE.md
+
+images:
+  - id: opening-question
+    output: book/images/001-opening-question.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: A person offers a small question card to a tabletop database machine while rows enter and two result cards emerge.
+    prompt: >-
+      Use case: illustration-story. Asset type: opening illustration for a
+      technical book chapter. A curious adult learner stands beside a small,
+      approachable tabletop database machine. The learner offers the machine a
+      single blank query card. Three simple row-shaped cards enter through a
+      lower tray; inside the machine, three stacked stages suggest reading,
+      choosing, and trimming; two small result cards emerge from the upper tray.
+      The visual story must read from input to result without arrows or labels.
+      Wide landscape composition with the learner on the left, the machine near
+      the center, and generous quiet space around them. Use the reusable book
+      illustration direction exactly. No legible text, letters, numbers, code,
+      SQL, logos, watermark, photorealism, or glossy 3D rendering.
+
+planned:
+  - id: rows-and-values
+    purpose: Show a table becoming individual row cards with named compartments.
+  - id: plan-tree
+    purpose: Show Scan, Filter, and Project as an exact technical SVG diagram.
+  - id: execute-the-plan
+    purpose: Distinguish calls into child nodes from rows returned by them.
+  - id: materialized-execution
+    purpose: Show complete trays of rows waiting between successive operations.
