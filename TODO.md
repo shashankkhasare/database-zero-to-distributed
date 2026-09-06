@@ -124,6 +124,7 @@ below should be checked only after this standard has been applied.
 - [x] Record music provenance and licensing in `ASSETS.md`
 - [x] Add explicit music paths, levels, and fades to the lesson manifest
 - [x] Mix and verify ident and outro music without rerendering visual frames
+- [x] Review the generated lesson 001 YouTube thumbnail
 - [x] Center scene compositions inside a shared title and caption-safe layout
 - [x] Correct overlapping and stale visual states found in the first preview
 - [x] Show plan nodes feeding rows upward without reversing their relationship

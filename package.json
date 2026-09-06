@@ -12,6 +12,7 @@
     "video:audio": "node video/scripts/generate-audio.mjs",
     "video:audio-review": "node video/scripts/compose-audio.mjs",
     "video:music": "node video/scripts/generate-music.mjs",
+    "video:thumbnail": "node video/scripts/render-thumbnail.mjs",
     "video:captions": "node video/scripts/generate-captions.mjs",
     "video:validate-sources": "node video/scripts/validate-video-sources.mjs",
     "video:frames": "node video/scripts/render-scenes.mjs",

@@ -473,3 +473,21 @@ VIDEO_RENDER_WORKERS=3 npm run video:preview -- 001 12
 The final file path, dimensions, frame rate, and caption language are declared
 under `video` in `lesson.yaml`. Generated previews remain under `build/`; only
 the verified delivery file is written under `dist/videos/`.
+
+# Thumbnail
+
+Each published episode has a dedicated thumbnail source rather than using an
+arbitrary video frame. Its module, output path, and delivery dimensions live
+under `thumbnail` in `lesson.yaml`. Keep the lesson number, main idea, and one
+clear database visual readable at small sizes. Avoid sentences, fine details,
+and duplicated YouTube interface text.
+
+Generate the declared thumbnail with:
+
+```bash
+npm run video:thumbnail -- 001
+```
+
+The renderer captures the source twice and rejects nondeterministic output.
+The generated PNG is a delivery artifact under `dist/thumbnails/`; its scene
+module and manifest entry are the durable inputs.

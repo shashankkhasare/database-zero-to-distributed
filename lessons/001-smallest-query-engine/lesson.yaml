@@ -25,6 +25,12 @@ video:
   output: dist/videos/001-smallest-query-engine.mp4
   caption_language: eng
 
+thumbnail:
+  module: video/scenes/001-thumbnail.mjs
+  width: 1280
+  height: 720
+  output: dist/thumbnails/001-smallest-query-engine.png
+
 music:
   module: video/music/001-theme.mjs
   sample_rate: 24000

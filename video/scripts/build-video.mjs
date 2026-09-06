@@ -20,6 +20,9 @@ if (!Number.isInteger(fps) || fps < 1 || fps > 60) {
 if (clean) {
   await removeInsideRepository(join(repositoryRoot, "build", "video", lessonId));
   await removeInsideRepository(resolve(repositoryRoot, lesson.video.output));
+  if (lesson.thumbnail?.output) {
+    await removeInsideRepository(resolve(repositoryRoot, lesson.thumbnail.output));
+  }
   console.log(`Removed generated artifacts for lesson ${lessonId}`);
 }
 
@@ -30,6 +33,7 @@ if (lesson.music) await runScript("generate-music.mjs", [lessonId]);
 await runScript("render-preview.mjs", [lessonId, String(fps)]);
 await runScript("compose-final.mjs", [lessonId]);
 await runScript("verify-video.mjs", [lessonId]);
+if (lesson.thumbnail) await runScript("render-thumbnail.mjs", [lessonId]);
 
 async function runScript(name, arguments_) {
   const script = join(repositoryRoot, "video", "scripts", name);
