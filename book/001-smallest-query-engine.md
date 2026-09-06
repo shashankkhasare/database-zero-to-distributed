@@ -1,5 +1,13 @@
 ﻿# 1. The Smallest Query Engine
 
+> Before a database can become distributed, it must first answer one small
+> question correctly.
+
+<figure class="book-illustration">
+  <img src="images/001-opening-question.png" alt="An employee table enters a database where Scan, Filter, and Project produce a two-name result table.">
+  <figcaption>Our first database will answer one question with three small operations.</figcaption>
+</figure>
+
 A database begins with a query: a request for some result. The query engine
 turns that request into a plan, reads the required data, performs the plan's
 operations, and returns the result. A large database may spread this work across
@@ -113,6 +121,11 @@ One `Value` represents only one cell in the table. A row brings together all
 the cells that describe one employee. Ada's row contains `id` 1, `name` Ada,
 and `salary` 70,000. Our program will represent that complete record with a
 type named `Row`, storing each column name beside its value.
+
+<figure class="book-illustration">
+  <img src="images/001-rows-and-values.png" alt="Ada's table row opens into three labeled cards containing an integer, text, and integer value.">
+  <figcaption>A row brings several named, typed values together.</figcaption>
+</figure>
 
 `src/row.rs`: add after `Value`
 
@@ -338,6 +351,11 @@ rows travel. `Project` is the root. Its `input` points to the filter child, and
 the filter's `input` points to the scan child. The scan is the leaf because it
 reads the employee rows without needing another operation below it.
 
+<figure class="book-illustration book-diagram">
+  <img src="images/001-plan-tree.png" alt="Project sits above Filter, which sits above Scan; arrows show rows flowing upward.">
+  <figcaption>The plan stores each operation together with the attributes it needs.</figcaption>
+</figure>
+
 We keep all three operations together in one `Plan` type, so the engine's
 complete vocabulary remains visible in one place. In the next section, we will
 define the behavior of each kind of node directly. Splitting them behind
@@ -381,6 +399,11 @@ Project result: Ada and Grace names
 Each node asks its child to execute before processing the returned rows. The
 same `execute()` method therefore calls itself on a smaller input plan. Calling
 a function from within itself is **recursion**.
+
+<figure class="book-illustration book-diagram">
+  <img src="images/001-execute-plan.png" alt="Execute calls descend from Project to Scan while result rows return from Scan to Project.">
+  <figcaption>Calls ask for input; returned rows carry the answers back through the same tree.</figcaption>
+</figure>
 
 The implementation will follow the same conversation. It examines the current
 node and runs the behavior for a scan, filter, or project. We will begin with a
@@ -610,6 +633,11 @@ operation processes it. The scan returns all employee rows, the filter builds
 its entire output, and only then does the project build the final result. A
 complete intermediate result like this is called a **materialized result**, so
 our engine uses **materialized execution**.
+
+<figure class="book-illustration">
+  <img src="images/001-materialized-execution.png" alt="Scan, Filter, and Project each fill a complete tray of rows before the next operation begins.">
+  <figcaption>Each operation waits for a complete tray before beginning its own work.</figcaption>
+</figure>
 
 Materialized execution is easy to follow and works well for three rows. With a
 large table, however, those intermediate lists could consume a great deal of

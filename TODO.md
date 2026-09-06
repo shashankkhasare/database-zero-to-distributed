@@ -252,8 +252,10 @@ below should be checked only after this standard has been applied.
 # Book production
 
 - [x] Define and version an original database illustration style
-- [ ] Generate and review the lesson 001 opening illustration
-- [ ] Add the approved opening illustration and epigraph to chapter 001
+- [x] Generate and review the lesson 001 opening illustration
+- [x] Add the approved opening illustration and epigraph to chapter 001
+- [x] Add rows, plan, execution-flow, and materialization visuals to chapter 001
+- [x] Review all lesson 001 illustrations
 
 - [x] Write and review the first chapter in plain Markdown
 - [x] Add Appendix A to the roadmap and manuscript contents

@@ -5,26 +5,93 @@ images:
   - id: opening-question
     output: book/images/001-opening-question.png
     placement: after the chapter epigraph and before the opening prose
-    alt: A person offers a small question card to a tabletop database machine while rows enter and two result cards emerge.
+    alt: An employee table enters a database where Scan, Filter, and Project produce a two-name result table.
     prompt: >-
       Use case: illustration-story. Asset type: opening illustration for a
-      technical book chapter. A curious adult learner stands beside a small,
-      approachable tabletop database machine. The learner offers the machine a
-      single blank query card. Three simple row-shaped cards enter through a
-      lower tray; inside the machine, three stacked stages suggest reading,
-      choosing, and trimming; two small result cards emerge from the upper tray.
-      The visual story must read from input to result without arrows or labels.
-      Wide landscape composition with the learner on the left, the machine near
-      the center, and generous quiet space around them. Use the reusable book
-      illustration direction exactly. No legible text, letters, numbers, code,
-      SQL, logos, watermark, photorealism, or glossy 3D rendering.
+      technical book chapter. Make the subject unmistakably a database. On the
+      left, show a small table grid with headers "name" and "salary" and three
+      rows: "Ada 70,000", "Linus 50,000", and "Grace 72,000". At the
+      center, show the familiar database symbol as a large stack of cylindrical
+      disks, combined with a modest server cabinet. A cutaway window inside the
+      database reveals three connected query-plan boxes arranged vertically.
+      Label the bottom box "SCAN", the middle box "FILTER salary > 50,000",
+      and the top box "PROJECT name". The bottom stage reads all three rows,
+      the middle stage visibly removes Linus, and the top stage keeps only the
+      name column. On the right, show a result table with header "name" and
+      exactly two rows: "Ada" and "Grace". A curious adult learner
+      observes the transformation without operating a mysterious machine. The
+      left-to-right input, database processing, and result story must be obvious
+      from the tables and connecting paths alone. Wide landscape composition
+      with generous quiet margins. Use the reusable book illustration direction
+      exactly. Render only the specified labels and values, spelled exactly as
+      provided. No other text, code, SQL, logos, watermark, photorealism,
+      conveyor belts, kitchen appliances, factory machinery, or glossy 3D
+      rendering.
 
-planned:
   - id: rows-and-values
-    purpose: Show a table becoming individual row cards with named compartments.
+    output: book/images/001-rows-and-values.png
+    placement: section 1.2 after introducing a row as a collection of cells
+    alt: Ada's table row opens into three labeled cards containing an integer, text, and integer value.
+    prompt: >-
+      Use case: scientific-educational. Asset type: conceptual illustration for
+      a technical book. On the left, show a small employee table with headers
+      "id", "name", and "salary". Highlight the row "1", "Ada", "70,000".
+      Let that highlighted row gently unfold into three large cards on the
+      right: "id: Integer(1)", "name: Text(Ada)", and
+      "salary: Integer(70,000)". Make it immediately clear that one row contains
+      three cells and each cell pairs a column name with a typed value. Use the
+      reusable book illustration direction exactly. Render only the specified
+      labels, spelled exactly. No other text, logos, watermark, photorealism,
+      factory machinery, or glossy 3D rendering.
+
   - id: plan-tree
-    purpose: Show Scan, Filter, and Project as an exact technical SVG diagram.
+    output: book/images/001-plan-tree.png
+    placement: section 1.3 after explaining the plan hierarchy
+    alt: A vertical query plan with Scan feeding Filter, which feeds Project.
+    prompt: >-
+      Use case: scientific-educational. Asset type: clear query-plan
+      illustration for a technical database book. Draw three large rounded cards
+      in one centered vertical column. The bottom card says "SCAN" with
+      "employees" beneath it. The middle card says "FILTER" with
+      "salary > 50,000" beneath it. The top card says "PROJECT" with "name"
+      beneath it. Connect bottom to middle and middle to top using straight
+      upward arrows. Every arrow must touch the borders of both cards cleanly
+      without entering any card or crossing any text. Use the reusable book
+      illustration direction, but keep the geometry orderly and diagram-like.
+      Render only the specified text, spelled exactly. No people, extra boxes,
+      curved connectors, decorative machinery, logos, or watermark.
+
   - id: execute-the-plan
-    purpose: Distinguish calls into child nodes from rows returned by them.
+    output: book/images/001-execute-plan.png
+    placement: section 1.4 after explaining recursive execution
+    alt: Orange execute calls descend beside the plan while teal result rows return upward on the other side.
+    prompt: >-
+      Use case: scientific-educational. Asset type: execution-flow illustration
+      for a technical database book. Put three rounded plan cards in one centered
+      vertical column: "PROJECT" at top, "FILTER" in the middle, and "SCAN" at
+      bottom. On the left, show a separate orange path with two straight downward
+      arrows labeled "execute() calls". On the right, show a separate teal path
+      with two straight upward arrows labeled "rows returned". Leave generous
+      space between paths, cards, and labels. Arrow lines must touch card borders
+      cleanly, never cross text, never overlap each other, and never curve behind
+      a label. Use the reusable book illustration direction, but keep the
+      geometry orderly and diagram-like. Render only the five specified labels,
+      spelled exactly. No people, extra cards, decorative machinery, logos, or
+      watermark.
+
   - id: materialized-execution
-    purpose: Show complete trays of rows waiting between successive operations.
+    output: book/images/001-materialized-execution.png
+    placement: section 1.6 after defining a materialized result
+    alt: Scan, Filter, and Project each fill a complete tray of rows before the next operation begins.
+    prompt: >-
+      Use case: illustration-story. Asset type: conceptual illustration for a
+      technical database book. Show three stations arranged left to right and
+      labeled exactly "SCAN", "FILTER", and "PROJECT". Between each pair is a
+      broad tray. The scan has completely filled the first tray with three row
+      cards before the filter begins. The filter has completely filled the
+      second tray with two row cards before the project begins. The project
+      produces two narrow one-cell result cards. Emphasize waiting for a whole
+      tray, not streaming one row continuously. Use the reusable book
+      illustration direction exactly. Render only the three operator names,
+      spelled exactly. No other text, code, numbers, logos, watermark,
+      photorealism, conveyor belts, or glossy 3D rendering.

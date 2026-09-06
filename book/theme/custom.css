@@ -99,6 +99,33 @@ blockquote {
   font-style: normal;
 }
 
+.book-illustration {
+  width: min(980px, calc(100vw - 3rem));
+  margin: 3rem 50% 3.4rem;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.book-illustration img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.book-illustration figcaption {
+  max-width: 680px;
+  margin: 1rem auto 0;
+  color: var(--muted-ink);
+  font-family: Inter, "Segoe UI", sans-serif;
+  font-size: 1.4rem;
+  line-height: 1.5;
+}
+
+.book-diagram img {
+  border: 1px solid var(--rule);
+}
+
 .sidebar,
 .menu-title,
 .nav-chapters,
@@ -120,6 +147,12 @@ blockquote {
   pre {
     margin-right: -0.5rem;
     margin-left: -0.5rem;
+  }
+
+  .book-illustration {
+    width: calc(100vw - 1.5rem);
+    margin-top: 2.2rem;
+    margin-bottom: 2.7rem;
   }
 }
 
