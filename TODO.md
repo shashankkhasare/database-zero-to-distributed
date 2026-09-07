@@ -53,96 +53,60 @@ below should be checked only after this standard has been applied.
 
 ---
 
-# Current milestone — 001: The Smallest Query Engine
+# Current milestone: 001, The Smallest Query Engine
 
-## Learning outcome
+Lesson 001 is editorially complete. The active work is release verification
+and publication, not further lesson development.
 
-- [x] State the question the lesson answers: how can we execute a query without SQL?
-- [x] Show the target `Scan → Filter → Project` result before discussing architecture
+## Learning outcome and implementation
+
+- [x] Explain how a known query can execute without parsing SQL
+- [x] Build the visible `Scan -> Filter -> Project` plan
 - [x] Keep execution synchronous, single-threaded, and materialized
+- [x] Represent rows with a deliberately simple owned structure
+- [x] Execute the plan recursively and print deterministic results
+- [x] Avoid traits, iterators, async, SQL parsing, and future architecture
+- [x] Test scan, filter, project, and the complete plan
+- [x] Pass formatting, Clippy, tests, and the deterministic demo
 
-## Implementation
+## Book
 
-- [x] Initialize the smallest useful Cargo binary project
-- [x] Represent a row with an intentionally simple owned value structure
-- [x] Add an in-memory employees relation for the demo
-- [x] Represent `Scan`, `Filter`, and `Project` directly in a plan enum
-- [x] Execute the plan recursively
-- [x] Support the one predicate needed by the lesson
-- [x] Print deterministic result rows
-- [x] Avoid custom execution traits, iterators, SQL parsing, async, and future module structure
+- [x] Publish the reviewed chapter and Appendix A through GitHub Pages
+- [x] Explain rows, plans, recursive execution, and materialization in plain language
+- [x] Document intentional limitations and lead into relational algebra
+- [x] Add and review original lesson illustrations and the chapter epigraph
+- [x] Verify the generated book and its internal links
 
-## Tests and demo
+## Video
 
-- [x] Test that scan returns the source rows
-- [x] Test that filter removes non-matching rows
-- [x] Test that project keeps only requested columns
-- [x] Test the complete `Scan → Filter → Project` plan
-- [x] Add one deterministic demo command
-- [x] Record the expected demo output
-- [x] Run formatting, Clippy, and all tests
+- [x] Review the narration, pronunciation, scene plan, and final episode
+- [x] Generate narration from a pinned Kokoro model revision
+- [x] Implement all declared scenes with stable lesson-prefixed modules
+- [x] Add the original ident, restrained music, and next-lesson end card
+- [x] Keep compositions inside shared title, content, and caption-safe regions
+- [x] Generate single-line captions and embed a selectable subtitle track
+- [x] Generate and review the dedicated YouTube thumbnail
+- [x] Verify the final MP4 streams, dimensions, frame rate, duration, and demo output
+- [x] Provide one clean command that regenerates all delivery artifacts
 
-## Book chapter
+## Publication
 
-- [x] Explain rows and relations using the demo data
-- [x] Keep Rust instruction in Appendix A and database reasoning in the chapter
-- [x] Motivate each operator from the example query
-- [x] Explain why an enum makes the plan tree visible
-- [x] Walk through recursive materialized execution
-- [x] Explain intentional limitations
-- [x] End with the relational-algebra tree recognized in lesson 002
+- [x] Deploy the web book and add it to the GitHub About panel
+- [x] Create the YouTube course playlist and record its stable ID
+- [x] Commit all Lesson 001 sources and release metadata
+- [ ] Rebuild and verify Lesson 001 from an isolated clean checkout
+- [x] Review dependency advisories that affect the release
+- [ ] Push the verified release commit
+- [ ] Create and push the `lesson-001` tag
+- [ ] Upload the MP4, captions, and thumbnail to YouTube as unlisted
+- [ ] Verify YouTube processing, subtitles, metadata, and playlist placement
+- [ ] Make the video and playlist public
+- [ ] Mark curriculum milestone 001 complete
 
-## Video episode
-
-- [x] Define the video source, intermediate, and final-artifact locations
-- [x] Define the reusable video-pipeline execution plan
-- [x] Create the minimum lesson 001 directory and source files
-- [x] Define the minimum lesson metadata required by the first episode
-- [x] Draft the complete scene-by-scene narration for lesson 001
-- [x] Review the complete lesson 001 narration
-- [x] Split narration into stable beats and generate the audio timing manifest
-- [x] Compose and verify a joined lesson 001 narration review file
-- [x] Review the joined narration for voice, pace, pauses, and pronunciation
-- [x] Draft the reviewable scene plan for the lesson 001 core-idea prototype
-- [x] Review the core-idea scene plan
-- [x] Implement and render the synchronized core-idea scene prototype
-- [x] Review the synchronized core-idea scene prototype
-- [x] Draft the remaining lesson 001 scene plans
-- [x] Implement all lesson 001 scene modules
-- [x] Prefix lesson-specific scene modules with the three-digit lesson ID
-- [x] Prefix lesson-specific visual components with the three-digit lesson ID
-- [x] Move lesson 001 editorial checkpoints from shared scripts into its manifest
-- [x] Require explicit lesson IDs in shared video commands
-- [x] Render and inspect representative frames from every lesson 001 scene
-- [x] Review the complete lesson 001 preview and record timestamped corrections
-- [x] Add the original project ident and lesson-title opening scene
-- [x] Add a lesson end card that previews the next lesson
-- [x] Decide that music is limited to the opening ident and closing lesson card
-- [x] Create an original opening and closing musical theme
-- [x] Review the opening and closing theme in the final episode
-- [x] Review the revised animated ident and next-lesson outro
-- [x] Record music provenance and licensing in `ASSETS.md`
-- [x] Add explicit music paths, levels, and fades to the lesson manifest
-- [x] Mix and verify ident and outro music without rerendering visual frames
-- [x] Review the generated lesson 001 YouTube thumbnail
-- [x] Center scene compositions inside a shared title and caption-safe layout
-- [x] Correct overlapping and stale visual states found in the first preview
-- [x] Show plan nodes feeding rows upward without reversing their relationship
-- [ ] Drive scene transitions from generated narration-beat boundaries
-- [x] Split and validate captions as single-line phrase-level cues
-- [x] Verify one clean command rebuilds lesson 001 from repository sources
-- [ ] Commit all video sources and verify the build from a clean checkout
-- [x] Pin the Kokoro model repository to an immutable revision
-- [x] Bound delivery-render disk use by deleting encoded PNG sequences
-- [x] Add final MP4 composition with an embedded selectable caption track
-- [x] Verify the final container, streams, dimensions, frame rate, and duration
-- [x] Review beat-boundary and reported-timestamp contact sheets for every scene
-- [ ] Review corrected short previews for every lesson 001 scene
-- [x] Create reproducible plan and row visuals
-- [x] Prototype narration generation with `kokoro-js`
-- [x] Verify pronunciation of all database and Rust terms in lesson 001
-- [x] Render the first episode with deterministic inputs
-- [x] Verify audio, captions, code, diagrams, and final encoding
+The release audit on 2026-09-07 upgraded `yaml` to 2.9.0. The remaining npm
+findings originate in `sharp` through the pinned local narration stack, have no
+available upstream fix, and are accepted while the pipeline processes only
+trusted repository inputs.
 
 ---
 

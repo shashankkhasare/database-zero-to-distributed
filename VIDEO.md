@@ -491,3 +491,11 @@ npm run video:thumbnail -- 001
 The renderer captures the source twice and rejects nondeterministic output.
 The generated PNG is a delivery artifact under `dist/thumbnails/`; its scene
 module and manifest entry are the durable inputs.
+
+# Publishing metadata
+
+Keep stable destination identifiers, such as the YouTube playlist ID, under
+`publishing` in the lesson manifest. Store the ID rather than a YouTube Studio
+management URL so automated publishing can construct viewer-facing and API
+requests without depending on a private browser route. Credentials and OAuth
+tokens must remain outside the repository.

@@ -4,6 +4,9 @@ Build a distributed SQL database from first principles.
 
 This project is a tutorial series and working codebase that starts with the smallest possible query engine and gradually evolves into a distributed SQL database with its own storage engine, transactions, replication, consensus, and ACID guarantees.
 
+[Read the free web book](https://shashankkhasare.github.io/database-zero-to-distributed/)
+or [watch the video course on YouTube](https://www.youtube.com/playlist?list=PLSyokgEjsYrc).
+
 The goal is not to build a production database.
 
 The goal is to understand how databases work by building one step by step.
