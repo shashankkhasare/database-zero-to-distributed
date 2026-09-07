@@ -46,17 +46,17 @@ Each lesson is complete only when all applicable items are satisfied:
 - [x] Narration and pronunciation have been reviewed
 - [x] The generated episode has been rendered and checked
 - [x] Educational simplifications and tradeoffs are documented
-- [ ] The completed state is tagged
+- [x] The completed state is tagged
 
 These boxes describe the shared completion standard. Lesson milestone boxes
 below should be checked only after this standard has been applied.
 
 ---
 
-# Current milestone: 001, The Smallest Query Engine
+# Completed milestone: 001, The Smallest Query Engine
 
-Lesson 001 is editorially complete. The active work is release verification
-and publication, not further lesson development.
+Lesson 001 is implemented, reviewed, released, and publicly available. The next
+curriculum step is milestone 002, Relational Algebra Without the Math.
 
 ## Learning outcome and implementation
 
@@ -104,8 +104,8 @@ and publication, not further lesson development.
 - [x] Upload the MP4 and captions to YouTube as private
 - [x] Verify YouTube processing, subtitles, metadata, and playlist placement
 - [x] Enable custom thumbnails for the channel and upload the lesson thumbnail
-- [ ] Make the video and playlist public
-- [ ] Mark curriculum milestone 001 complete
+- [x] Make the video and playlist public
+- [x] Mark curriculum milestone 001 complete
 
 The release audit on 2026-09-07 upgraded `yaml` to 2.9.0. The remaining npm
 findings originate in `sharp` through the pinned local narration stack, have no
@@ -115,7 +115,8 @@ trusted repository inputs.
 The isolated clean build regenerated the 575.968-second MP4 and thumbnail from
 commit `e0b0878`. Both files were byte-for-byte identical to the reviewed
 delivery artifacts. A new agent should follow the bootstrap order in
-`AGENTS.md`, then resume at the first unchecked item under **Publication**.
+`AGENTS.md`, then begin milestone 002 from its roadmap entry before expanding
+its checklist here.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
 
@@ -125,7 +126,7 @@ command documented in `VIDEO.md`.
 
 ## Season 1 — Build the Smallest Query Engine
 
-- [ ] 001 — The Smallest Query Engine
+- [x] 001 — The Smallest Query Engine
 - [ ] 002 — Relational Algebra Without the Math
 - [ ] 003 — SQL Is Just a Frontend
 - [ ] 004 — Binding and Expressions

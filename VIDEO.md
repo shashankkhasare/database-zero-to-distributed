@@ -517,3 +517,5 @@ without depending on local state.
 YouTube restricts uploads from unaudited API projects to private visibility.
 Make a video public manually until the Google Cloud project has passed the
 required YouTube API audit. Never automate the browser UI as a workaround.
+The verification command checks the video and playlist against the manifest's
+`final_privacy_status` after that manual release.

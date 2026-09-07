@@ -27,7 +27,11 @@ export async function loadPublishingContext(lessonId) {
   await Promise.all([access(videoPath), access(thumbnailPath), access(captionPath)]);
   validatePublishing(publishing);
 
-  const { video_id: _publishedVideoId, ...uploadPublishing } = publishing;
+  const {
+    video_id: _publishedVideoId,
+    final_privacy_status: _finalPrivacyStatus,
+    ...uploadPublishing
+  } = publishing;
   const fingerprint = createHash("sha256")
     .update(JSON.stringify({ lessonId, publishing: uploadPublishing, video: lesson.video, thumbnail: lesson.thumbnail }))
     .digest("hex");
@@ -89,6 +93,9 @@ function validatePublishing(value) {
   if (!Array.isArray(value.tags)) throw new Error("publishing.youtube.tags must be a list");
   if (value.privacy_status !== "private") {
     throw new Error("Automated first uploads must use privacy_status: private");
+  }
+  if (!["private", "unlisted", "public"].includes(value.final_privacy_status)) {
+    throw new Error("publishing.youtube.final_privacy_status must be private, unlisted, or public");
   }
   if (!value.captions?.language || !value.captions?.name) {
     throw new Error("Caption language and name are required");

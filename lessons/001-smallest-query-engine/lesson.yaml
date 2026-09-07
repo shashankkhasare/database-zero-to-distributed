@@ -70,6 +70,7 @@ publishing:
     category_id: "27"
     default_language: en
     privacy_status: private
+    final_privacy_status: public
     made_for_kids: false
     embeddable: true
     notify_subscribers: false
