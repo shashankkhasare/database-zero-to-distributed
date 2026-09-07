@@ -96,8 +96,8 @@ and publication, not further lesson development.
 - [x] Commit all Lesson 001 sources and release metadata
 - [x] Rebuild and verify Lesson 001 from an isolated clean checkout
 - [x] Review dependency advisories that affect the release
-- [ ] Push the verified release commit
-- [ ] Create and push the `lesson-001` tag
+- [x] Push the verified release commit
+- [x] Create and push the `lesson-001` tag
 - [ ] Upload the MP4, captions, and thumbnail to YouTube as unlisted
 - [ ] Verify YouTube processing, subtitles, metadata, and playlist placement
 - [ ] Make the video and playlist public
