@@ -21,10 +21,10 @@ not design distant lessons prematurely.
 - [x] Install and verify the Rust development toolchain
 - [x] Install and verify Node.js, FFmpeg, and FFprobe
 - [x] Add `kokoro-js` as the initial local narration engine
-- [ ] Add a full `LICENSE` file
+- [x] Add a full `LICENSE` file
 - [x] Publish Rust orientation as optional Appendix A instead of lesson 000
-- [ ] Decide the repository tagging convention for completed lessons
-- [ ] Define the smallest lesson directory only when lesson 001 needs it
+- [x] Use `lesson-NNN` tags for completed, verified lesson states
+- [x] Define the smallest lesson directory only when lesson 001 needs it
 
 ---
 
@@ -42,9 +42,9 @@ Each lesson is complete only when all applicable items are satisfied:
 - [x] `cargo test` passes
 - [x] The book chapter is complete and matches the code
 - [x] Diagrams and expected output are reproducible
-- [ ] The video lesson definition is complete
-- [ ] Narration and pronunciation have been reviewed
-- [ ] The generated episode has been rendered and checked
+- [x] The video lesson definition is complete
+- [x] Narration and pronunciation have been reviewed
+- [x] The generated episode has been rendered and checked
 - [x] Educational simplifications and tradeoffs are documented
 - [ ] The completed state is tagged
 
@@ -303,15 +303,15 @@ below should be checked only after this standard has been applied.
 - [x] Create only the shared script directories required by the first prototype
 - [x] Create a small `kokoro-js` narration proof of concept
 - [x] Approve `af_heart`, speed 1.0, and mono 24 kHz WAV as the initial audio settings
-- [ ] Pin the exact Kokoro model revision used for reproducible generation
-- [ ] Define pronunciation overrides for technical vocabulary
+- [x] Pin the exact Kokoro model revision used for reproducible generation
+- [x] Define pronunciation overrides for technical vocabulary
 - [x] Cache model assets in a documented, reproducible location
 - [x] Choose Playwright as the renderer using the lesson 001 prototype
 - [x] Generate initial captions from narration timing
-- [ ] Compose narration, visuals, and captions with FFmpeg
-- [ ] Verify final media with FFprobe
+- [x] Compose narration, visuals, and captions with FFmpeg
+- [x] Verify final media with FFprobe
 - [x] Verify identical repeated frame capture at the same scene timestamp
-- [ ] Define shared title, content, and single-line caption-safe regions
+- [x] Define shared title, content, and single-line caption-safe regions
 - [ ] Add automatic safe-area and unexpected-overlap validation
 - [ ] Derive all scene transitions from narration beats
 - [x] Derive review timestamps from narration beats and editorial checkpoints
@@ -320,7 +320,7 @@ below should be checked only after this standard has been applied.
 - [ ] Render independent frame ranges with parallel browser workers
 - [x] Limit deterministic double capture to review checkpoints
 - [ ] Support optional NVENC encoding for disposable review previews
-- [ ] Document the complete non-interactive render command
+- [x] Document the complete non-interactive render command
 
 ---
 
