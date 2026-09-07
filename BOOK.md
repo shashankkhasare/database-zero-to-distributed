@@ -128,6 +128,50 @@ End with the unresolved problem that motivates the following chapter.
 
 ---
 
+# Cross-chapter continuity
+
+The book is one continuous argument, not a collection of independent articles.
+Before drafting a chapter, read the preceding chapter's opening, ending,
+terminology, callouts, exercises, diagrams, and promises. The new chapter
+should pick up the unresolved question near its beginning instead of silently
+starting a different conversation.
+
+Use [`book/TERMS.md`](book/TERMS.md) as the editorial terminology ledger. When
+a previous chapter has already introduced a term, refer back to the familiar
+idea and use the term normally. Do not bold and define it again as if the
+reader missed the earlier explanation. Add a term to the ledger when its first
+real definition is accepted.
+
+Later chapters should spend the vocabulary that earlier chapters earned. If a
+chapter introduced `predicate`, use `predicate` instead of returning to a
+longer unnamed description of the same idea. A brief callback is useful when
+context has changed, but it should extend the reader's model rather than repeat
+the original definition.
+
+Honor promises made by earlier chapters. If an earlier chapter establishes a
+diagram convention, a simplification to revisit, or a question for the next
+lesson, either fulfill it or revise the original promise. Prefer references
+such as “the next lesson,” “later in Season 2,” or a link to `Roadmap.md` over
+hard chapter numbers that can become stale as the curriculum changes.
+
+Keep recurring chapter furniture recognizable without forcing every lesson
+into an identical template. Callouts should use the established meanings,
+reader experiments should contain something the reader can actually do, and
+answers should not be revealed before the attempt. Compare new diagrams with
+earlier ones and remove any that merely redraw an already familiar idea.
+
+Before declaring a chapter ready for review, perform a seam audit:
+
+1. Read the previous chapter's final section and the new chapter's opening
+   together.
+2. Check new bold terms against `book/TERMS.md` and earlier chapters.
+3. Search for promises, terminology, and diagrams carried across the boundary.
+4. Verify every source-labelled code block in its stated repository context.
+5. Compare heading depth, callout names, exercises, and closing momentum with
+   nearby chapters.
+
+---
+
 # Narration style
 
 The book should read like an experienced programmer building the system beside
@@ -492,5 +536,9 @@ A chapter is complete when:
 - [ ] important simplifications and tradeoffs are documented
 - [ ] code references match the tagged repository state
 - [ ] diagrams and expected output are reproducible
+- [ ] its opening continues the previous chapter's unresolved problem
+- [ ] established terms are reused consistently with `book/TERMS.md`
+- [ ] earlier promises and diagram conventions are honored or deliberately revised
+- [ ] source-labelled code blocks compile in their stated repository context
 - [ ] the chapter has been technically reviewed
 - [ ] spelling, links, formatting, and rendering have been checked

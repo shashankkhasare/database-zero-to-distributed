@@ -22,8 +22,9 @@ this order:
 2. `TODO.md` — current progress, active milestone, and verified completion state
 3. `Roadmap.md` — curriculum order and the problem each lesson should expose
 4. `BOOK.md` — chapter contract, writing standards, and web-book direction
-5. `VIDEO.md` — video source layout, artifact policy, and execution workflow
-6. `README.md` — project vision and public overview
+5. `book/TERMS.md` — terminology already introduced to the reader
+6. `VIDEO.md` — video source layout, artifact policy, and execution workflow
+7. `README.md` — project vision and public overview
 
 For a narrowly scoped task, inspect the relevant sections rather than assuming
 the entire long-term architecture is already required. Before implementing a
@@ -35,6 +36,8 @@ Treat these files as distinct sources of truth:
 - `AGENTS.md` governs how work is performed.
 - `Roadmap.md` governs why concepts appear and in what order.
 - `BOOK.md` governs how the written and web-book experience is produced.
+- `book/TERMS.md` records where technical vocabulary first appears and how
+  later chapters should reuse it.
 - `VIDEO.md` governs how lesson sources become generated video artifacts.
 - `TODO.md` records what has actually been completed and what is active next.
 - The Rust implementation, tests, and demos remain the source of truth for

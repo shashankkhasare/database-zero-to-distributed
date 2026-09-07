@@ -278,6 +278,7 @@ streaming execution, or new query operators.
 
 # Book production
 
+- [x] Define cross-chapter continuity rules and maintain an editorial terminology ledger
 - [x] Define and version an original database illustration style
 - [x] Generate and review the lesson 001 opening illustration
 - [x] Add the approved opening illustration and epigraph to chapter 001
