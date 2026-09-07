@@ -100,9 +100,9 @@ blockquote {
 }
 
 .book-illustration {
-  width: min(980px, calc(100vw - 3rem));
-  margin: 3rem 50% 3.4rem;
-  transform: translateX(-50%);
+  width: 100%;
+  max-width: 680px;
+  margin: 3rem auto 3.4rem;
   text-align: center;
 }
 
@@ -150,7 +150,7 @@ blockquote {
   }
 
   .book-illustration {
-    width: calc(100vw - 1.5rem);
+    width: 100%;
     margin-top: 2.2rem;
     margin-bottom: 2.7rem;
   }
