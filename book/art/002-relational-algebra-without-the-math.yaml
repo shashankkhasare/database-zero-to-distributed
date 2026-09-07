@@ -1,0 +1,61 @@
+lesson: "002"
+style: book/art/STYLE.md
+
+images:
+  - id: equivalent-plans
+    kind: generated-raster
+    output: book/images/002-equivalent-plans.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: One employee relation passes through two differently arranged query-plan paths that produce matching result relations.
+    prompt: >-
+      Use case: illustration-story. Asset type: opening illustration for a
+      technical book chapter about relational algebra and equivalent query
+      plans. Make the subject unmistakably a database. On the left, show one
+      employee table with the exact headers "id", "name", and "salary" and
+      exactly three rows: "1 Ada 70,000", "2 Linus 50,000", and
+      "3 Grace 72,000". Let this single table enter a large teal database made
+      from stacked cylindrical disks. Inside a wide cutaway window, split the
+      rows into two distinct query-plan paths. Each path contains the same two
+      simple filter gates but in opposite vertical order. One gate is labeled
+      exactly "FILTER salary > 50,000" and the other exactly "FILTER id > 1".
+      The two paths visibly have different shapes, then converge on the right
+      into two matching small result tables, each with header "name" and the
+      single row "Grace". Make the identical results visually obvious without
+      a written conclusion. Wide landscape composition with generous quiet
+      margins. Follow the reusable book illustration direction in
+      book/art/STYLE.md. Render only the specified labels and values, spelled
+      exactly. No other text, formulas, Greek letters, SQL, logos, watermark,
+      photorealism, factory machinery, conveyor belts, or glossy 3D rendering.
+
+  - id: safe-and-unsafe-projection
+    kind: generated-raster
+    output: book/images/002-safe-and-unsafe-projection.png
+    placement: section 2.7 after both rearrangements have been explained
+    alt: An unsafe plan removes salary before filtering, while a safe plan removes only id and keeps salary until after filtering.
+    prompt: >-
+      Use case: scientific-educational. Asset type: conceptual comparison
+      illustration for a technical database book. Create two balanced plan
+      paths side by side on warm paper. Label the left side exactly "UNSAFE"
+      and the right side exactly "SAFE". Both paths flow upward. On the unsafe
+      side, show three vertically aligned cards: bottom "SCAN" with
+      "id, name, salary"; middle "PROJECT" with "keeps name"; top "FILTER"
+      with "needs salary > 50,000". Between PROJECT and FILTER, show the
+      salary cell fading out or being removed, followed by a small red break in
+      the path. On the safe side, show four vertically aligned cards: bottom
+      "SCAN" with "id, name, salary"; above it "PROJECT" with
+      "keeps name, salary"; above it "FILTER" with
+      "uses salary > 50,000"; top "PROJECT" with "keeps name". Make the
+      safe path continuous and the unsafe dependency failure immediately
+      understandable. Use straight upward arrows that touch card borders and
+      never cross text. Follow the reusable book illustration direction in
+      book/art/STYLE.md, with hand-drawn ink, restrained watercolor and
+      gouache, deep teal, ochre, and a small rust-red accent. Wide landscape
+      composition with generous margins. Render only the specified labels and
+      values, spelled exactly. No people, extra cards, formulas, SQL, logos,
+      watermark, photorealism, factory machinery, or glossy 3D rendering.
+    edit_prompt: >-
+      Change only the three-column strip inside the left UNSAFE PROJECT card.
+      Keep the name cell active in teal. Make both the id cell and the salary
+      cell visibly faded and removed, using the same pale dashed treatment.
+      Preserve every other object, word, number, arrow, layout, color, texture,
+      and spelling exactly. Do not add new text or symbols.

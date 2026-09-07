@@ -675,7 +675,9 @@ Scan(employees)
 
 This shape is more than a convenient Rust data structure. The operations are
 the beginnings of **relational algebra**, a small language for describing how
-relations are transformed. Giving the tree a formal interpretation matters
-because we can then inspect it, explain it, rearrange it, and eventually choose
-better ways to execute it. That is the problem waiting for us in the next
-chapter.
+relations are transformed. Once a query has this form, we can rearrange its
+operations and consider different ways to perform the work. But a
+different-looking plan is useful only if it preserves the query's meaning.
+
+How can we tell whether two query plans still produce the same result? That is
+the question waiting for us in the next chapter.

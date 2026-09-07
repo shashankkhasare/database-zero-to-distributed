@@ -102,7 +102,13 @@ Keep the implementation single-threaded and synchronous.
 
 ## 002 — Relational Algebra Without the Math
 
-Recognize that the operators we created form a relational algebra tree.
+Use the operators created in Lesson 001 to answer one question:
+
+> What makes two query plans mean the same thing?
+
+Recognize the existing plan as a relational algebra tree. Define two plans as
+equivalent when they produce the same result for every valid input, not merely
+for the three example rows.
 
 Introduce:
 
@@ -112,6 +118,9 @@ Introduce:
 - Projection
 - operator trees
 - recursive execution
+- equivalent plans
+- rearrangements that preserve meaning
+- rearrangements that change meaning or make a plan invalid
 
 Example:
 
@@ -123,7 +132,13 @@ Filter(salary > 50000)
 Scan(employees)
 ```
 
-Show how Rust enums naturally represent the tree.
+Show how Rust enums naturally represent the tree. Compare one safe and one
+unsafe rearrangement using the existing operations. Do not build an optimizer
+or a general rewrite framework yet.
+
+Name the algebra tree as a logical plan and briefly contrast what it computes
+with how a physical plan computes it. Keep the current `Plan` enum combined.
+Defer the architectural separation and physical alternatives to Lesson 010.
 
 ---
 

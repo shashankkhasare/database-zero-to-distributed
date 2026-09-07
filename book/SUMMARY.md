@@ -5,6 +5,7 @@
 # Season 1: Build the Smallest Query Engine
 
 - [The Smallest Query Engine](001-smallest-query-engine.md)
+- [Relational Algebra Without the Math](002-relational-algebra-without-the-math.md)
 
 # Appendices
 

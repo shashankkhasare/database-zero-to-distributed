@@ -122,6 +122,57 @@ command documented in `VIDEO.md`.
 
 ---
 
+# Current milestone: 002, Relational Algebra Without the Math
+
+Lesson 002 uses relational algebra to answer the question promised by the
+Lesson 001 video: what makes two query plans mean the same thing? It should
+strengthen the reader's mental model without adding SQL parsing, optimization,
+streaming execution, or new query operators.
+
+## Learning outcome and scope
+
+- [x] Begin with the working employee query from Lesson 001
+- [x] Explain a relation first as the table-shaped data the reader already knows
+- [x] Connect filtering to selection and choosing columns to projection
+- [x] Explain how operators compose into a tree whose leaves supply data
+- [x] Trace recursive execution through the tree without reteaching Rust syntax
+- [x] Name the algebra tree as a logical plan and briefly distinguish a physical plan
+- [x] Define equivalent plans as plans that agree for every valid input
+- [x] Explain why agreement on the three employee rows alone is not proof
+- [x] Show one rearrangement that changes meaning or makes the plan invalid
+- [x] Show one rearrangement that preserves meaning and explain why
+- [x] Give the reader a small equivalence exercise with a verifiable answer
+- [x] End with the need for a convenient way to write plans, motivating SQL
+- [x] Avoid SQL parsing, optimizer implementation, rewrite frameworks, and new operators
+
+## Book
+
+- [x] Add the skeletal Chapter 2 manuscript and contents entry
+- [x] Select and verify an opening epigraph
+- [x] Draft the chapter in plain language before introducing formal vocabulary
+- [x] Use real Lesson 001 rows, plans, code, tests, and output as evidence
+- [x] Add only the diagrams needed to explain tree structure and equivalence
+- [x] Decide that only concept-focused tests are needed; keep production execution unchanged
+- [ ] Review the complete chapter for teaching flow and technical accuracy
+- [x] Build the book and verify links, layout, and responsive images
+
+## Implementation and verification
+
+- [x] Keep the production implementation unchanged
+- [x] Add concept-focused equivalence tests and preserve Lesson 001 behavior
+- [x] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
+- [x] Run the deterministic demo and compare it with the expected output
+
+## Video and publication
+
+- [ ] Create lesson metadata only after the chapter's teaching sequence is approved
+- [ ] Write and review conceptual narration derived from the chapter
+- [ ] Plan and implement the minimum visual scenes needed for the lesson
+- [ ] Render, review, verify, and publish the completed episode
+- [ ] Tag the verified repository state as `lesson-002`
+
+---
+
 # Curriculum milestones
 
 ## Season 1 — Build the Smallest Query Engine
