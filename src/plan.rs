@@ -123,6 +123,23 @@ mod tests {
     }
 
     #[test]
+    fn project_preserves_duplicate_rows() {
+        let rows = vec![
+            Row::new(vec![("name", Value::Text("Ada".to_string()))]),
+            Row::new(vec![("name", Value::Text("Ada".to_string()))]),
+        ];
+        let plan = Plan::Project {
+            columns: vec!["name".to_string()],
+            input: Box::new(Plan::Scan { rows }),
+        };
+
+        let result = plan.execute();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], result[1]);
+    }
+
+    #[test]
     fn removing_an_unused_column_early_preserves_the_result() {
         let inputs = vec![
             employees(),

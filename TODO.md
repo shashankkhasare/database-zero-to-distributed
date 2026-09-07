@@ -132,7 +132,7 @@ streaming execution, or new query operators.
 ## Learning outcome and scope
 
 - [x] Begin with the working employee query from Lesson 001
-- [x] Explain a relation first as the table-shaped data the reader already knows
+- [x] Build on Chapter 1's relation definition by showing that intermediate results are relations too
 - [x] Connect filtering to selection and choosing columns to projection
 - [x] Explain how operators compose into a tree whose leaves supply data
 - [x] Trace recursive execution through the tree without reteaching Rust syntax
@@ -141,7 +141,7 @@ streaming execution, or new query operators.
 - [x] Explain why agreement on the three employee rows alone is not proof
 - [x] Show one rearrangement that changes meaning or makes the plan invalid
 - [x] Show one rearrangement that preserves meaning and explain why
-- [x] Give the reader a small equivalence exercise with a verifiable answer
+- [x] Give the reader equivalence and duplicate-semantics exercises with verifiable answers
 - [x] End with the need for a convenient way to write plans, motivating SQL
 - [x] Avoid SQL parsing, optimizer implementation, rewrite frameworks, and new operators
 
@@ -154,12 +154,12 @@ streaming execution, or new query operators.
 - [x] Add only the diagrams needed to explain tree structure and equivalence
 - [x] Decide that only concept-focused tests are needed; keep production execution unchanged
 - [ ] Review the complete chapter for teaching flow and technical accuracy
-- [x] Build the book and verify links, layout, and responsive images
+- [x] Rebuild the revised chapter and verify links, layout, and responsive images
 
 ## Implementation and verification
 
 - [x] Keep the production implementation unchanged
-- [x] Add concept-focused equivalence tests and preserve Lesson 001 behavior
+- [x] Add concept-focused equivalence and duplicate-projection tests
 - [x] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
 - [x] Run the deterministic demo and compare it with the expected output
 

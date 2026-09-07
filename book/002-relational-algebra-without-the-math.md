@@ -3,17 +3,16 @@
 <!--
 Chapter contract
 
-Start with the employee query that already runs. Let the reader recognize each
-familiar action before giving it a formal name. The chapter should explain the
-existing implementation, not introduce a new abstraction merely to make the
-terminology look more formal.
+Continue directly from Chapter 1's closing question. Reuse vocabulary the
+reader already learned, then introduce selection, projection, logical plans,
+equivalence, and counterexamples when the employee example needs them.
 
 Visible outcome
 
 The reader can decide whether two small query plans mean the same thing. They
-understand that equivalent plans must produce the same result for every valid
-input, not merely for the example table. The real Lesson 001 implementation
-provides the operations and runnable evidence.
+understand that equivalence requires the same result for every valid input,
+not merely one example table. Tests also expose the difference between
+textbook set projection and this engine's duplicate-preserving Project.
 -->
 
 > A plan is not a pile of operations. Its shape is part of the answer.
@@ -23,47 +22,34 @@ provides the operations and runnable evidence.
   <figcaption>Different paths can preserve the same answer.</figcaption>
 </figure>
 
-Chapter 1 left us with a working query engine and an unfamiliar name for what
-we had built: relational algebra. The name may sound as if we are about to
-trade rows for equations. We are not. We will keep the employee table on the
-screen and use it to uncover an idea already present in our program.
+Chapter 1 left us with a working query engine and one unanswered question:
+how can we tell whether two query plans still produce the same result? This
+question matters whenever a database rearranges work. A different arrangement
+may be faster, but speed is useless if the answer changes.
 
-Our engine answers a request by connecting small operations. Each operation
-receives rows, performs one kind of work, and produces rows for the operation
-above it. Because every piece has the same broad shape, we can connect the
-pieces into plans for many different questions. Relational algebra gives us a
-precise vocabulary for describing those pieces and connections.
+The name relational algebra may suggest that rows are about to disappear
+behind equations. They are not. We will keep the employee table visible and
+give precise names to ideas already present in our program. Those names will
+let us explain why one rearrangement is safe and another is not.
 
-The connections are not arbitrary. If we remove the `salary` column before
-checking it, the filter can no longer decide which employees earn more than
-50,000. The same operations arranged in a different order may produce a
-different answer or no answer at all. Understanding a plan therefore means
-understanding both its operations and its shape.
-
-In this chapter, we will give familiar ideas their database names, read our
-plan as a tree, and compare different ways to connect its operations. We will
-not build an optimizer yet. That work begins in Season 3. First, we need to
-answer the correctness question every optimizer depends on: what makes two
-query plans mean the same thing?
+We will not build an optimizer yet. Season 3 will automate plan rewriting and
+compare the costs of valid alternatives. This chapter establishes the rule
+that work depends on: two plans may look different only when they preserve the
+same meaning.
 
 ## 2.1 We already have the pieces
 
-Return to the request our small engine can already answer: find the names of
-employees who earn more than 50,000. Ada and Grace appear in the result. Linus
-does not. We reach that answer without parsing SQL, reading a file, or using an
-index. Three small operations are enough.
+Return to our first request: find the names of employees who earn more than
+50,000. Ada and Grace appear in the result. Linus does not. Three operations
+produce that answer: a scan reads the rows, a filter applies a predicate, and
+a project keeps the requested columns.
 
-The result matters, but the way we reached it matters more. We did not write
-one large function that knew everything about employees and salaries. We
-connected three pieces. One read the available rows, one kept the rows that
-passed a condition, and one kept the requested columns.
-
-Here is the request again in ordinary language:
+Here is the request in ordinary language:
 
 > From the employees, keep those earning more than 50,000, then show only
 > their names.
 
-Each part of that sentence corresponds to one part of the plan:
+Each part corresponds to one plan node:
 
 ```text
 Project(name)
@@ -73,22 +59,20 @@ Filter(salary > 50000)
 Scan(employees)
 ```
 
-The scan supplies all three employee rows. The filter examines those rows and
-keeps Ada and Grace. The project removes `id` and `salary` from each remaining
-row. Read from the bottom upward, the tree describes a sequence of small data
-changes that produces the requested answer.
+Read from the bottom upward. The scan supplies all three employee rows. The
+filter's predicate keeps Ada and Grace. The project removes `id` and `salary`
+from those rows. Each node performs one small transformation, and its result
+feeds the node above it.
 
-Nothing in this description depends on the particular names Ada, Linus, and
-Grace. We could use the same three kinds of operation for products, books, or
-bank accounts. Only the rows, condition, and requested columns would change.
-That repeatable structure lets us compare plans instead of treating each query
-as unrelated code. First, however, we need a precise name for the table-shaped
-data that enters and leaves every operation.
+The same structure could query products, books, or bank accounts. Only the
+source rows, predicate, and requested columns would change. This repeatable
+shape lets us compare plans instead of treating every query as unrelated
+code.
 
-## 2.2 A table-shaped value
+## 2.2 Intermediate results are relations too
 
-We began with a table named `employees`. It has three columns, and each row
-describes one employee:
+Chapter 1 introduced a relation as the table-shaped collection of rows on
+which our engine operates. The original `employees` table is one relation:
 
 | id | name  | salary |
 |---:|-------|-------:|
@@ -96,71 +80,39 @@ describes one employee:
 | 2  | Linus | 50,000 |
 | 3  | Grace | 72,000 |
 
-A stored table is not the only place where this shape appears. After the
-filter runs, we still have rows and columns, even though Linus is gone. After
-the project runs, we still have rows and columns, even though only `name`
-remains. These intermediate results may never be stored or given permanent
-names, but they have the same table-like shape.
-
-Database theory uses the word **relation** for this kind of value. The original
-employees are a relation. The two rows produced by the filter are another
-relation. The one-column result produced by the project is another. A relation
-can therefore be the starting data, a temporary result, or the final answer to
-a query.
+The important extension is that a relation does not need to be a stored table.
+After the filter runs, its two-row result is also a relation. After the project
+runs, its one-column result is another. An intermediate result may exist only
+long enough to feed the next operation, but it still has rows and columns.
 
 This shared shape is what lets operations connect. A filter accepts a relation
 and produces a relation. A project does the same. The output of one operation
-can become the input of the next without changing into a completely different
-kind of thing. That simple rule lets a few operations form larger plans.
+can therefore become the input of another without changing into a completely
+different kind of value.
 
-> **Design note: Our rows are an approximation**
->
-> In the mathematical relational model, a relation does not promise a row
-> order and does not contain duplicate rows. Our engine stores rows in a
-> `Vec<Row>`, which preserves order and can contain duplicates. We will keep
-> that simpler representation for now. Later chapters will give ordering and
-> duplicates the attention they require.
+Now we can name the two transformations more precisely.
 
-For this chapter, picture a relation as rows arranged under named columns. That
-picture is enough to follow data through our engine. Our `Vec<Row>` keeps rows
-in a particular sequence, such as Ada before Linus before Grace. Relational
-algebra itself does not promise that sequence. This is separate from the upward
-flow of relations through the plan tree.
+## 2.3 Selection, projection, and logical plans
 
-With that distinction in place, we can give each transformation a more precise
-name.
-
-## 2.3 Three operations, three names
-
-Our plan begins with `Scan`. In this engine, a scan brings the source rows into
-the plan. A future scan may read pages from a file or use an index, but this one
-simply returns the rows it owns. Its role is still important: every plan needs
-some **relation** to begin with.
-
-The next operation keeps rows that answer yes to a condition. Our Rust enum
-calls this operation `Filter`. Relational algebra traditionally calls the same
-idea **selection** and represents it with the Greek letter `σ`, pronounced
-“sigma.” The condition is written as a subscript, so
+Our `Filter` keeps rows for which its predicate is true. Relational algebra
+calls this operation **selection** and represents it with the Greek letter
+`σ`, pronounced “sigma.” The predicate is written as a subscript, so
 <code>σ<sub>salary &gt; 50000</sub></code> means “keep rows whose salary is
 greater than 50,000.”
 
-The terminology is slightly unfortunate because SQL uses `SELECT` to choose
-output columns. Relational algebra uses selection to choose rows. Whenever this
-chapter says selection, picture a yes-or-no condition applied to each row.
-
-For the employee query, the condition is `salary > 50000`. Applying it changes
-the relation like this:
+The terminology can be confusing because SQL uses `SELECT` to choose output
+columns. In relational algebra, selection chooses rows. Applied to our
+employees, it produces:
 
 | id | name  | salary |
 |---:|-------|-------:|
 | 1  | Ada   | 70,000 |
 | 3  | Grace | 72,000 |
 
-The last operation keeps specified columns and removes the others. Both our
-Rust enum and relational algebra call this **projection**. Relational algebra
-represents it with `π`, pronounced “pi,” and writes the retained columns as a
-subscript. Thus <code>π<sub>name</sub></code> means “keep the name column.”
-Projecting `name` from the filtered relation produces the final answer:
+Our `Project` keeps named columns and removes the others. Relational algebra
+calls this operation **projection**, represents it with `π`, pronounced “pi,”
+and writes the retained columns as a subscript. Thus
+<code>π<sub>name</sub></code> means “keep the name column.”
 
 | name  |
 |-------|
@@ -168,15 +120,9 @@ Projecting `name` from the filtered relation produces the final answer:
 | Grace |
 
 Selection changes which rows continue. Projection changes which columns
-continue. Neither operation needs to know why another operation produced its
-input. Each receives one relation, applies its own rule, and returns another
-relation. That independence is what allows the operations to be connected in
-different ways.
-
-We now have the three ingredients behind the chapter's title: relations,
-operations that transform relations, and rules for connecting those
-operations. That is enough to form a small **relational algebra**. Here is our
-employee query written as a relational algebra tree:
+continue. Together with relations and rules for connecting operations, they
+form the small relational algebra that Chapter 1 uncovered. Our query can now
+be written as an algebra tree:
 
 <pre><code>Projection: π<sub>name</sub>
              ↑
@@ -184,332 +130,288 @@ Selection:  σ<sub>salary &gt; 50000</sub>
              ↑
 Relation:   employees</code></pre>
 
-Read from the bottom upward. The `employees` relation enters the selection.
-Selection produces a new relation containing Ada and Grace. Projection accepts
-that relation and produces another containing only their names. Each arrow
-connects one table-shaped output to the next table-shaped input.
-
-Putting the symbols together gives us the conventional compact expression:
+The compact form contains the same nesting:
 
 <p class="relational-expression"><code>π<sub>name</sub>(σ<sub>salary &gt; 50000</sub>(employees))</code></p>
 
 Read the inner operation first. Selection receives `employees`, and projection
-receives the selection's result. We will occasionally use this notation, but
-we do not need it to reason about plans. The tree says the same thing while
-keeping every transformation visible.
+receives the selection result. The symbols are useful shorthand, but the tree
+often makes the flow easier to inspect.
 
-This algebra tree describes **what** result the query requires without choosing
-a particular algorithm for producing it. A description at this level is called
-a **logical plan**. We need a logical plan because SQL syntax, equivalence
-reasoning, and future optimization should not depend on whether rows eventually
-come from memory, a file, or an index.
+This tree describes **what** result the query requires without choosing among
+algorithms for producing it. A description at this level is a **logical plan**.
+It lets us reason about the query independently of whether rows later come from
+memory, a file, or an index.
 
-A **physical plan** describes **how** the database will perform that logical
-work. One logical scan might become a full table scan or an index scan. A later
-join might use one of several algorithms. Our engine has none of those choices
-yet, so Chapter 10 will introduce the full logical and physical separation when
-we have alternatives worth separating.
+A **physical plan** describes **how** the database performs that logical work.
+For example, one logical scan might become a full table scan or an index scan.
+Our engine has no such alternatives yet, so a later Season 2 lesson will split
+logical and physical plans when there are real choices to represent.
 
-Our engine adds a practical `Scan` node beneath these algebra operations. In
-the compact notation, writing `employees` is enough to name the input relation.
-The executable plan must also say how that relation enters the computation.
-For now, `Scan` does that by returning the rows stored inside the node.
+For now, the `Plan` enum serves both roles. Its `Scan` is the leaf that brings
+stored rows into execution, while its boxed inputs connect operations into the
+same tree shown above. Chapter 1 already followed `execute()` through that
+structure, so we do not need to draw it again.
 
-## 2.4 The operations form a tree
+> **Production note: Projection and duplicate rows**
+>
+> In textbook relational algebra, a relation is a set, so it cannot contain
+> duplicate rows. Projection therefore removes duplicates. Our engine stores
+> rows in a `Vec<Row>` and produces one projected row for every input row. If
+> two employees are named Ada, `Project(name)` returns two Ada rows. This is
+> closer to SQL projection without `DISTINCT` than to textbook `π`.
 
-The Rust plan makes the same composition concrete. A plan node records one
-operation. A scan has no input plan because it already owns its source rows. A
-filter has one input, and a project has one input. Those inputs point to nodes
-beneath them, so the complete plan forms a tree:
+## 2.4 What makes two plans equivalent?
 
-```text
-Project
-  columns: name
-       ↑
-Filter
-  condition: salary > 50000
-       ↑
-Scan
-  source: employees
-```
-
-The scan is a **leaf**, a node with no child plan. The project is the **root**,
-the node whose result answers the query. The filter connects them. Rows begin
-at the leaf and move upward as each operation transforms the relation returned
-by the node below it.
-
-The Rust values have the same shape. Each `input: Box<Plan>` stores the child
-node beneath a filter or project. `Plan::execute()` follows those links down to
-the scan. Results then return through the waiting operations until the root
-produces the final rows. Chapter 1 called this pattern recursion.
-
-The algebra tree and its execution are related, but they are not the same thing.
-The logical plan describes which transformations the query requires.
-`execute()` is our current method for performing them. Our `Plan` enum handles
-both roles for now, which keeps the first engine small. Later, separate logical
-and physical plans will let the database change how it works without changing
-what the query means.
-
-That future separation depends on a promise: replacing one plan with another
-must preserve the requested answer. Before we can choose a different physical
-plan, or even rearrange this logical tree, we need to say exactly what “the
-same” means.
-
-## 2.5 What does “the same” mean?
-
-Consider two plans with different trees. Running both against the employee
-table may produce Ada and Grace. That is encouraging, but it is not enough to
-say the plans mean the same thing. Perhaps they agree only because this table
-does not contain the row that exposes their difference.
+Suppose two different plan trees both return Ada and Grace for our current
+table. That is encouraging, but it does not prove that they mean the same
+thing. They may agree only because these three rows do not expose their
+difference.
 
 Two plans are **equivalent** when they produce the same result for every valid
-input relation. Valid means that the input has the columns and value types the
-plans require. For our employee examples, each input must provide integer `id`
-and `salary` values and a text `name` value.
+input. Valid means the input supplies the columns and value types required by
+both plans. The phrase “every valid input” prevents one convenient example
+from becoming a false proof.
 
-The words “every valid input” do the hard work. They prevent us from declaring
-two plans equivalent after one convenient test. An equivalent plan must keep
-the same rows, produce the same columns and values, and behave the same way no
-matter which valid employees we supply.
+An equivalent plan must keep the same rows and produce the same columns and
+values. For this chapter, our comparisons also preserve the order and number
+of rows because that is what the current engine exposes. We will collect the
+gap between this behavior and the mathematical model later in the chapter.
 
-Our current engine also preserves input order because it stores relations in a
-`Vec<Row>`. The examples in this chapter preserve that order as well, so it
-will not hide the main idea. When the course reaches sorting and duplicates, we
-will separate those behaviors more carefully from the mathematical definition
-of a relation.
+## 2.5 Rearranging a plan
 
-## 2.6 A rearrangement that breaks the plan
+The order of nodes is part of a plan's meaning. Moving an operation changes
+which columns and rows are available to the next operation. We can see the
+difference by trying one unsafe rearrangement and one safe one.
 
-Start with the working plan. The filter reads `salary`, and the project removes
-that column only after the decision has been made:
+### 2.5.1 An unsafe projection
 
-```text
-Project(name)
-       ↑
-Filter(salary > 50000)
-       ↑
-Scan(employees)
-```
-
-Now move the projection beneath the filter:
+The working plan filters before removing columns. Now place
+`Project(name)` below the filter:
 
 ```text
 Filter(salary > 50000)
-       ↑
+       │
 Project(name)
-       ↑
+       │
 Scan(employees)
 ```
 
-Read the second tree from the bottom upward. The scan supplies complete rows.
-The project keeps `name` and removes `id` and `salary`. The filter then asks
-each smaller row for `salary`, but that column no longer exists. Our engine
-stops with `unknown column: salary`.
+We already know that data moves from the bottom toward the root, so plain lines
+can now stand for that flow. The scan supplies complete rows, but the project
+removes `salary`. When the filter receives those smaller rows, its predicate
+asks for a column that no longer exists. Our engine stops with
+`unknown column: salary`.
 
-Both trees contain a scan, filter, and project, but they do not mean the same
-thing. The first produces a relation. The second cannot perform its stated
-condition. A plan's meaning therefore depends on more than the names of its
-operations. The information required by each operation must still be available
-when that operation runs.
+The nodes have familiar names, but the plan cannot perform the request. A
+rearrangement is valid only if every operation still receives the information
+it needs.
 
-## 2.7 A rearrangement that preserves the answer
+### 2.5.2 A safe projection
 
-Removing columns early was not itself the mistake. The mistake was removing a
-column that a later operation needed. We can place a projection below the
-filter if it keeps both `name`, which the final result needs, and `salary`,
-which the filter needs:
+Removing columns early was not the mistake. Removing a required column was.
+An early projection may discard `id` while retaining `name` for the final
+answer and `salary` for the predicate:
 
 ```text
 Original                         Remove id early
 
 Project(name)                    Project(name)
-       ↑                                ↑
+       │                                │
 Filter(salary > 50000)           Filter(salary > 50000)
-       ↑                                ↑
+       │                                │
 Scan(employees)                  Project(name, salary)
-                                        ↑
+                                        │
                                  Scan(employees)
 ```
 
-In the second plan, the lower project removes only `id`. The filter can still
-read `salary`, so it keeps exactly the rows it kept before. The upper project
-then removes `salary`, leaving the same `name` relation as the original plan.
-For our familiar input, both plans return Ada and Grace.
-
-More importantly, the reasoning does not depend on those three employees. The
-filter never reads `id`, and the final project never returns it. Removing `id`
-early therefore cannot change a filtering decision or a final value. For every
-valid employee relation, the two plans produce the same answer.
+The lower project removes only `id`. The filter can still read `salary`, and
+the upper project still returns `name`. This reasoning does not depend on Ada,
+Linus, or Grace. For every valid employee input, removing `id` early cannot
+change a filtering decision or a returned value.
 
 <figure class="book-illustration book-diagram">
   <img src="images/002-safe-and-unsafe-projection.png" alt="An unsafe plan removes salary before filtering, while a safe plan removes only id and keeps salary until after filtering.">
   <figcaption>An early projection is safe only when later operations retain every column they need.</figcaption>
 </figure>
 
-This is an example of a meaning-preserving transformation. We have not taught
-the database to discover or apply it. We have only reasoned that these two
-particular trees are equivalent. That distinction keeps this chapter focused
-on correctness. Automatic plan rewriting belongs to the optimizer we will
-build later.
+We have justified one meaning-preserving transformation. We have not taught
+the database to discover or apply it. Automatic rewriting belongs to the
+optimizer we will build in Season 3.
 
-## 2.8 Test more than one table
+### 2.5.3 A counterexample
 
-Tests are useful when comparing plans, but a few passing examples do not prove
-equivalence. Suppose a plan contains two salary filters. A developer tests a
-version that accidentally drops the stricter filter:
+Testing several inputs can expose an invalid claim. Suppose one plan contains
+two salary filters while another accidentally drops the stricter filter:
 
 ```text
 Both filters                     Stricter filter dropped
 
 Filter(salary > 60000)           Filter(salary > 50000)
-          ↑                                ↑
+          │                                │
 Filter(salary > 50000)           Scan(employees)
-          ↑
+          │
 Scan(employees)
 ```
 
-Against our original employees, both plans return Ada and Grace. The result
-makes the removed filter look redundant. It is not. The table simply contains
-no salary between 50,000 and 60,000, so both plans happen to make the same
-decision for every row currently available.
+Both plans return Ada and Grace for our original table. Neither table contains
+a salary between 50,000 and 60,000, so the missing condition appears harmless.
+Now add Edsger:
 
-Add one more employee:
-
-| id | name  | salary |
-|---:|-------|-------:|
+| id | name   | salary |
+|---:|--------|-------:|
 | 4  | Edsger | 55,000 |
 
-The plan with both filters removes Edsger because he fails the stricter
-condition. The plan missing that filter keeps him. This row is a
-**counterexample**: one valid input that proves the plans are not equivalent.
-A counterexample is decisive because equivalence requires agreement for every
-valid input. One disagreement is enough to reject the claim.
+The first plan removes Edsger; the second keeps him. This row is a
+**counterexample**, one valid input that proves the plans are not equivalent.
+Equivalence requires agreement for every valid input, so one disagreement is
+enough to reject it.
 
-There is a redundant filter in the first plan, but it is the weaker one. Any
-salary greater than 60,000 is already greater than 50,000. Removing the weaker
-condition preserves the result. Removing the stricter condition changes which
-rows can survive. The original data cannot tell us which transformation is
-valid; the meanings of the two conditions can.
+There is a redundant condition in the first plan, but it is the weaker one.
+Any salary greater than 60,000 is already greater than 50,000. We learn which
+condition is removable from their meanings, not from the particular rows in
+our first table.
 
-Passing tests still provide valuable evidence and catch many mistakes. The
-stronger argument comes from the operations themselves. In our safe projection
-example, we identified every column used above the new projection and kept all
-of them. That explanation covers arbitrary valid rows, including rows we did
-not think to place in a test.
+The repository records the counterexample in a complete test.
 
-Later optimizer rules will need this kind of general justification. Testing a
-rule against several tables can support the implementation, but the rule must
-be derived from what the operations mean. Otherwise a database may return the
-right answer throughout development and fail when a user supplies the one row
-we forgot to imagine.
-
-The repository records both observations as tests. One runs the original and
-early-projection plans against more than one input. The other first shows two
-plan shapes agreeing on our three employees, then adds Edsger as the
-counterexample that separates them.
-
-`src/plan.rs`: tests of plan equivalence and its limits
+`src/plan.rs`: inside `mod tests`, the complete counterexample test
 
 ```rust
-for rows in inputs {
-    let original = employee_name_plan(rows.clone());
-    let remove_id_early = Plan::Project {
-        columns: vec!["name".to_string()],
-        input: Box::new(Plan::Filter {
-            column: "salary".to_string(),
-            greater_than: 50_000,
-            input: Box::new(Plan::Project {
-                columns: vec!["name".to_string(), "salary".to_string()],
-                input: Box::new(Plan::Scan { rows }),
-            }),
-        }),
-    };
+#[test]
+fn dropping_a_filter_based_on_one_input_changes_other_results() {
+    let original_rows = employees();
+    assert_eq!(
+        strict_and_weak_salary_filters(original_rows.clone()).execute(),
+        salary_filter(original_rows, 50_000).execute()
+    );
 
-    assert_eq!(original.execute(), remove_id_early.execute());
+    let revealing_rows = vec![Row::new(vec![
+        ("id", Value::Integer(4)),
+        ("name", Value::Text("Edsger".to_string())),
+        ("salary", Value::Integer(55_000)),
+    ])];
+
+    assert_ne!(
+        strict_and_weak_salary_filters(revealing_rows.clone()).execute(),
+        salary_filter(revealing_rows, 50_000).execute()
+    );
 }
 ```
 
-This is the central loop from the first test. The complete test supplies both
-input relations, while the following test constructs the two salary filters
-and the Edsger counterexample explicitly. Both use the same `Plan` and `Row`
-types as the engine. Run all plan tests together:
+This code is copied from the real test module, where `employees`,
+`salary_filter`, and `strict_and_weak_salary_filters` construct the plans named
+in the test. Run it with:
 
 ```bash
-cargo test plan::tests
+cargo test dropping_a_filter_based_on_one_input_changes_other_results
 ```
 
-The test names describe two different lessons. Matching results can support an
-equivalence claim, while a counterexample can disprove one. Neither replaces
-the general explanation of why a transformation preserves every valid result.
+A passing test supplies evidence about its examples. The general argument must
+still come from the operations: which rows they keep, which columns they need,
+and whether changing their order can alter either fact.
 
-## 2.9 Why equivalent plans matter
+## 2.6 Why equivalent plans matter
 
-A database often has several ways to answer the same query. One plan may remove
-unneeded columns early. Another may delay that work. Future operators such as
-joins will create choices with much larger consequences. Some arrangements may
-process far fewer rows, use less memory, or finish much sooner than others.
+A database often has several ways to answer the same query. One plan may
+remove unused columns early. Another may delay that work. Joins will eventually
+create choices with much larger consequences. Different arrangements may
+process fewer rows, use less memory, or finish sooner.
 
-The database may choose among those plans only after establishing that they
+The database can choose among those plans only after establishing that they
 preserve the requested answer. A fast plan that returns different rows is not
-an optimization. It is a bug. Equivalence supplies the safety boundary: change
-the shape as much as useful, but do not change the meaning.
+an optimization. It is a bug. Equivalence is the safety boundary: change the
+shape as much as useful, but do not change the meaning.
 
-Season 3 will turn that freedom into a query optimizer. We will define rewrite
-rules, collect information about the data, estimate costs, and choose among
-equivalent plans. This chapter provides the correctness foundation for that
-work. We are learning when a different tree is allowed before asking which
-allowed tree is cheaper.
+Season 3 will turn that freedom into a query optimizer. It will apply rewrite
+rules, estimate costs, and choose among equivalent alternatives. Correctness
+comes first because cost can choose only among plans that are allowed.
 
-## 2.10 Try comparing two plans
+## 2.7 What we deliberately did not build
 
-Suppose a plan contains several filters. The database may eventually want to
-run the filter that removes more rows first, leaving less work for the
-operations above it. Before comparing costs, however, it must know whether
-changing the filter order preserves the answer. Our next pair of plans isolates
-that correctness question.
+This chapter gives our small plans a logical interpretation, but the engine is
+still intentionally incomplete:
 
-Consider a query with two filters. One keeps employees whose salary is greater
-than 50,000. The other keeps employees whose `id` is greater than 1. Compare
-these plans:
+- It does not separate logical nodes from physical execution algorithms.
+- It cannot discover or apply equivalent-plan rewrites automatically.
+- It has no statistics or cost model for choosing a faster plan.
+- Its `Vec<Row>` preserves row order and permits duplicate rows, unlike a
+  mathematical relation.
+- Its `Project` preserves duplicates instead of implementing textbook `π`.
+- Its predicates only read a column and compare an integer. We have not
+  considered errors, nondeterministic expressions, or side effects.
 
-```text
-Plan A                           Plan B
+These limitations matter, but solving them together would hide the idea we
+needed first. This chapter asks whether a transformation is correct. Later
+lessons can ask how to represent alternatives, find them, and choose among
+them.
 
-Filter(id > 1)                  Filter(salary > 50000)
-       ↑                                ↑
-Filter(salary > 50000)          Filter(id > 1)
-       ↑                                ↑
-Scan(employees)                 Scan(employees)
+## 2.8 Try it
+
+Use the current `Plan`, `Row`, and `Value` types for these experiments. For the
+first three, write a test that executes both plans against more than one input.
+Try to decide the answer before running the code.
+
+1. Build two filters, `salary > 50000` and `id > 1`, then swap their order. Are
+   the plans equivalent for every valid employee relation?
+2. Place a projection below those two filters. What is the smallest set of
+   columns it must retain for the plan to keep working and return names?
+3. Construct a wrong early projection, then find the smallest input that
+   exposes the mistake.
+4. Add two employees named Ada and run `Project(name)`. How does the result
+   differ from textbook `π`?
+
+<details>
+<summary>Check your reasoning</summary>
+
+1. The filters are equivalent in either order. A row reaches the root only
+   when both predicates are true.
+2. The early projection must retain `id`, `salary`, and `name`: two columns for
+   the predicates and one for the final answer. It cannot remove anything from
+   our three-column rows.
+3. For example, keeping only `name` before `salary > 50000` fails on a
+   one-row input because the predicate cannot find `salary`.
+4. Our project returns two identical `{name: "Ada"}` rows. Textbook projection
+   produces one because mathematical relations do not contain duplicates.
+
+</details>
+
+The final behavior also has a repository test. It prevents a future refactor
+from silently making the educational operator claim untrue.
+
+`src/plan.rs`: duplicate-preserving projection
+
+```rust
+#[test]
+fn project_preserves_duplicate_rows() {
+    let rows = vec![
+        Row::new(vec![("name", Value::Text("Ada".to_string()))]),
+        Row::new(vec![("name", Value::Text("Ada".to_string()))]),
+    ];
+    let plan = Plan::Project {
+        columns: vec!["name".to_string()],
+        input: Box::new(Plan::Scan { rows }),
+    };
+
+    let result = plan.execute();
+
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0], result[1]);
+}
 ```
 
-Before reading further, decide whether the plans are equivalent. Do not check
-only Ada, Linus, and Grace. Imagine an arbitrary employee row and ask what must
-be true for that row to reach the root of each plan.
+## 2.9 From SQL to a plan
 
-In Plan A, a row survives only if its salary is greater than 50,000 and its
-`id` is greater than 1. Plan B asks the same two questions in the opposite
-order. A row that passes both reaches either root. A row that fails either is
-removed by both. The plans are equivalent for every valid input.
+We can now read a logical plan as transformations of relations and compare two
+plans by their meaning. Yet every plan in the program is still assembled from
+Rust enum values. A person should not need to write
+`Box::new(Plan::Filter { ... })` merely to ask for employee names.
 
-This conclusion depends on the operations having no side effects and on both
-conditions being defined for the input. Our small filters only inspect a row
-and decide whether to keep it, so swapping these two filters preserves the
-answer. More complicated operations will require their own reasoning rather
-than borrowing this conclusion automatically.
-
-## 2.11 A better way to write the request
-
-We can now read a plan as transformations of relations and compare two plans by
-their meaning. Yet every plan in our program is still assembled directly from
-Rust enum values. A person asking a database a question should not need to
-write `Box::new(Plan::Filter { ... })` merely to find two employee names.
-
-SQL provides a more convenient way to express that request. Its words and
-punctuation are not the plan itself. They are a source language from which the
-database can build a plan. The plan then carries the meaning we studied here,
+SQL provides a convenient way to express the request. Its words and
+punctuation are not the plan itself. They are source text from which the
+database can build a plan. The plan carries the meaning we studied here,
 regardless of the text that produced it.
 
-That separation gives us our next problem. How does a database turn characters
-such as `SELECT`, `FROM`, and `WHERE` into the tree our engine already knows how
-to execute? In Chapter 3, we will build the smallest SQL frontend needed to
-answer that question.
+That separation creates our next problem. How does a database turn characters
+such as `SELECT`, `FROM`, and `WHERE` into the tree our engine knows how to
+execute? The next lesson builds the smallest SQL frontend needed to answer
+that question.
