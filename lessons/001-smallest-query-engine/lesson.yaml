@@ -32,7 +32,51 @@ thumbnail:
   output: dist/thumbnails/001-smallest-query-engine.png
 
 publishing:
-  youtube_playlist_id: PLSyokgEjsYrc
+  youtube:
+    video_id: 57IAZvOUHcg
+    playlist_id: PLSyokgEjsYrc
+    title: "The Smallest Query Engine | Database: Zero to Distributed #1"
+    description: |-
+      How does a database turn a known query into rows?
+
+      In the first lesson of Database: Zero to Distributed, we build a tiny query engine in Rust using three operations: Scan, Filter, and Project. We then follow rows through the plan and expose the limitations of materialized execution.
+
+      Read the free book:
+      https://shashankkhasare.github.io/database-zero-to-distributed/001-smallest-query-engine.html
+
+      Source code for this lesson:
+      https://github.com/shashankkhasare/database-zero-to-distributed/tree/lesson-001
+
+      Project repository:
+      https://github.com/shashankkhasare/database-zero-to-distributed
+
+      00:00 Introduction
+      00:05 A query and its result
+      01:27 A query as small transformations
+      02:25 Rows and values
+      03:48 The query plan
+      05:10 Executing the plan
+      07:11 Running the query
+      07:56 Materialized execution
+      08:47 Relational algebra
+      09:29 Next lesson
+    tags:
+      - database
+      - distributed systems
+      - query engine
+      - Rust
+      - SQL
+      - database internals
+    category_id: "27"
+    default_language: en
+    privacy_status: private
+    made_for_kids: false
+    embeddable: true
+    notify_subscribers: false
+    captions:
+      file: build/video/001/captions/lesson.srt
+      language: en
+      name: English
 
 music:
   module: video/music/001-theme.mjs

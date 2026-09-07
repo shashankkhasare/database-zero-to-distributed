@@ -496,3 +496,24 @@ Keep stable destination identifiers, such as the YouTube playlist ID, under
 management URL so automated publishing can construct viewer-facing and API
 requests without depending on a private browser route. Credentials and OAuth
 tokens must remain outside the repository.
+
+Lesson publishing uses the official YouTube Data API through three commands:
+
+```bash
+npm run youtube:auth -- --client-secrets <desktop-client.json>
+npm run youtube:publish -- 001
+npm run youtube:publish -- 001 --execute
+npm run youtube:publish-verify -- 001
+```
+
+`youtube:publish` is a non-mutating validation by default. `--execute` uploads
+the declared MP4 as private, sets its thumbnail, uploads its timed caption
+track, and adds it to the declared playlist. OAuth tokens and resumable
+publishing state are stored outside the repository under the operating
+system's local application-data directory. After upload, record the returned
+`video_id` in `lesson.yaml` so another machine can verify the published lesson
+without depending on local state.
+
+YouTube restricts uploads from unaudited API projects to private visibility.
+Make a video public manually until the Google Cloud project has passed the
+required YouTube API audit. Never automate the browser UI as a workaround.

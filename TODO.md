@@ -93,13 +93,17 @@ and publication, not further lesson development.
 
 - [x] Deploy the web book and add it to the GitHub About panel
 - [x] Create the YouTube course playlist and record its stable ID
+- [x] Define manifest-driven YouTube metadata and delivery-asset paths
+- [x] Add dry-run-first OAuth, upload, and publishing-verification commands
+- [x] Authorize the publisher for the channel owner account
 - [x] Commit all Lesson 001 sources and release metadata
 - [x] Rebuild and verify Lesson 001 from an isolated clean checkout
 - [x] Review dependency advisories that affect the release
 - [x] Push the verified release commit
 - [x] Create and push the `lesson-001` tag
-- [ ] Upload the MP4, captions, and thumbnail to YouTube as unlisted
-- [ ] Verify YouTube processing, subtitles, metadata, and playlist placement
+- [x] Upload the MP4 and captions to YouTube as private
+- [x] Verify YouTube processing, subtitles, metadata, and playlist placement
+- [x] Enable custom thumbnails for the channel and upload the lesson thumbnail
 - [ ] Make the video and playlist public
 - [ ] Mark curriculum milestone 001 complete
 

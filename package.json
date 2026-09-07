@@ -21,10 +21,14 @@
     "video:preview": "node video/scripts/render-preview.mjs",
     "video:compose": "node video/scripts/compose-final.mjs",
     "video:verify": "node video/scripts/verify-video.mjs",
-    "video:render": "node video/scripts/build-video.mjs"
+    "video:render": "node video/scripts/build-video.mjs",
+    "youtube:auth": "node video/scripts/youtube-auth.mjs",
+    "youtube:publish": "node video/scripts/youtube-publish.mjs",
+    "youtube:publish-verify": "node video/scripts/youtube-publish-verify.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
+    "googleapis": "178.0.0",
     "kokoro-js": "1.2.1",
     "yaml": "2.9.0"
   },
