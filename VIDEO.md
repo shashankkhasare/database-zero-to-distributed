@@ -32,6 +32,12 @@ npx playwright install chromium
 FFmpeg and FFprobe must be available on `PATH`. The first audio build downloads
 the pinned Kokoro model into the external cache documented below.
 
+On Windows, the Rust MSVC toolchain also requires the **Desktop development
+with C++** workload and a current Windows SDK from Visual Studio Installer.
+Run clean release checks from a Visual Studio Developer PowerShell or another
+terminal initialized with `VsDevCmd.bat`; otherwise Rust may find `link.exe`
+without finding SDK libraries such as `kernel32.lib`.
+
 # Narration approach
 
 Begin each episode with a concrete question, visible transformation, or
@@ -50,50 +56,37 @@ aloud, listing definitions without motivation, or copying book prose verbatim.
 
 # Directory contract
 
-Create only the directories required by the first working prototype:
+Lesson-specific sources and generated artifacts currently follow this layout:
 
 ```text
 lessons/
 └── 001-smallest-query-engine/
+    ├── expected-output.txt
     ├── lesson.yaml
-    ├── narration.md
     ├── narration-beats.json
-    ├── scenes.md
-    └── expected-output.txt
+    ├── narration.md
+    └── scenes.md
 
 video/
-├── components/
-│   ├── 001-employee-table.mjs
-│   ├── 001-plan-tree.mjs
-│   └── scene-utils.mjs
-├── scenes/
-│   ├── 001-project-ident.mjs
-│   ├── 001-question-and-result.mjs
-│   └── 001-materialized-execution.mjs
-├── scripts/
-│   ├── generate-audio.mjs
-│   ├── generate-captions.mjs
-│   ├── render-scenes.mjs
-│   ├── compose-video.mjs
-│   └── verify-video.mjs
-├── templates/
+├── components/       reusable and lesson-specific visual objects
+├── music/            deterministic music source modules
+├── scenes/           programmatic scene and thumbnail modules
+├── scripts/          generation, rendering, composition, and verification
+├── styles/           shared player layout and visual styles
+├── player.html
+├── player.mjs
 └── pronunciation.json
 
 build/
 └── video/
-    └── 001/
-        ├── audio/
-        ├── captions/
-        ├── frames/
-        └── preview.mp4
+    └── 001/           generated audio, timing, captions, frames, and previews
 
 dist/
+├── thumbnails/
+│   └── 001-smallest-query-engine.png
 └── videos/
     └── 001-smallest-query-engine.mp4
 ```
-
-The exact shared script set may shrink or change while building the prototype.
-Do not create empty scripts merely to match this drawing.
 
 # Animation strategy
 
@@ -443,14 +436,14 @@ npm run video:verify -- 001
 ```
 
 Without `--fps`, `video:frames` captures a small set of review timestamps and
-checks that two captures at each timestamp are identical. The next pipeline
-revision will derive these timestamps from narration beats, accept editorial
-checkpoints, and produce scene contact sheets. With `--fps`, it renders every
-frame needed by `video:scene-preview`. Twelve frames per second is suitable for
-a quick animation review; use the final delivery rate only after the scene's
-pacing has been approved. Once a complete frame set exists, `--from` and
-`--to` may regenerate only a changed time range while preserving the other
-frames.
+checks that two captures at each timestamp are identical. `video:review`
+derives its timestamps from narration beats, adds editorial checkpoints from
+the lesson manifest, and produces scene contact sheets. With `--fps`,
+`video:frames` renders every frame needed by `video:scene-preview`. Twelve
+frames per second is suitable for a quick animation review; use the final
+delivery rate only after the scene's pacing has been approved. Once a complete
+frame set exists, `--from` and `--to` may regenerate only a changed time range
+while preserving the other frames.
 
 `video:preview` validates every source reference, reuses only fingerprinted
 frames or encoded clips, composes each scene with its measured audio segment,
@@ -467,8 +460,12 @@ exhaust disk space. Override that value only when the machine has enough CPU,
 memory, and temporary storage:
 
 ```bash
-VIDEO_RENDER_WORKERS=3 npm run video:preview -- 001 12
+VIDEO_RENDER_WORKERS=3 npm run video:render -- 001 --clean
 ```
+
+In PowerShell, set `$env:VIDEO_RENDER_WORKERS = "3"` before running the npm
+command. Three workers produced the verified Lesson 001 release on the current
+development machine; lower the value if memory or disk pressure becomes high.
 
 The final file path, dimensions, frame rate, and caption language are declared
 under `video` in `lesson.yaml`. Generated previews remain under `build/`; only

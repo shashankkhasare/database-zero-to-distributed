@@ -94,7 +94,7 @@ and publication, not further lesson development.
 - [x] Deploy the web book and add it to the GitHub About panel
 - [x] Create the YouTube course playlist and record its stable ID
 - [x] Commit all Lesson 001 sources and release metadata
-- [ ] Rebuild and verify Lesson 001 from an isolated clean checkout
+- [x] Rebuild and verify Lesson 001 from an isolated clean checkout
 - [x] Review dependency advisories that affect the release
 - [ ] Push the verified release commit
 - [ ] Create and push the `lesson-001` tag
@@ -107,6 +107,13 @@ The release audit on 2026-09-07 upgraded `yaml` to 2.9.0. The remaining npm
 findings originate in `sharp` through the pinned local narration stack, have no
 available upstream fix, and are accepted while the pipeline processes only
 trusted repository inputs.
+
+The isolated clean build regenerated the 575.968-second MP4 and thumbnail from
+commit `e0b0878`. Both files were byte-for-byte identical to the reviewed
+delivery artifacts. A new agent should follow the bootstrap order in
+`AGENTS.md`, then resume at the first unchecked item under **Publication**.
+Generated files are intentionally ignored and can be recreated with the clean
+command documented in `VIDEO.md`.
 
 ---
 
