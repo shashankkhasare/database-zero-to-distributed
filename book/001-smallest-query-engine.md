@@ -55,10 +55,6 @@ does not satisfy the condition, and remove every column except the name. There
 is only one awkward detail: we have not built a database yet. Fortunately, an
 absent database gives us no old design that must be preserved.
 
-We will postpone reading SQL, saving data to disk, and building shortcuts for
-finding rows quickly. Those features matter, but none is required to understand
-how rows move through a query.
-
 By the end of the chapter, we will have represented the table in Rust,
 described the required work, executed it, and tested each operation separately.
 That is not much of a database, but it is enough database to teach us how a
@@ -67,6 +63,18 @@ query engine begins.
 This chapter uses a small amount of Rust without pausing to teach the language.
 If any syntax is unfamiliar, keep [Appendix A](appendix-a-enough-rust.md) nearby
 and return here when the code is readable again.
+
+If you are building beside the book in an empty directory, create the Rust
+project first:
+
+```bash
+cargo new --bin database-zero-to-distributed
+cd database-zero-to-distributed
+```
+
+This command creates `Cargo.toml` and a starter `src/main.rs`. If you cloned the
+book's repository instead, those files already exist and you can continue from
+there.
 
 ## 1.1 Begin without SQL
 
@@ -111,6 +119,20 @@ pub enum Value {
     Integer(i64),
     Text(String),
 }
+```
+
+Rust compiles a source file only after it is included in the program's module
+tree. Add the new `row` module at the top of the starter file. The row types are
+not used yet, but `cargo check` can now confirm that the declarations compile.
+
+`src/main.rs`: add at the top of the file
+
+```rust
+mod row;
+```
+
+```bash
+cargo check
 ```
 
 `Integer` and `Text` cover every cell in our employee table. Keeping the two
@@ -332,6 +354,18 @@ pub enum Plan {
 }
 ```
 
+This first filter is deliberately narrow. It compares one integer column with
+`>`. That is enough for the employee query, and we will generalize predicates
+when another query requires more.
+
+Include the second source file in the module tree as soon as we create it.
+
+`src/main.rs`: add above `mod row;`
+
+```rust
+mod plan;
+```
+
 For our employee query, those nodes and their attributes form this structure:
 
 ```text
@@ -368,8 +402,8 @@ let's teach the plan how to execute.
 ## 1.4 Execute the plan
 
 Our plan currently describes work but cannot perform it. We will give `Plan` a
-project-specific method named `execute()`. Calling it asks that plan to run and
-return its result rows.
+method named `execute()`. Calling it asks that plan to run and return its result
+rows.
 
 Calling `execute()` on the project does not begin by projecting a row. The
 project has no rows yet. It first asks its input, the filter, to execute. The
@@ -412,11 +446,6 @@ placeholder for each operation, then replace them one at a time.
 `src/plan.rs`: add an implementation block after the `Plan` enum
 
 ```rust
-pub enum Plan {
-    // Same as before.
-}
-
-// Add this block.
 impl Plan {
     pub fn execute(&self) -> Vec<Row> {
         match self {
@@ -432,6 +461,39 @@ Each `todo!()` marks behavior we have not implemented yet. The temporary
 version gives every kind of plan node a place in `execute()`, allowing us to
 build the executor in the same order that rows travel upward: scan, filter,
 then project.
+
+Before replacing the placeholders, let one run. Temporarily replace the starter
+program with the smallest plan that calls `execute()`.
+
+`src/main.rs`: temporarily replace the file
+
+```rust
+mod plan;
+mod row;
+
+use plan::Plan;
+
+fn main() {
+    let plan = Plan::Scan { rows: Vec::new() };
+    plan.execute();
+}
+```
+
+```bash
+cargo run --quiet
+```
+
+The program stops at the first unfinished operation:
+
+```text
+thread 'main' panicked:
+not yet implemented: execute scan
+```
+
+Rust may also print the source location and a note about backtraces. The panic
+is useful here: it proves that execution reached the scan placeholder. We can
+now replace that placeholder with real behavior and continue upward through
+the plan.
 
 ### 1.4.1 Scan returns its rows
 
@@ -496,8 +558,10 @@ Plan::Filter {
 > **Production note: Invalid plans**
 >
 > Stopping is a temporary shortcut, not a claim about good database behavior.
-> Once plans come from user-written SQL, invalid names and incompatible types
-> will need ordinary error messages instead of a panic.
+> Both filtering and `Row::project()` currently panic when a requested column
+> is missing; filtering also panics when its column contains text instead of an
+> integer. Once plans come from user-written SQL, invalid names and incompatible
+> types will need ordinary error messages instead.
 
 ### 1.4.3 Project makes each row smaller
 
@@ -653,7 +717,8 @@ These experiments stay within the ideas from this chapter:
 2. Project both `name` and `salary`. Notice that the requested column order
    becomes the output order.
 3. Reverse the employee input rows. Confirm that the output order changes in
-   the same way.
+   the same way. This demonstrates how our current `Vec<Row>` implementation
+   behaves; it is not yet a guarantee of the relational model.
 4. Add an employee who earns 50,001 and confirm that the strict comparison
    includes the new row.
 

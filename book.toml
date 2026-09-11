@@ -19,3 +19,6 @@ site-url = "/database-zero-to-distributed/"
 [output.html.fold]
 enable = false
 level = 0
+
+[output.html.playground]
+runnable = false
