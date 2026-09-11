@@ -160,6 +160,10 @@ structure, so we do not need to draw it again.
 > rows in a `Vec<Row>` and produces one projected row for every input row. If
 > two employees are named Ada, `Project(name)` returns two Ada rows. This is
 > closer to SQL projection without `DISTINCT` than to textbook `π`.
+>
+> Chapter 1's third experiment showed that reversing the input also reverses
+> our output. That observation describes this `Vec<Row>` implementation, not a
+> promise made by the relational model, which does not define row order.
 
 ## 2.4 What makes two plans equivalent?
 
