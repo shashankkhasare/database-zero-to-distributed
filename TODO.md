@@ -23,7 +23,7 @@ not design distant lessons prematurely.
 - [x] Add `kokoro-js` as the initial local narration engine
 - [x] Add a full `LICENSE` file
 - [x] Publish Rust orientation as optional Appendix A instead of lesson 000
-- [x] Use `lesson-NNN` tags for completed, verified lesson states
+- [x] Use one movable `lesson-NNN` tag per verified lesson while the series is in active development
 - [x] Define the smallest lesson directory only when lesson 001 needs it
 
 ---
@@ -345,6 +345,7 @@ streaming execution, or new query operators.
 - [x] Derive review timestamps from narration beats and editorial checkpoints
 - [x] Generate per-scene contact sheets before full-frame rendering
 - [x] Fingerprint scene sources, timing, dimensions, and frame rate for safe reuse
+- [ ] Record the exact repository source commit in every published lesson manifest
 - [ ] Render independent frame ranges with parallel browser workers
 - [x] Limit deterministic double capture to review checkpoints
 - [ ] Support optional NVENC encoding for disposable review previews
@@ -354,6 +355,7 @@ streaming execution, or new query operators.
 
 # Release and maintenance
 
+- [x] Define temporary lesson branches, forward-merged corrections, and one movable tag per lesson
 - [ ] Add continuous integration after the Cargo project exists
 - [ ] Check formatting, Clippy, tests, demos, links, and generated artifacts in CI
 - [ ] Document supported development platforms

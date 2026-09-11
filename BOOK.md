@@ -381,8 +381,11 @@ could reasonably wonder where it belongs. Mark omitted existing code clearly,
 and explain temporary placeholders when an incremental snippet is not yet the
 final implementation.
 
-When a chapter requires the reader to make several edits, the tagged lesson
-state remains the final reference implementation.
+When a chapter requires the reader to make several edits, its latest verified
+`lesson-NNN` tag remains the final reference implementation for that stage.
+During active series development, an accepted correction may move that tag
+after the complete lesson is verified again. Never point an older lesson tag at
+a main-branch state that already includes later lessons.
 
 ---
 

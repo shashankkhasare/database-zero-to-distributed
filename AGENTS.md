@@ -823,7 +823,7 @@ Large refactors make it difficult for learners to understand what changed betwee
 
 # 35. Git history matters
 
-The repository may use tags such as:
+Completed lessons use one tag per chapter:
 
 ```text
 lesson-001
@@ -831,14 +831,39 @@ lesson-002
 lesson-003
 ```
 
-Each tagged state should ideally:
+Each tagged state should:
 
 - compile
 - pass tests
 - run its demo
 - match the corresponding lesson
 
-The evolution between tags is part of the learning material.
+During active development of the series, a lesson tag is a movable verified
+checkpoint rather than an immutable release. Move it only when the complete
+lesson state, including affected code, book, video sources, metadata, tests,
+and reproducible outputs, has been corrected and verified again. Once the
+series is declared stable, existing lesson tags become immutable.
+
+Do not keep one permanent branch per chapter. Develop the current lesson on a
+temporary `lesson/003` branch when isolation is useful, then merge it into the
+main branch and delete it. Correct an older lesson on a temporary branch
+created from its tag, for example `fix/lesson-001`.
+
+An older-lesson correction follows this sequence:
+
+1. branch from the existing lesson tag
+2. make only the correction and any reproducibility updates it requires
+3. verify the complete lesson at that historical stage
+4. merge the correction into the main branch so future lessons inherit it
+5. replace the one lesson tag with the corrected branch tip
+6. update the remote tag and delete the temporary correction branch
+
+Never move an older tag to the tip of the current main branch when that branch
+already contains later lessons. The tag must still represent its own lesson's
+stage of the system. A published video must record the exact commit used to
+build it; a movable lesson tag is not sufficient provenance by itself.
+
+The evolution between lesson tags is part of the learning material.
 
 ---
 

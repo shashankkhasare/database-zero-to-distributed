@@ -421,7 +421,7 @@ Every lesson should correspond to a reproducible state of the database.
 
 Example tags:
 
-Completed lessons use the tag form `lesson-NNN`, where `NNN` is the
+Completed lessons use one tag in the form `lesson-NNN`, where `NNN` is the
 three-digit lesson ID. A lesson tag is created only after its code, book,
 video, and reproducible build checks pass.
 
@@ -439,6 +439,13 @@ git checkout lesson-018
 ```
 
 and see exactly the implementation shown in that lesson.
+
+While the series is being developed, an accepted correction may replace a
+lesson tag after that complete lesson has been rebuilt and verified. The
+correction is also merged into `master`, so every later lesson inherits it.
+Temporary lesson and correction branches are deleted after merging; the
+project does not maintain a permanent branch for every chapter. Once the
+series reaches a declared stable release, lesson tags become immutable.
 
 The evolution of the codebase is part of the curriculum.
 

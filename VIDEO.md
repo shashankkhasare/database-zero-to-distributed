@@ -471,6 +471,27 @@ The final file path, dimensions, frame rate, and caption language are declared
 under `video` in `lesson.yaml`. Generated previews remain under `build/`; only
 the verified delivery file is written under `dist/videos/`.
 
+# Release provenance and lesson corrections
+
+Each published episode must record the full repository commit used to build
+its delivery assets. The exact commit is the video's provenance; the movable
+`lesson-NNN` tag is a convenient course checkpoint, not a substitute for that
+commit hash.
+
+While the series is under active development, an older lesson may be corrected
+on a temporary branch created from its tag. If the correction affects
+narration, scenes, demonstrations, captions, thumbnails, metadata, or final
+composition, rebuild and verify those affected assets before moving the tag.
+Merge the correction into the main branch so later lessons inherit it, replace
+the single lesson tag with the corrected historical-stage commit, and delete
+the temporary branch.
+
+Do not move a tag for a source change while leaving a published video that no
+longer matches the tagged state. A book-only typo may be fixed on the main
+branch without moving the lesson tag. Once the series is declared stable,
+lesson tags become immutable and later corrections require an explicit release
+policy rather than rewriting published history.
+
 # Thumbnail
 
 Each published episode has a dedicated thumbnail source rather than using an
