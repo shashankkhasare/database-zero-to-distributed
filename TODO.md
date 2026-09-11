@@ -76,6 +76,7 @@ and publication, not further lesson development.
 - [x] Document intentional limitations and lead into relational algebra
 - [x] Add and review original lesson illustrations and the chapter epigraph
 - [x] Verify the generated book and its internal links
+- [x] Correct Rust fragment rendering, project scaffolding, executor context, and cross-chapter ordering guidance
 
 ## Video
 

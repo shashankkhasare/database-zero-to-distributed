@@ -5,3 +5,4 @@ dist/videos/
 dist/thumbnails/
 .cache/
 debug.log
+client_secret_*.apps.googleusercontent.com.json
