@@ -80,6 +80,13 @@ curriculum step is milestone 002, Relational Algebra Without the Math.
 
 ## Video
 
+- [x] Remove repeated full employee transformations from the revised episode
+- [x] Rewrite narration into shorter TTS beats with pauses after visible results
+- [x] Compare generated voices and speeds; select `af_heart` at speed `0.82`
+- [x] Move the concrete table-and-result hook into the first twelve seconds
+- [x] Retain one slow transformation, one named-tree execution, and one short algebra callback
+- [x] Regenerate captions, render review artifacts, and inspect the revision at 1.25 times speed
+- [x] Rebuild and verify the final episode before moving `lesson-001`
 - [x] Review the narration, pronunciation, scene plan, and final episode
 - [x] Generate narration from a pinned Kokoro model revision
 - [x] Implement all declared scenes with stable lesson-prefixed modules
@@ -108,16 +115,16 @@ curriculum step is milestone 002, Relational Algebra Without the Math.
 - [x] Make the video and playlist public
 - [x] Mark curriculum milestone 001 complete
 
-The release audit on 2026-09-07 upgraded `yaml` to 2.9.0. The remaining npm
+The release audit was repeated on 2026-09-12. The remaining npm
 findings originate in `sharp` through the pinned local narration stack, have no
 available upstream fix, and are accepted while the pipeline processes only
 trusted repository inputs.
 
-The isolated clean build regenerated the 575.968-second MP4 and thumbnail from
-commit `e0b0878`. Both files were byte-for-byte identical to the reviewed
-delivery artifacts. A new agent should follow the bootstrap order in
-`AGENTS.md`, then begin milestone 002 from its roadmap entry before expanding
-its checklist here.
+The revised build generated a 761.618-second, 1920 by 1080 MP4 at 29.996 FPS
+with H.264 video, AAC audio, and selectable English captions. The thumbnail was
+regenerated from its committed scene source. A new agent should follow the
+bootstrap order in `AGENTS.md`, then begin milestone 002 from its roadmap entry
+before expanding its checklist here.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
 

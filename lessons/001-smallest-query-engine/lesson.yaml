@@ -13,10 +13,26 @@ audio:
   dtype: q8
   device: cpu
   voice: af_heart
-  speed: 1.0
+  speed: 0.82
   format: wav
   sample_rate: 24000
   channels: 1
+  voice_review:
+    scene: execute-the-plan
+    paragraphs: [13, 31]
+    candidates:
+      - name: adam-070
+        voice: am_adam
+        speed: 0.70
+      - name: adam-074
+        voice: am_adam
+        speed: 0.74
+      - name: adam-078
+        voice: am_adam
+        speed: 0.78
+      - name: heart-082
+        voice: af_heart
+        speed: 0.82
 
 video:
   width: 1920
@@ -94,7 +110,7 @@ music:
     fade_out: 1.2
 
 review:
-  checkpoints: [20, 34, 53, 75, 120, 145, 160, 173, 208, 220, 260, 268, 283, 348, 457, 466, 480, 504, 514, 527, 563.8]
+  checkpoints: [10.25, 25.725, 38.8, 48.65, 71.225, 79.1, 85.075, 95.075, 108.3, 128.8, 164.375, 176.875, 196.2, 222.825, 245.1, 273.525, 291.725, 316.25, 332.05, 360.025, 391.9, 404.825, 408.9, 430.925, 450.325, 465.175, 477.575, 488.725, 503.95, 519.65, 536.15, 550.35, 570.275, 577.325, 583.85, 593.65, 614.475, 623.725, 630.125, 646.675, 657.175, 671.8, 687.625, 696.325, 707.725, 723.95, 733.825, 745.225, 749.575]
 
 ident:
   id: project-ident

@@ -11,7 +11,7 @@ import {
   windowOpacity,
 } from "../components/scene-utils.mjs";
 
-export const duration = 50.625;
+export const duration = 63.9;
 
 export function renderScene(root, requestedTime) {
   const time = clamp(requestedTime, 0, duration);
@@ -30,10 +30,10 @@ export function renderScene(root, requestedTime) {
     createEmployeeTable({ columns: ["name"], rows: rows.filter((row) => row.name !== "Linus"), compact: true }),
   );
   stages.append(scan, createArrow(), filter, createArrow(), project);
-  setStyle(scan, { opacity: String(fade(time, 0.5, 3.0)) });
-  setStyle(filter, { opacity: String(fade(time, 6.0, 9.0)) });
-  setStyle(project, { opacity: String(fade(time, 11.5, 14.5)) });
-  setStyle(stages, { opacity: String(windowOpacity(time, 0, 0.5, 16.0, 19.0)) });
+  setStyle(scan, { opacity: String(fade(time, 0.5, 2.325)) });
+  setStyle(filter, { opacity: String(fade(time, 6.4, 8.0)) });
+  setStyle(project, { opacity: String(fade(time, 12.95, 14.5)) });
+  setStyle(stages, { opacity: String(windowOpacity(time, 0, 0.5, 21.0, 22.95)) });
   scene.append(stages);
 
   const memory = element("section", "memory-frame");
@@ -44,7 +44,7 @@ export function renderScene(root, requestedTime) {
     element("div", "materialized-term", "MATERIALIZED RESULTS"),
   );
   setStyle(memory, {
-    opacity: String(windowOpacity(time, 16.0, 19.0, 35.0, 37.0)),
+    opacity: String(windowOpacity(time, 22.95, 25.0, 39.0, 40.825)),
   });
   scene.append(memory);
 
@@ -55,8 +55,8 @@ export function renderScene(root, requestedTime) {
     element("div", "streaming-preview__note", "A later lesson will change this"),
   );
   setStyle(comparison, {
-    opacity: String(fade(time, 35.0, 38.0)),
-    transform: `translateY(${lerp(24, 0, ease(fade(time, 35.0, 38.0)))}px)`,
+    opacity: String(fade(time, 40.825, 43.0)),
+    transform: `translateY(${lerp(24, 0, ease(fade(time, 40.825, 43.0)))}px)`,
   });
   scene.append(comparison);
   root.append(scene);

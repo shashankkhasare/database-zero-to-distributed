@@ -1,367 +1,273 @@
 # Lesson 001 Scene Plan
 
-This document is the human-reviewable plan for lesson 001's visuals. Each
-section is tied to stable narration beat IDs. Timing is measured from the start
-of the section, so the scene can be rendered by itself during review or placed
-at its generated start time in the complete episode.
+This is the human-reviewable visual contract for Lesson 001. Stable beat IDs
+come from `narration-beats.json`; measured times come from generated
+`build/video/001/timing.json`. JavaScript modules under `video/scenes/` are the
+executable source of truth.
 
-The document describes what the viewer should understand and what changes on
-screen. The programmatic implementation in `video/scenes/` remains the source
-of truth for the rendered animation.
+## Visual rules
 
-## Visual language
+- Keep the employee table and the two-name result visually consistent whenever
+  they return.
+- Use green for rows that survive, muted red for a rejected row, and neutral
+  colors for untouched data.
+- Filtering must remove a row and close its vertical gap. Projection must keep
+  the row count while removing columns horizontally.
+- Preserve the two-name result card after its first reveal. Later scenes may
+  move, shrink, or relabel it, but should not reconstruct it from scratch.
+- Show the complete employee transformation only twice: once slowly in the
+  opening and once through the named execution tree.
+- Keep titles above the shared content stage and reserve the lower caption-safe
+  region for one-line subtitles.
+- Prefer one meaningful visual change per spoken idea. Hold completed results
+  long enough to read.
+- Do not show Rust syntax unless the repository's real code is the subject.
 
-- Use a warm, quiet background with high-contrast text and restrained color.
-- Give employee rows one consistent visual form wherever they reappear.
-- Use color to carry meaning: neutral for untouched data, green for rows that
-  continue, and muted red for a row that does not satisfy a condition.
-- Prefer transformation over replacement. When data changes, let the viewer
-  see what disappeared and what remained.
-- Keep permanent labels short. The narration and captions provide detail.
-- Reserve the lower caption-safe area for generated captions.
-- Do not show Rust code unless understanding the code is the point of a scene.
+## Episode structure
 
-## First-preview corrections
+The instructional timeline is measured after the five-second ident.
 
-The first complete preview was reviewed at 1920 by 1080. Apply these
-corrections before the next full render:
+| Scene | Beat range | Instructional time | Purpose |
+|---|---|---:|---|
+| Question and result | `question-and-result-001..020` | 0:00-1:41.350 | Predict and visibly derive the answer |
+| Core idea | `core-idea-001..017` | 1:41.350-2:56.875 | Split the work into three independent transformations |
+| Rows and values | `rows-and-values-001..028` | 2:56.875-4:51.725 | Explain what moves through the operators |
+| Plan structure | `plan-structure-001..026` | 4:51.725-6:48.900 | Name the operators and arrange their dependencies as a tree |
+| Execute the plan | `execute-the-plan-001..043` | 6:48.900-9:37.325 | Send requests down and rows up through the tree |
+| Run the query | `run-the-query-001..012` | 9:37.325-10:23.725 | Confirm the model using the real program |
+| Materialized execution | `materialized-execution-001..013` | 10:23.725-11:27.625 | Expose complete intermediate collections in memory |
+| Relational algebra | `relational-algebra-001..013` | 11:27.625-12:29.575 | Name the language and hand off to Lesson 002 |
 
-- Add a four- to six-second original project ident before the instructional
-  opening and index it as a scene in `lesson.yaml`.
-- End with a seven-second card naming lesson 002 and returning to the question
-  posed by the final narration beat.
-- Center every main composition optically inside the shared content stage,
-  leaving the title and single-line caption regions clear.
-- In `question-and-result`, give the employee table, SQL, database operation,
-  and result separate positions. The database frame and result must not cover
-  the table or query.
-- In `rows-and-values`, keep the `Value`, `Integer`, and `Text` explanation
-  separate from the row-representation cards. Remove earlier visual states
-  before later states occupy their space.
-- In `plan-structure`, show `Scan` feeding rows upward to `Filter`, then
-  `Filter` feeding rows upward to `Project`. Do not use a downward `input`
-  diagram that implies Project supplies data to Filter. Center the question
-  `How does this description produce rows?` inside the content stage.
-- In `execute-the-plan`, reserve independent space for the predicate panel and
-  moving employee rows so neither can cover the other.
-- In `materialized-execution`, keep the preceding visual until its narration
-  ends. The million-row question begins only with its assigned narration beat.
-- In every scene, inspect the reported editorial checkpoints together with the
-  start and end of each narration beat before rendering the complete episode.
-- Render captions as one-line phrase cues. Split a long sentence across
-  multiple consecutive cues instead of wrapping it onto two lines.
+## Project ident
 
-## Core idea
+**Duration:** 5 seconds
 
-**Narration beats:** `core-idea-001` through `core-idea-004`
-**Generated episode time:** 82.225 to 139.675 seconds
-**Section duration:** 57.450 seconds
-
-### Purpose
-
-Give the viewer a mental model of a query as several small transformations.
-The scene should make three facts visible before introducing database terms:
-
-1. rows enter a sequence of operations
-2. each operation changes only one aspect of the data
-3. the output of one operation becomes the input of the next
-
-### Starting state
-
-Continue from the previous section's employee table. The SQL text recedes and
-the table moves to the left, preserving visual continuity. Three empty rounded
-boxes appear to its right with space between them for connectors.
-
-Use this source table throughout the lesson:
-
-| id | name  | salary |
-|---:|-------|-------:|
-| 1  | Ada   | 70000  |
-| 2  | Linus | 50000  |
-| 3  | Grace | 72000  |
-
-### Beat `core-idea-001`
-
-**Local time:** 0.000 to 15.225 seconds, including the trailing pause
-
-As “Forget the SQL syntax” is spoken, finish fading the SQL text and bring the
-three boxes into focus from left to right. Connect them with simple horizontal
-lines. Do not use the database terms scan, filter, or project yet.
-
-Reveal one plain-language label with each description:
-
-```text
-READ ROWS  ->  KEEP MATCHING ROWS  ->  KEEP REQUESTED COLUMNS
-```
-
-Briefly brighten the corresponding box when the narration describes it. The
-employee table remains beside the first box so the boxes already feel like a
-path the data can follow.
-
-**End state:** the source table and all three labeled boxes are visible.
-
-### Beat `core-idea-002`
-
-**Local time:** 15.225 to 35.375 seconds, including the trailing pause
-
-This beat performs the complete transformation slowly enough to follow:
-
-1. Move a copy of all three complete rows into `READ ROWS` and then toward
-   `KEEP MATCHING ROWS`.
-2. When the narration says “two complete rows,” tint Linus's row muted red,
-   fade it out, and close the space it occupied. Ada and Grace remain green.
-3. Move the two surviving rows toward `KEEP REQUESTED COLUMNS`.
-4. When the narration says “only names,” fade the `id` and `salary` cells and
-   let the `name` cells slide together into the final two-row result.
-
-After the final result appears, highlight one box at a time as the narration
-says that each performs one small transformation. A small pulse should cross
-each connector to show that the result is handed to the next box.
-
-**End state:** each box contains its own stage of the data: three full rows,
-two full rows, and two name-only rows.
-
-### Beat `core-idea-003`
-
-**Local time:** 35.375 to 49.175 seconds, including the trailing pause
-
-Pull back slightly so all three operations read as one connected system. As
-“not one large piece of code” is spoken, keep the three separate boxes visible.
-The contrast is already present in the diagram, so do not introduce a symbol
-for the hypothetical large piece of code.
-
-Draw a subtle bracket around the whole sequence and label it `QUERY ENGINE`.
-Then illuminate the boxes in order to reinforce that the engine is the
-connected arrangement of small operations, not any one box.
-
-**End state:** the three transformations remain visible inside the query-engine
-bracket.
-
-### Beat `core-idea-004`
-
-**Local time:** 49.175 to 57.450 seconds, including the trailing pause
-
-Dim the box labels without removing the boxes. Send one representative row
-from the first box across both connectors. Stop it at center screen as the
-narration says “They need rows.” Enlarge the row gently while the surrounding
-diagram fades back.
-
-This is the transition into “Rows and values.” The next section should begin
-from this same enlarged row rather than cutting to an unrelated diagram.
-
-**End state:** one employee row is centered and ready to be examined cell by
-cell.
-
-### Review questions
-
-- Is the three-step transformation understandable without database terms?
-- Can the viewer follow Linus's removal without reading the captions?
-- Does removing columns look different from removing a row?
-- Does every visual change support the words being spoken at that moment?
-- Does the final row provide a natural transition into “Rows and values”?
-
-### Implementation notes
-
-- Build the table and operation boxes as reusable HTML/SVG components.
-- Derive the data shown in every stage from one employee-row data structure.
-- Drive every state from the requested local timestamp. Do not depend on an
-  animation having played from the beginning.
-- Keep narration audio, generated captions, and scene artwork on separate
-  layers so each can be reviewed or regenerated independently.
-- Render this section first as the browser-pipeline prototype. Plan the
-  remaining sections after its visual language and pacing have been reviewed.
+Assemble the original series mark and lesson title, then dissolve into the
+employee table already occupying the lesson stage. The table must be present on
+both sides of the transition so the ident does not feel like an unrelated clip.
 
 ## Question and result
 
-**Narration beats:** `question-and-result-001` through `question-and-result-005`
-**Generated episode time:** 0.000 to 82.225 seconds
-**Section duration:** 82.225 seconds
+**Beats:** `question-and-result-001..020`
+**Local duration:** 101.350 seconds
 
-### Purpose
+### `001..004`: pose the question
 
-Begin with one concrete query and let the viewer predict its result before
-introducing any implementation. The table is the visual anchor for the lesson.
+Open immediately on the employee table and a small empty result card. Reveal
+Ada, Linus, and Grace as their salaries are spoken. Highlight the salary column
+when the question is asked, then hold while the viewer predicts the answer.
 
-### Beat sequence
+### `005..008`: check the prediction
 
-1. Present the employee table one row at a time while the three people and
-   salaries are introduced.
-2. Place the SQL beside the table. Highlight `name`, `employees`, and the salary
-   condition as each phrase is spoken. Mark Ada and Grace as matches and Linus
-   as an equality case that does not match.
-3. Move the SQL through a quiet `DATABASE` frame and reveal the two-name result.
-4. Return to the full table. Fade Linus's row, then remove the `id` and `salary`
-   columns so the predicted result is produced as a visible transformation.
-5. Hold the input and result together, then make room for the three operation
-   boxes used by “Core idea.”
+Move Ada and Grace toward the result card one at a time. Tint Linus muted red
+and leave him in the source table beside an equality marker. Emphasize `>` and
+`50,000` while explaining why equality does not qualify.
 
-**Transition:** the SQL remains faintly visible when “Core idea” begins, while
-the employee table moves to the left of the operation sequence.
+### `009..014`: reveal the hidden machinery
+
+Place the SQL beside the table without covering either object. Highlight
+`name`, `employees`, and `salary > 50000` in spoken order. Briefly place a
+database frame by itself, clear it completely, and hold a short empty beat
+before restoring the table and SQL panel. Ask the smaller machinery question
+over that stable composition; the result card remains hidden here.
+
+### `015..020`: one slow transformation
+
+Return focus to the source table. Fade the SQL. Tint Linus red, remove his row,
+and visibly close the gap. Then fade the `id` and `salary` cells and slide the
+two `name` cells into the persistent result card. Hold the completed answer.
+
+**Transition:** keep the result card fixed at the right while three empty
+operation boxes appear between the source side and result.
+
+## Core idea
+
+**Beats:** `core-idea-001..017`
+**Local duration:** 75.525 seconds
+
+### `001..006`: three jobs
+
+Do not replay the data transformation. Reveal three boxes labelled `GIVE
+ROWS`, `CHOOSE ROWS`, and `CHOOSE COLUMNS`. A subtle pulse crosses each
+connector while the persistent result remains visible.
+
+### `007..014`: local responsibility
+
+Highlight one box at a time. Dim information that each box does not need, so
+the division of responsibility is visible without rebuilding the rows. Enclose
+the connected boxes with a quiet `QUERY ENGINE` bracket only after their
+individual jobs are clear.
+
+### `015..017`: what moves
+
+Send one Ada row card through the connectors, stop it in the center, and gently
+enlarge it while the boxes and result recede.
+
+**Transition:** the enlarged Ada row becomes the first object in Rows and
+values.
 
 ## Rows and values
 
-**Narration beats:** `rows-and-values-001` through `rows-and-values-005`
-**Generated episode time:** 139.675 to 222.575 seconds
-**Section duration:** 82.900 seconds
+**Beats:** `rows-and-values-001..028`
+**Local duration:** 114.850 seconds
 
-### Purpose
+### `001..013`: cells and value kinds
 
-Move from the familiar table to the two concrete data objects the program
-needs: a value for one cell and a row for one employee.
+Inspect Ada's cells in order. Connect `1` and `70,000` to `INTEGER`, and `Ada`
+to `TEXT`, under one `VALUE` label. Keep these cards separate from the later row
+representation so labels never overlap.
 
-### Beat sequence
+### `014..021`: names beside values
 
-1. Continue from the enlarged Ada row. Draw guides from its cells to the
-   corresponding table columns, then focus on the number `1` and text `Ada`.
-2. Place `INTEGER` and `TEXT` cards beneath those cells and group them under
-   the label `VALUE`.
-3. Reassemble Ada's three cells into one named row. Keep each column name beside
-   its value so the representation is explicit.
-4. Reveal the row's three abilities one at a time: `CREATE`, `FIND A VALUE`, and
-   `KEEP SELECTED COLUMNS`. Demonstrate the last ability by reducing Ada's row
-   to `{ name: "Ada" }`.
-5. Send several row cards toward three dim operation boxes, setting up the
-   question of how those boxes and their order are stored.
+Clear the value-kind cards. Show an isolated `70,000` and ask whether it is an
+ID or salary. Then rebuild the row as three explicit pairs: `id: 1`, `name:
+Ada`, and `salary: 70,000`. Duplicate the column-name labels faintly to make the
+intentional repetition visible.
 
-**Transition:** rows remain moving at the bottom while the operation boxes
-rotate into the vertical tree used by “Plan structure.”
+### `022..028`: the row's abilities
+
+Reveal `CREATE`, `FIND BY NAME`, and `KEEP COLUMNS` beside the same row. Show a
+lookup selecting `salary: 70,000`, then reduce the row to `name: Ada`. End by
+sending several compact row cards toward three dim operation nodes.
+
+**Transition:** the operation nodes rotate into the vertical plan tree.
 
 ## Plan structure
 
-**Narration beats:** `plan-structure-001` through `plan-structure-005`
-**Generated episode time:** 222.575 to 304.900 seconds
-**Section duration:** 82.325 seconds
+**Beats:** `plan-structure-001..026`
+**Local duration:** 117.175 seconds
 
-### Purpose
+### `001..006`: name familiar operations
 
-Turn the informal three-box picture into a named query-plan tree whose nodes
-contain the information required by each operation.
+Reuse the three boxes without replaying rows. Rename them `SCAN`, `FILTER`, and
+`PROJECTION`. Add a small `Project` code label beneath Projection to distinguish
+the concept from the Rust variant.
 
-### Beat sequence
+### `007..015`: line becomes tree
 
-1. Replay the three transformations in compact form and keep their order
-   visible.
-2. Replace the plain-language labels with `SCAN`, `FILTER`, and `PROJECT`, then
-   rotate the horizontal chain into a tree with Scan at the bottom.
-3. Open each node to reveal its attributes: employee rows in Scan, salary and
-   `> 50000` in Filter, and `name` in Project.
-4. Trace the child link from Project to Filter and from Filter to Scan. Place
-   the compact `Plan` vocabulary beside the tree without showing full code.
-5. Close the attribute panels, retain the tree, and place a question above it:
-   `How does this description produce rows?`
+Rotate the horizontal chain into a tree with Scan at the bottom, Filter above
+it, and Project at the root. Label both meanings on every connection:
+`DEPENDS ON ↓` for the parent-to-child relationship and `↑ FEEDS ROWS` for data
+returning toward the root. Reveal `ROOT` and `LEAF` only when those terms are
+spoken.
 
-**Transition:** the question fades as an `execute()` request appears at the
-Project root.
+### `016..023`: dependencies and attributes
+
+Trace dependency lines from Project to Filter and Filter to Scan without
+animating rows in the wrong direction. Open one attribute panel at a time:
+employee rows for Scan, `salary > 50000` for Filter, and `name` for Project.
+Show the compact `Plan` vocabulary beside the tree, not the full enum.
+
+### `024..026`: description, not execution
+
+Close the attribute panels and hold the inert tree. Center the question `How
+does this description produce rows?`
+
+**Transition:** attach an `execute()` request to the Project root.
 
 ## Execute the plan
 
-**Narration beats:** `execute-the-plan-001` through `execute-the-plan-007`
-**Generated episode time:** 304.900 to 425.700 seconds
-**Section duration:** 120.800 seconds
+**Beats:** `execute-the-plan-001..043`
+**Local duration:** 168.425 seconds
 
-### Purpose
+This is the second and final complete data pass.
 
-Show the request moving to the Scan and rows returning through Filter and
-Project. The viewer should understand the behavior before hearing “recursion.”
+### `001..014`: request travels down
 
-### Beat sequence
+Keep the plan tree centered. Attach `execute()` to Project, then animate a
+request token from Project to Filter and from Filter to Scan. Label these links
+`ASKS CHILD ↓` so the request direction is explicit. Do not move employee
+rows yet. Mark Scan as the stopping point
+because it already owns the rows.
 
-1. Attach `execute()` to Project. Show an empty input slot to explain why it
-   must ask Filter for rows first.
-2. Move the request from Project to Filter and then Scan. Stop at Scan because
-   it already owns the employee rows.
-3. Send the three rows from Scan to Filter. Compare each salary with `50000`,
-   showing yes for Ada and Grace and no for Linus. Introduce `PREDICATE` only
-   after the yes-or-no behavior is visible.
-4. Send the two surviving rows to Project. Remove `id` and `salary`, leaving
-   two name-only rows.
-5. Replay the two child requests in a compact loop and label the repeated
-   operation `RECURSION`. Keep Scan visibly marked as the stopping point.
-6. Align three short behavior statements beside their nodes: Scan returns,
-   Filter chooses, Project reshapes.
-7. Connect the tree back to the employee data and let the two names settle into
-   an output area, leading naturally into running the real program.
+### `015..021`: rows return through Filter
 
-**Transition:** the diagram moves left and a terminal panel opens on the right.
+Reverse the visual emphasis: label the upward path `FEEDS ROWS`. Move the three
+rows from Scan to a predicate panel beside Filter. Test salaries one at a time;
+Ada and Grace continue in green, while Linus turns red and disappears. Reveal
+`PREDICATE` only after the yes-or-no behavior is visible.
+
+### `022..029`: rows return through Project
+
+Move the two surviving full rows upward. Keep their row positions fixed while
+`id` and `salary` collapse horizontally. Clear the projection demonstration,
+then settle the two names into the same result card established in the opening.
+Do not show both at once.
+
+### `030..037`: name recursion
+
+Clear the result card. Replay only the request tokens, not the row
+transformation. Highlight the same `execute()` label on progressively smaller
+child plans, reveal `RECURSION`, and mark Scan as the leaf and stopping point.
+
+### `038..043`: connect model to implementation
+
+Align three concise statements beside the nodes: `Scan returns`, `Filter
+chooses`, and `Project reshapes`. Briefly reveal the corresponding real
+`execute` match arms. Restore the result only after those statements clear,
+then retain it for the terminal scene.
 
 ## Run the query
 
-**Narration beats:** `run-the-query-001` through `run-the-query-003`
-**Generated episode time:** 425.700 to 471.175 seconds
-**Section duration:** 45.475 seconds
+**Beats:** `run-the-query-001..012`
+**Local duration:** 46.400 seconds
 
-### Purpose
+Open a terminal beside the persistent result. Type `cargo run`, then reveal Ada
+and Grace line by line from `expected-output.txt`. Connect the terminal output
+to the result card so this feels like confirmation, not a third transformation.
+When one million rows are mentioned, replace the small input count with
+`1,000,000` and let the intermediate-buffer outlines multiply behind it.
 
-Confirm that the repository's real program produces the result predicted by
-the visual model.
-
-### Beat sequence
-
-1. Assemble Scan, Filter, and Project around the exact employee rows and
-   condition used by the program.
-2. Show `cargo run --quiet`, then reveal the stable output from
-   `expected-output.txt` line by line. Connect Ada and Grace to the condition
-   and the single retained column.
-3. Hold the correct result, then duplicate the three-row buffer repeatedly and
-   ask what changes when the table contains millions of rows.
-
-**Transition:** the terminal recedes while the intermediate row buffers remain.
+**Transition:** keep only the growing buffer outlines.
 
 ## Materialized execution
 
-**Narration beats:** `materialized-execution-001` through
-`materialized-execution-003`
-**Generated episode time:** 471.175 to 521.800 seconds
-**Section duration:** 50.625 seconds
+**Beats:** `materialized-execution-001..013`
+**Local duration:** 63.900 seconds
 
-### Purpose
+### `001..007`: complete collections
 
-Make the memory cost of complete intermediate results visible without solving
-it yet.
+Fill one complete Scan tray before activating Filter. Fill one complete Filter
+tray before activating Project. Label the trays `COMPLETE RESULT IN MEMORY`,
+then name the model `MATERIALIZED EXECUTION`.
 
-### Beat sequence
+### `008..013`: scale and preview
 
-1. Show Scan filling a complete three-row tray before Filter begins. Then show
-   Filter filling a complete two-row tray before Project begins.
-2. Label each complete tray `MATERIALIZED RESULT` and place both in a simple
-   memory frame. Grow the row counts to suggest a large table without inventing
-   performance measurements.
-3. Preview one row moving directly from one operation to the next, then return
-   to the current complete trays. End by pulling back from execution mechanics
-   to the language formed by the connected operations.
+Change `3 rows` directly to `1,000,000 rows`; do not animate hundreds of
+copies. Let the memory frame expand once, then clear it before comparing
+`complete list → complete list` with a future row-at-a-time model. No
+materialized tray may remain behind that comparison.
 
-**Transition:** the trays flatten into collections of rows connected by the
-same Scan, Filter, and Project transformations.
+**Transition:** the trays flatten into relation cards without replaying their
+contents.
 
 ## Relational algebra
 
-**Narration beats:** `relational-algebra-001` through `relational-algebra-003`
-**Generated episode time:** 521.800 to 563.925 seconds
-**Section duration:** 42.125 seconds
+**Beats:** `relational-algebra-001..013`
+**Local duration:** 61.950 seconds
 
-### Purpose
+Keep the familiar source and result still. Relabel the three moves `SCAN`,
+`FILTER`, and `PROJECTION`, then group them under `RELATIONAL ALGEBRA`. Rotate
+the labels into the plan tree without moving rows. End on two alternative plan
+silhouettes beside the question `Can two different plans mean the same thing?`
 
-Name the small transformation language the viewer has already understood and
-finish with the query-plan tree that lesson 002 will examine.
+## Lesson outro
 
-### Beat sequence
+**Duration:** 7 seconds
 
-1. Return to the opening table and replay the three ordinary actions: read
-   rows, keep rows, and keep columns. Show one collection becoming another.
-2. Replace those phrases with `SCAN`, `FILTER`, and `PROJECT`. Draw a brace
-   around them and reveal `RELATIONAL ALGEBRA` only after the transformations
-   are familiar.
-3. Rotate the operations into the final plan tree. Highlight that it can be
-   inspected, explained, and eventually rearranged. End on the tree and the
-   question `What makes two plans mean the same thing?`
+Transform the two plan silhouettes into the Lesson 002 card, `Relational
+Algebra Without the Math`. Preserve the final question long enough to read and
+fade the original musical theme cleanly.
 
-### Whole-episode review questions
+## Review checklist
 
-- Does each formal term appear only after its behavior is visible?
-- Do objects persist across section transitions instead of appearing from
-  nowhere?
-- Are filtering rows and projecting columns visually distinct every time?
-- Does code appear only when it confirms the repository's real behavior?
-- Does materialization look like a concrete memory cost rather than a warning
-  without evidence?
-- Does the final question create a clear reason to begin lesson 002?
+- Is the concrete table and result visible in the first twelve seconds?
+- Does the opening contain the only slow table-to-result transformation?
+- Does Execute the plan contain the only other complete data pass?
+- Does the result card persist instead of repeatedly being reconstructed?
+- Are filtering rows and projecting columns visually unmistakable?
+- Do request tokens travel down while rows feed upward?
+- Does every composition remain optically centered inside the content stage?
+- Do transitions wait until the preceding narration beat has ended?
+- Are subtitles always a single line?
+- Does the final question lead naturally into Lesson 002?

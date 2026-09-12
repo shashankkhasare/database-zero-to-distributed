@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -72,7 +72,7 @@ const timing = [];
 let cursor = 0;
 
 for (const [index, beat] of beats.entries()) {
-  const spokenText = applyPronunciation(beat.text, pronunciation);
+  const spokenText = prepareSpokenText(beat.text, pronunciation);
   const signature = createHash("sha256")
     .update(JSON.stringify({ spokenText, settings }))
     .digest("hex");
@@ -87,7 +87,8 @@ for (const [index, beat] of beats.entries()) {
       voice: settings.voice,
       speed: settings.speed,
     });
-    audio.save(outputPath);
+    await audio.save(outputPath);
+    await waitForCompleteFile(outputPath);
     console.log(`[${index + 1}/${beats.length}] generated ${beat.id}`);
   } else {
     console.log(`[${index + 1}/${beats.length}] reused ${beat.id}`);
@@ -109,9 +110,9 @@ for (const [index, beat] of beats.entries()) {
   });
   cursor = end + beat.pauseAfter;
   nextState[beat.id] = { signature };
+  await writeFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`);
 }
 
-await writeFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`);
 await writeFile(
   path.join("build", "video", lessonId, "timing.json"),
   `${JSON.stringify({ lessonId, duration: cursor, beats: timing }, null, 2)}\n`,
@@ -144,6 +145,10 @@ function applyPronunciation(text, replacements) {
     (result, [written, spoken]) => result.replaceAll(written, spoken),
     text,
   );
+}
+
+function prepareSpokenText(text, replacements) {
+  return applyPronunciation(text, replacements).replaceAll(/[*_`]/g, "");
 }
 
 function validateBeats(beats, sections) {
@@ -190,4 +195,21 @@ async function probeDuration(filePath) {
     filePath,
   ]);
   return Number.parseFloat(stdout.trim());
+}
+
+async function waitForCompleteFile(filePath) {
+  let previousSize = -1;
+
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    try {
+      const information = await stat(filePath);
+      if (information.size > 44 && information.size === previousSize) return;
+      previousSize = information.size;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  throw new Error(`audio file was not written completely: ${filePath}`);
 }

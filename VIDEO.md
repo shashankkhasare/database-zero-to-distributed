@@ -54,6 +54,18 @@ Transitions should arise from unanswered questions. A scene should establish
 why the next scene is needed before moving there. Avoid reading source code
 aloud, listing definitions without motivation, or copying book prose verbatim.
 
+The spoken lesson should sound like a patient teacher reasoning at a board.
+Prefer complete connected thoughts over a rapid sequence of slogan-like lines.
+Use short pauses after questions, predictions, visible results, new terms, and
+scene conclusions. A sentence may be short for emphasis, but several isolated
+sentences in succession usually sound rushed when synthesized.
+
+Review narration at normal speed before animating it. Choose voice and speed
+from a representative technical passage, record both in `lesson.yaml`, and do
+not compensate for rushed writing merely by slowing the voice. Spoken text
+must not contain Markdown markers. Audio and caption generators strip
+formatting defensively, but `narration.md` should still read naturally aloud.
+
 # Directory contract
 
 Lesson-specific sources and generated artifacts currently follow this layout:
@@ -159,6 +171,22 @@ only when it communicates a deliberate transformation. Review tooling should
 flag objects that cross a safe-area boundary or collide unexpectedly. A scene
 must remove or hide an earlier state before a later state occupies the same
 space.
+
+Each spoken idea owns one primary composition. Before the next composition
+appears, clear objects that no longer serve it; when necessary, leave a short
+empty beat between states. Do not keep a result, plan, code panel, or enclosing
+frame merely for continuity if it competes with the current explanation.
+
+An enclosing frame must have visible padding on every side of every object it
+claims to contain. Source data outside an operator group must remain outside
+that frame. Check both the start and end of every fade because two layouts that
+are individually valid can still collide during their crossfade.
+
+Plan connections must state their meaning and direction. Use `depends on ↓` or
+`asks child ↓` for requests moving toward a child, and `↑ feeds rows` for data
+returning toward the root. When both meanings matter at once, show both labels;
+never rely on an unlabeled line or arrow direction that contradicts the spoken
+model.
 
 # Timeline contract
 

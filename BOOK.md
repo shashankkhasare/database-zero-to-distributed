@@ -179,6 +179,26 @@ the reader. It should be conversational and energetic without becoming casual
 about correctness. The prose must have its own voice; use the principles below
 rather than imitating another author sentence by sentence.
 
+## Preserve continuity across chapters
+
+Treat the book as one continuing investigation, not a collection of independent
+articles. Before drafting a chapter, read the preceding chapter's opening,
+closing section, vocabulary, exercises, and deliberate limitations. The new
+chapter should catch the unresolved question left by the previous one within
+its opening paragraphs.
+
+Define and bold a technical term only at its first meaningful introduction.
+Later chapters should call it back in ordinary prose and spend the vocabulary
+the reader has already learned. Maintain consistency for recurring structural
+devices such as production notes, try-it sections, limitation summaries, code
+placement labels, heading depth, and chapter endings.
+
+When a later chapter qualifies an earlier simplification, name the earlier
+behavior directly. Forward references should point to a roadmap season or a
+stable topic unless the destination chapter already exists. Before review,
+compare the new chapter beside its predecessor for narrative rhythm, code
+integrity, diagram economy, and reader activity.
+
 ## Assume curiosity, not a computer-science education
 
 Assume the reader has written or modified a small program and understands basic
