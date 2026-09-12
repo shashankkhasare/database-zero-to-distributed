@@ -45,8 +45,9 @@ export async function authorizedYoutube() {
   return google.youtube({ version: "v3", auth });
 }
 
-export function externalStatePath(lessonId) {
-  return join(configDirectory(), `lesson-${lessonId}-publish.json`);
+export function externalStatePath(lessonId, release) {
+  const suffix = release ? `-${validatedRelease(release)}` : "";
+  return join(configDirectory(), `lesson-${lessonId}${suffix}-publish.json`);
 }
 
 export function tokenPath() {
@@ -55,17 +56,17 @@ export function tokenPath() {
     : join(configDirectory(), "oauth-token.json");
 }
 
-export async function readState(lessonId) {
+export async function readState(lessonId, release) {
   try {
-    return JSON.parse(await readFile(externalStatePath(lessonId), "utf8"));
+    return JSON.parse(await readFile(externalStatePath(lessonId, release), "utf8"));
   } catch (error) {
     if (error.code === "ENOENT") return {};
     throw error;
   }
 }
 
-export async function writeState(lessonId, state) {
-  const path = externalStatePath(lessonId);
+export async function writeState(lessonId, state, release) {
+  const path = externalStatePath(lessonId, release);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
 }
@@ -75,6 +76,13 @@ function configDirectory() {
     ? resolve(process.env.LOCALAPPDATA)
     : join(homedir(), ".config");
   return join(base, "database-zero-to-distributed", "youtube");
+}
+
+function validatedRelease(value) {
+  if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(value)) {
+    throw new Error("publishing.youtube.release must use lowercase letters, digits, and hyphens");
+  }
+  return value;
 }
 
 function repositoryFile(relativePath, description) {

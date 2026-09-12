@@ -5,8 +5,9 @@ import {
 } from "./youtube-common.mjs";
 
 const lessonId = process.argv[2];
+const allowPrivate = process.argv.includes("--allow-private");
 const context = await loadPublishingContext(lessonId);
-const state = await readState(lessonId);
+const state = await readState(lessonId, context.publishing.release);
 const videoId = state.video_id ?? context.publishing.video_id;
 if (!videoId) throw new Error("No uploaded video ID exists in external state or lesson.yaml");
 
@@ -43,5 +44,5 @@ console.log(`Playlist visibility: ${playlist?.status?.privacyStatus ?? "missing"
 if (video.processingDetails?.processingStatus !== "succeeded") process.exitCode = 2;
 if (caption?.snippet?.status !== "serving") process.exitCode = 2;
 if (!playlistItem) process.exitCode = 2;
-if (video.status?.privacyStatus !== context.publishing.final_privacy_status) process.exitCode = 2;
+if (!allowPrivate && video.status?.privacyStatus !== context.publishing.final_privacy_status) process.exitCode = 2;
 if (playlist?.status?.privacyStatus !== context.publishing.final_privacy_status) process.exitCode = 2;

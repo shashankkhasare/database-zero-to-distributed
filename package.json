@@ -25,7 +25,8 @@
     "video:render": "node video/scripts/build-video.mjs",
     "youtube:auth": "node video/scripts/youtube-auth.mjs",
     "youtube:publish": "node video/scripts/youtube-publish.mjs",
-    "youtube:publish-verify": "node video/scripts/youtube-publish-verify.mjs"
+    "youtube:publish-verify": "node video/scripts/youtube-publish-verify.mjs",
+    "youtube:retire-replaced": "node video/scripts/youtube-retire-replaced.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",

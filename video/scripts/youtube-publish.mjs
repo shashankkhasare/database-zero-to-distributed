@@ -23,12 +23,16 @@ if (!execute) {
 }
 
 const youtube = await authorizedYoutube();
-const state = await readState(lessonId);
+const state = await readState(lessonId, publishing.release);
 if (state.fingerprint && state.fingerprint !== context.fingerprint) {
   throw new Error("Publishing metadata changed after upload state was created; inspect external state before retrying");
 }
 state.fingerprint = context.fingerprint;
 state.video_id ??= publishing.video_id;
+
+if (!state.video_id && publishing.replaces_video_id) {
+  console.log(`Creating a replacement for https://youtu.be/${publishing.replaces_video_id}`);
+}
 
 if (!state.video_id) {
   console.log("Uploading private video...");
@@ -53,7 +57,7 @@ if (!state.video_id) {
     media: { body: createReadStream(context.videoPath) },
   });
   state.video_id = response.data.id;
-  await writeState(lessonId, state);
+  await writeState(lessonId, state, publishing.release);
   console.log(`Uploaded video ${state.video_id}`);
 } else {
   console.log(`Reusing uploaded video ${state.video_id}`);
@@ -73,7 +77,7 @@ if (!state.thumbnail_set) {
     console.warn(`Thumbnail pending: ${state.thumbnail_error}`);
     console.warn("Enable custom thumbnails for the channel, then rerun this command.");
   }
-  await writeState(lessonId, state);
+  await writeState(lessonId, state, publishing.release);
 }
 
 if (!state.caption_id) {
@@ -96,7 +100,7 @@ if (!state.caption_id) {
     media: { mimeType: "application/octet-stream", body: createReadStream(context.captionPath) },
   });
   state.caption_id = response.data.id;
-  await writeState(lessonId, state);
+  await writeState(lessonId, state, publishing.release);
   console.log(`Caption uploaded: ${state.caption_id}`);
 }
 
@@ -119,7 +123,7 @@ if (!state.playlist_item_id) {
     },
   });
   state.playlist_item_id = response.data.id;
-  await writeState(lessonId, state);
+  await writeState(lessonId, state, publishing.release);
   console.log(`Added to playlist: ${state.playlist_item_id}`);
 }
 
