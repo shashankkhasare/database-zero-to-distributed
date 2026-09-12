@@ -2,174 +2,362 @@
 
 ## Question and result
 
-Every database begins with a question. Suppose we have a small table of three
-employees: Ada earns seventy thousand, Linus earns fifty thousand, and Grace
-earns seventy-two thousand. We want the names of employees whose salary is
-greater than fifty thousand.
+Suppose I give you this tiny table of employees and ask a simple question.
 
-In SQL, the question takes only three lines. Select the name, from the employees
-table, where salary is greater than fifty thousand. Ada belongs in the result.
-Grace does too. Linus does not, because his salary is exactly fifty thousand
-and the query asks for something greater.
+Which employees earn more than fifty thousand?
 
-A real database accepts that SQL, plans the work, reads the data, and returns
-the two names. We do not have a database yet, so let us build the smallest
-engine capable of producing the same answer.
+Ada earns seventy thousand.
+Linus earns exactly fifty thousand.
+Grace earns seventy-two thousand.
 
-Before writing any code, picture what must happen to the table. All three rows
-enter from one side. Linus's row disappears because it does not pass the salary
-condition. Then the I.D. and salary columns disappear because the query asks
-only for names. What remains is exactly the result we wanted.
+Before thinking about SQL or databases, decide what the answer should be.
 
-That simple transformation is the idea behind this entire lesson. Before we
-write code, we need a picture simple enough to reason about and precise enough
-to become a program.
+Ada should appear.
+
+Grace should appear.
+
+Linus should not.
+
+The important word is *more*. Exactly fifty thousand does not qualify.
+
+In SQL, the question is compact:
+
+Select the name from the employees table where salary is greater than fifty thousand.
+
+A real database takes that query and returns the two names we predicted.
+
+But there is quite a lot hiding between the query we write and the rows that come back.
+
+So instead of building a database, let us ask a smaller question.
+
+What is the least machinery we need to reproduce this result?
+
+Forget SQL for a moment and watch what happens to the table.
+
+We begin with three complete rows.
+
+One row disappears because it does not satisfy the salary condition.
+
+Then the unnecessary columns disappear because the query asks only for names.
+
+What remains is the result.
+
+That transformation is what our first query engine needs to reproduce.
 
 ## Core idea
 
-Forget the SQL syntax for a moment. Imagine three boxes connected in a row.
-The first box reads the table. The second box decides which rows continue. The
-third box removes columns that the result does not need.
+Without using database terminology, we can describe the work with three small operations.
 
-The table changes a little as it passes through each box. First we have three
-complete employee rows. Then we have two complete rows. Finally, we have two
-rows containing only names. No single box understands the whole query. Each
-one performs one small transformation and hands its result to the next.
+One operation gives us rows.
 
-This gives us a useful way to think about a query engine. It is not one large
-piece of code that somehow understands every query. It is a collection of
-small operations connected in a meaningful order.
+Another decides which rows survive.
 
-Before naming or coding the boxes, we need something concrete for them to pass
-between one another. They need rows.
+And another decides which columns remain.
+
+Imagine them as three boxes connected together.
+
+Rows flow from one box to the next.
+
+And notice something useful.
+
+No box needs to understand the entire query.
+
+The first does not care which rows will later be rejected.
+
+The second does not care which columns will eventually be displayed.
+
+The third does not care why a row disappeared earlier.
+
+Each operation knows one small part of the job.
+
+The meaning comes from how those operations are connected.
+
+So our first picture of a query engine is a collection of small transformations arranged in the right order.
+
+What moves between those transformations?
+
+Rows.
+
+So before we build the operators, we need to decide what a row actually is.
 
 ## Rows and values
 
-Return to the table. Where a row and column meet, we find a cell. Ada's I.D.
-cell contains the number one. Her name cell contains text. Each cell holds a
-value, and our engine must distinguish numbers from text before it can compare
-or display them.
+Look at Ada's row.
 
-Our first Value type therefore supports two possibilities: an integer and a
-piece of text. That is enough for every cell in this example. We can add more
-possibilities later, when a query actually needs them.
+Her I.D. is a number.
 
-One value represents one cell. A row brings together all the cells describing
-one employee. Ada's row contains her I.D., name, and salary. For now, each row
-stores a list of column names beside their values. This repeats names such as
-I.D. and salary in every row, but it keeps the relationship between a column
-and its value visible.
+Her name is text.
 
-The row needs three small operations. It can be constructed from named values.
-It can find a value by column name. And it can produce a smaller row containing
-only selected columns. That last operation will let the query return a name
-without also returning the employee's I.D. and salary.
+Her salary is another number.
 
-We now have the objects that move through our three boxes. How can the program
-represent the boxes themselves and preserve the order connecting them?
+Each cell holds a value, but not every value is the same kind of thing.
+
+The engine needs to know the difference.
+
+For this first implementation, a value only needs two possibilities:
+
+an integer,
+
+or a piece of text.
+
+That is enough for this table.
+
+We can add more types when a future query actually needs them.
+
+One value represents one cell.
+
+A row brings several values together.
+
+But there is another problem.
+
+If the engine sees the number seventy thousand, how does it know that this is a salary rather than an I.D.?
+
+For now, we keep the column name beside each value.
+
+So a row can say:
+
+I.D. is one.
+
+Name is Ada.
+
+Salary is seventy thousand.
+
+This repeats column names in every row, which a real engine might avoid, but it keeps the representation easy to inspect.
+
+With that structure, a row needs only a few basic operations.
+
+We should be able to construct one.
+
+We should be able to look up a value by column name.
+
+And we should be able to produce a smaller row containing only selected columns.
+
+That last operation will become important when the query asks for a name but not an I.D. or salary.
+
+Now we know what moves through the engine.
+
+The next question is how to represent the operations those rows move through.
 
 ## Plan structure
 
-Our three-box picture already describes what should happen to those rows: read
-the employee rows, keep only rows whose salary is greater than fifty thousand,
-and keep only the name column. Now we need to store that description in the
-program.
+Return to our three operations.
 
-Database systems call these operations scan, filter, and project. Together,
-they form a query plan. The plan is a tree. Scan is the leaf at the bottom.
-Filter uses the scan as its input. Project uses the filter as its input and
-becomes the root at the top.
+Database systems give them names.
 
-Each node must remember enough information to do its job. The scan contains
-the employee rows. The filter contains the salary column, the boundary of fifty
-thousand, and its input node. The project contains the name column and its
-input node.
+The operation that produces rows is a **scan**.
 
-In this plan, each node above the scan points to its child. The project's child
-is the filter, and the filter's child is the scan. Rust lets us keep all three
-kinds of node in one Plan type, so the complete vocabulary of our first query
-engine remains visible in one place.
+The operation that keeps matching rows is a **filter**.
 
-The picture of three boxes has now become a concrete tree. It records both the
-work and the order of that work. But how does a tree that describes a query
-actually produce its result?
+And the operation that keeps selected columns is called **projection**. Our Rust plan names the node that performs it `Project`.
+
+When we connect operators like these to describe how a query should run, we get a **query plan**.
+
+At first, it is natural to picture that plan as three boxes in a line.
+
+But another picture is more useful.
+
+A tree.
+
+The scan sits at the bottom.
+
+The filter depends on the scan.
+
+The `Project` node depends on the filter.
+
+So the `Project` node becomes the root, and the scan becomes a leaf.
+
+This can feel backwards at first because the operation that happens last appears at the top.
+
+But the structure is describing dependencies.
+
+The `Project` node needs the filter.
+
+The filter needs the scan.
+
+That means each node only needs to point to the operation that provides its input.
+
+Each node also stores the information needed for its own job.
+
+The scan stores the employee rows.
+
+The filter stores its input, the salary column, and the value fifty thousand.
+
+The `Project` node stores its input and the name column.
+
+Rust lets us represent these node types together inside one `Plan` type.
+
+At this point, nothing has executed.
+
+The tree is only a description of the work.
+
+So how does that description produce rows?
 
 ## Execute the plan
 
-Begin by asking the root for the final answer. We give every plan node an
-operation named execute. Executing the project does not begin by removing
-columns, because the project has no rows yet. It first asks its child, the
-filter, to execute.
+Suppose we ask the root of the tree for the final result.
 
-The filter has the same problem. It cannot test a salary before receiving a
-row, so it asks its child, the scan, to execute. The scan is different. It is
-the leaf, already contains the employee rows, and can return them immediately.
+The root is the `Project` node.
 
-Now the filter can work. It examines each employee row, finds the salary, and
-asks whether that integer is greater than fifty thousand. This yes-or-no
-condition is called a predicate. Ada and Grace satisfy it. Linus does not. The
-filter returns only the two surviving rows.
+So every plan node gets an operation called `execute`.
 
-The project receives those rows and keeps the requested name column from each
-one. Filtering changed how many rows remained. Projection changes what each
-remaining row contains. Two complete employee records become two smaller rows,
-each containing only a name.
+What happens when we execute the `Project` node?
 
-Notice the repeated request. Project calls execute on filter, and filter calls
-execute on scan. The same operation invokes itself on a smaller input plan.
-This is recursion, and the tree gives it a natural stopping point: the scan has
-no child to execute.
+It cannot remove columns yet because it does not have any rows.
 
-The implementation follows this conversation directly. Scan returns its rows.
-Filter executes its input and chooses which rows survive. Project executes its
-input and reshapes every returned row. Each node performs one visible job.
+So it asks its child to execute.
 
-We began with data passing through three boxes. We now have the more precise
-picture: a tree of nodes asking their children for rows. If we connect that
-tree to the employee data, will the answer we predicted actually fall out?
+Its child is the filter.
+
+The filter has the same problem.
+
+It knows how to test a salary, but it has no rows yet.
+
+So it asks its own child to execute.
+
+That child is the scan.
+
+And here the chain stops.
+
+The scan has no child.
+
+It already contains the employee rows, so it can return them immediately.
+
+Now execution begins moving back up the tree.
+
+The filter receives those rows.
+
+For each one, it looks up the salary and asks a yes-or-no question:
+
+Is this salary greater than fifty thousand?
+
+That kind of yes-or-no test is called a **predicate**.
+
+Rows for which the predicate is true survive.
+
+Rows for which it is false disappear.
+
+The surviving rows then move to the `Project` node.
+
+The `Project` node does something different.
+
+It does not decide whether a row survives.
+
+It changes what each surviving row contains.
+
+From each row, it keeps only the requested name column.
+
+That gives us an important distinction.
+
+Filtering changes **which rows remain**.
+
+Projection changes **what those rows contain**.
+
+Now notice the shape of the execution.
+
+The `Project` node calls `execute` on the filter.
+
+Filter calls `execute` on scan.
+
+The same operation is applied to smaller and smaller pieces of the tree.
+
+That is recursion.
+
+And the tree gives the recursion a natural stopping point.
+
+Eventually we reach a leaf.
+
+The scan has no child, so it returns data.
+
+The implementation follows the structure of the plan itself.
+
+We began with a visual transformation.
+
+Then we represented that transformation as operators.
+
+Then we connected the operators into a tree.
+
+And now that tree can execute.
+
+The only thing left is to check whether the program agrees with our original prediction.
 
 ## Run the query
 
-Let us assemble the exact plan and find out. The scan owns our three employee
-rows. The filter wraps that scan and stores the salary condition. The project
-wraps the filter and asks for the name column.
+Run:
 
-Run the program. The engine prints Ada, then Grace. Linus is absent because
-equality is not enough for a strict greater-than comparison. Each result
-contains only a name, confirming that filtering happened before projection.
+`cargo run`
 
-Our scan read the source rows, our filter applied a predicate, and our project
-removed the columns the query did not request. The answer is correct for three
-rows. But what must the engine keep in memory if the table contains millions?
+The engine prints:
+
+Ada
+
+Grace
+
+Linus is gone, and each result contains only the requested name.
+
+So our prediction and implementation agree.
+
+Small as it is, this is already a query engine.
+
+Data flows through a plan of operators and produces a result.
+
+But there is something about the way it executes that will matter once the table becomes larger.
+
+Imagine replacing three employees with one million.
+
+What happens to all those rows while the plan runs?
 
 ## Materialized execution
 
-To answer that, watch when each operation begins. The scan first returns a
-complete list of employees. The filter consumes that list and builds another
-complete list. Only after the filter finishes does the project begin building
-the final result.
+Watch the data.
 
-A complete intermediate list like this is called a materialized result. Our
-engine therefore uses materialized execution. It is easy to follow and works
-well for three rows, but a large table could leave us holding many rows in
-memory between every pair of operations.
+The scan produces a complete collection of rows.
 
-Later, we will let an operation process rows as they become available instead
-of waiting for a complete list. Before improving it, though, step back and ask:
-what kind of language have we accidentally created by connecting these
-operations?
+Only after that collection exists does the filter produce another complete collection.
+
+Then the `Project` node produces the final one.
+
+Each operator finishes its entire result before the next stage completes.
+
+This execution model is called **materialized execution**.
+
+Each intermediate result is materialized in memory.
+
+For three rows, that is irrelevant.
+
+For millions of rows, it can become expensive.
+
+Later, we will look at execution models where rows can move forward as soon as they are ready.
+
+For now, materialized execution has one useful property.
+
+It makes every intermediate result easy to see.
+
+And with our first plan working, there is one final idea to name.
 
 ## Relational algebra
 
-Return to our opening picture. We began with three ordinary actions: read rows,
-keep some rows, and keep some columns. By connecting them, we produced a tree
-that transforms one collection of rows into another.
+Scanning, filtering, and projection are examples of operations from a language for transforming relations.
 
-Scan, filter, and project are the beginnings of relational algebra, a small
-language for describing transformations of relations. Giving the tree this
-meaning will let us inspect it, explain it, and eventually rearrange it without
-changing the answer.
+That language is called **relational algebra**.
 
-We have built the smallest query engine. Next, we will look at the algebra
-inside its plan and discover why that simple tree is more powerful than it
-first appears.
+SQL is what we write.
+
+A relational plan describes the operations underneath it.
+
+And we now have enough machinery to work with those plans.
+
+We can represent values and rows.
+
+We can describe computation as a tree of operators.
+
+And we can execute that tree to produce a result.
+
+Those pieces are the material for the next chapter.
+
+Because once a query exists as a plan, a new question becomes possible.
+
+Can two different plans represent the same computation?
+
+And if they can, what transformations can we make without changing the answer?
+
+That is the question we will explore next.

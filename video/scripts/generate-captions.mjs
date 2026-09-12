@@ -47,6 +47,7 @@ console.log(`Generated ${outputDirectory.replaceAll("\\", "/")}/lesson.srt`);
 
 function splitCaptionText(text, maximum) {
   const clauses = text
+    .replace(/[*_`]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .split(/(?<=[.!?;,])\s+/);

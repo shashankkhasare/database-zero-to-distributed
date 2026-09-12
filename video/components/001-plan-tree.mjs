@@ -15,7 +15,11 @@ export function createPlanTree({ formal = true, details = false } = {}) {
     if (details) card.append(element("div", "plan-node__detail", node.detail));
     tree.append(card);
     if (index < NODE_DATA.length - 1) {
-      const edge = element("div", "plan-edge", "↑ feeds rows to");
+      const edge = element("div", "plan-edge");
+      edge.append(
+        element("span", "plan-edge__up", "↑ feeds rows"),
+        element("span", "plan-edge__down", "depends on ↓"),
+      );
       edge.dataset.edge = `${node.id}-${NODE_DATA[index + 1].id}`;
       tree.append(edge);
     }

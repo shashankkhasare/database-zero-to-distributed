@@ -1,39 +1,1036 @@
 {
   "beats": [
-    { "id": "question-and-result-001", "scene": "question-and-result", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "question-and-result-002", "scene": "question-and-result", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "question-and-result-003", "scene": "question-and-result", "paragraph": 3, "pauseAfter": 0.3 },
-    { "id": "question-and-result-004", "scene": "question-and-result", "paragraph": 4, "pauseAfter": 0.3 },
-    { "id": "question-and-result-005", "scene": "question-and-result", "paragraph": 5, "pauseAfter": 0.7 },
-    { "id": "core-idea-001", "scene": "core-idea", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "core-idea-002", "scene": "core-idea", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "core-idea-003", "scene": "core-idea", "paragraph": 3, "pauseAfter": 0.3 },
-    { "id": "core-idea-004", "scene": "core-idea", "paragraph": 4, "pauseAfter": 0.7 },
-    { "id": "rows-and-values-001", "scene": "rows-and-values", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "rows-and-values-002", "scene": "rows-and-values", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "rows-and-values-003", "scene": "rows-and-values", "paragraph": 3, "pauseAfter": 0.3 },
-    { "id": "rows-and-values-004", "scene": "rows-and-values", "paragraph": 4, "pauseAfter": 0.3 },
-    { "id": "rows-and-values-005", "scene": "rows-and-values", "paragraph": 5, "pauseAfter": 0.7 },
-    { "id": "plan-structure-001", "scene": "plan-structure", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "plan-structure-002", "scene": "plan-structure", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "plan-structure-003", "scene": "plan-structure", "paragraph": 3, "pauseAfter": 0.3 },
-    { "id": "plan-structure-004", "scene": "plan-structure", "paragraph": 4, "pauseAfter": 0.3 },
-    { "id": "plan-structure-005", "scene": "plan-structure", "paragraph": 5, "pauseAfter": 0.7 },
-    { "id": "execute-the-plan-001", "scene": "execute-the-plan", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-002", "scene": "execute-the-plan", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-003", "scene": "execute-the-plan", "paragraph": 3, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-004", "scene": "execute-the-plan", "paragraph": 4, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-005", "scene": "execute-the-plan", "paragraph": 5, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-006", "scene": "execute-the-plan", "paragraph": 6, "pauseAfter": 0.3 },
-    { "id": "execute-the-plan-007", "scene": "execute-the-plan", "paragraph": 7, "pauseAfter": 0.7 },
-    { "id": "run-the-query-001", "scene": "run-the-query", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "run-the-query-002", "scene": "run-the-query", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "run-the-query-003", "scene": "run-the-query", "paragraph": 3, "pauseAfter": 0.7 },
-    { "id": "materialized-execution-001", "scene": "materialized-execution", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "materialized-execution-002", "scene": "materialized-execution", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "materialized-execution-003", "scene": "materialized-execution", "paragraph": 3, "pauseAfter": 0.7 },
-    { "id": "relational-algebra-001", "scene": "relational-algebra", "paragraph": 1, "pauseAfter": 0.3 },
-    { "id": "relational-algebra-002", "scene": "relational-algebra", "paragraph": 2, "pauseAfter": 0.3 },
-    { "id": "relational-algebra-003", "scene": "relational-algebra", "paragraph": 3, "pauseAfter": 0.8 }
+    {
+      "id": "question-and-result-001",
+      "scene": "question-and-result",
+      "paragraph": 1,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-002",
+      "scene": "question-and-result",
+      "paragraph": 2,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "question-and-result-003",
+      "scene": "question-and-result",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-004",
+      "scene": "question-and-result",
+      "paragraph": 4,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "question-and-result-005",
+      "scene": "question-and-result",
+      "paragraph": 5,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "question-and-result-006",
+      "scene": "question-and-result",
+      "paragraph": 6,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "question-and-result-007",
+      "scene": "question-and-result",
+      "paragraph": 7,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "question-and-result-008",
+      "scene": "question-and-result",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-009",
+      "scene": "question-and-result",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-010",
+      "scene": "question-and-result",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-011",
+      "scene": "question-and-result",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-012",
+      "scene": "question-and-result",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-013",
+      "scene": "question-and-result",
+      "paragraph": 13,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-014",
+      "scene": "question-and-result",
+      "paragraph": 14,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "question-and-result-015",
+      "scene": "question-and-result",
+      "paragraph": 15,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-016",
+      "scene": "question-and-result",
+      "paragraph": 16,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-017",
+      "scene": "question-and-result",
+      "paragraph": 17,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-018",
+      "scene": "question-and-result",
+      "paragraph": 18,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "question-and-result-019",
+      "scene": "question-and-result",
+      "paragraph": 19,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "question-and-result-020",
+      "scene": "question-and-result",
+      "paragraph": 20,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "core-idea-001",
+      "scene": "core-idea",
+      "paragraph": 1,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-002",
+      "scene": "core-idea",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-003",
+      "scene": "core-idea",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-004",
+      "scene": "core-idea",
+      "paragraph": 4,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-005",
+      "scene": "core-idea",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-006",
+      "scene": "core-idea",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-007",
+      "scene": "core-idea",
+      "paragraph": 7,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "core-idea-008",
+      "scene": "core-idea",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-009",
+      "scene": "core-idea",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-010",
+      "scene": "core-idea",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-011",
+      "scene": "core-idea",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-012",
+      "scene": "core-idea",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-013",
+      "scene": "core-idea",
+      "paragraph": 13,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-014",
+      "scene": "core-idea",
+      "paragraph": 14,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "core-idea-015",
+      "scene": "core-idea",
+      "paragraph": 15,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "core-idea-016",
+      "scene": "core-idea",
+      "paragraph": 16,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "core-idea-017",
+      "scene": "core-idea",
+      "paragraph": 17,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "rows-and-values-001",
+      "scene": "rows-and-values",
+      "paragraph": 1,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-002",
+      "scene": "rows-and-values",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-003",
+      "scene": "rows-and-values",
+      "paragraph": 3,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-004",
+      "scene": "rows-and-values",
+      "paragraph": 4,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-005",
+      "scene": "rows-and-values",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-006",
+      "scene": "rows-and-values",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-007",
+      "scene": "rows-and-values",
+      "paragraph": 7,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-008",
+      "scene": "rows-and-values",
+      "paragraph": 8,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-009",
+      "scene": "rows-and-values",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-010",
+      "scene": "rows-and-values",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-011",
+      "scene": "rows-and-values",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-012",
+      "scene": "rows-and-values",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-013",
+      "scene": "rows-and-values",
+      "paragraph": 13,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-014",
+      "scene": "rows-and-values",
+      "paragraph": 14,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-015",
+      "scene": "rows-and-values",
+      "paragraph": 15,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "rows-and-values-016",
+      "scene": "rows-and-values",
+      "paragraph": 16,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-017",
+      "scene": "rows-and-values",
+      "paragraph": 17,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-018",
+      "scene": "rows-and-values",
+      "paragraph": 18,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-019",
+      "scene": "rows-and-values",
+      "paragraph": 19,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-020",
+      "scene": "rows-and-values",
+      "paragraph": 20,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "rows-and-values-021",
+      "scene": "rows-and-values",
+      "paragraph": 21,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-022",
+      "scene": "rows-and-values",
+      "paragraph": 22,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-023",
+      "scene": "rows-and-values",
+      "paragraph": 23,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-024",
+      "scene": "rows-and-values",
+      "paragraph": 24,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-025",
+      "scene": "rows-and-values",
+      "paragraph": 25,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-026",
+      "scene": "rows-and-values",
+      "paragraph": 26,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-027",
+      "scene": "rows-and-values",
+      "paragraph": 27,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "rows-and-values-028",
+      "scene": "rows-and-values",
+      "paragraph": 28,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "plan-structure-001",
+      "scene": "plan-structure",
+      "paragraph": 1,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-002",
+      "scene": "plan-structure",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-003",
+      "scene": "plan-structure",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-004",
+      "scene": "plan-structure",
+      "paragraph": 4,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-005",
+      "scene": "plan-structure",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-006",
+      "scene": "plan-structure",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-007",
+      "scene": "plan-structure",
+      "paragraph": 7,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-008",
+      "scene": "plan-structure",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-009",
+      "scene": "plan-structure",
+      "paragraph": 9,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "plan-structure-010",
+      "scene": "plan-structure",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-011",
+      "scene": "plan-structure",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-012",
+      "scene": "plan-structure",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-013",
+      "scene": "plan-structure",
+      "paragraph": 13,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-014",
+      "scene": "plan-structure",
+      "paragraph": 14,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-015",
+      "scene": "plan-structure",
+      "paragraph": 15,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-016",
+      "scene": "plan-structure",
+      "paragraph": 16,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-017",
+      "scene": "plan-structure",
+      "paragraph": 17,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-018",
+      "scene": "plan-structure",
+      "paragraph": 18,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-019",
+      "scene": "plan-structure",
+      "paragraph": 19,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-020",
+      "scene": "plan-structure",
+      "paragraph": 20,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-021",
+      "scene": "plan-structure",
+      "paragraph": 21,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-022",
+      "scene": "plan-structure",
+      "paragraph": 22,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-023",
+      "scene": "plan-structure",
+      "paragraph": 23,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-024",
+      "scene": "plan-structure",
+      "paragraph": 24,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-025",
+      "scene": "plan-structure",
+      "paragraph": 25,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "plan-structure-026",
+      "scene": "plan-structure",
+      "paragraph": 26,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "execute-the-plan-001",
+      "scene": "execute-the-plan",
+      "paragraph": 1,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-002",
+      "scene": "execute-the-plan",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-003",
+      "scene": "execute-the-plan",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-004",
+      "scene": "execute-the-plan",
+      "paragraph": 4,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "execute-the-plan-005",
+      "scene": "execute-the-plan",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-006",
+      "scene": "execute-the-plan",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-007",
+      "scene": "execute-the-plan",
+      "paragraph": 7,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-008",
+      "scene": "execute-the-plan",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-009",
+      "scene": "execute-the-plan",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-010",
+      "scene": "execute-the-plan",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-011",
+      "scene": "execute-the-plan",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-012",
+      "scene": "execute-the-plan",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-013",
+      "scene": "execute-the-plan",
+      "paragraph": 13,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-014",
+      "scene": "execute-the-plan",
+      "paragraph": 14,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-015",
+      "scene": "execute-the-plan",
+      "paragraph": 15,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-016",
+      "scene": "execute-the-plan",
+      "paragraph": 16,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-017",
+      "scene": "execute-the-plan",
+      "paragraph": 17,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-018",
+      "scene": "execute-the-plan",
+      "paragraph": 18,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "execute-the-plan-019",
+      "scene": "execute-the-plan",
+      "paragraph": 19,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-020",
+      "scene": "execute-the-plan",
+      "paragraph": 20,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-021",
+      "scene": "execute-the-plan",
+      "paragraph": 21,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-022",
+      "scene": "execute-the-plan",
+      "paragraph": 22,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-023",
+      "scene": "execute-the-plan",
+      "paragraph": 23,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-024",
+      "scene": "execute-the-plan",
+      "paragraph": 24,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-025",
+      "scene": "execute-the-plan",
+      "paragraph": 25,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-026",
+      "scene": "execute-the-plan",
+      "paragraph": 26,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-027",
+      "scene": "execute-the-plan",
+      "paragraph": 27,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-028",
+      "scene": "execute-the-plan",
+      "paragraph": 28,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-029",
+      "scene": "execute-the-plan",
+      "paragraph": 29,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-030",
+      "scene": "execute-the-plan",
+      "paragraph": 30,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-031",
+      "scene": "execute-the-plan",
+      "paragraph": 31,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-032",
+      "scene": "execute-the-plan",
+      "paragraph": 32,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-033",
+      "scene": "execute-the-plan",
+      "paragraph": 33,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-034",
+      "scene": "execute-the-plan",
+      "paragraph": 34,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "execute-the-plan-035",
+      "scene": "execute-the-plan",
+      "paragraph": 35,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-036",
+      "scene": "execute-the-plan",
+      "paragraph": 36,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-037",
+      "scene": "execute-the-plan",
+      "paragraph": 37,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-038",
+      "scene": "execute-the-plan",
+      "paragraph": 38,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-039",
+      "scene": "execute-the-plan",
+      "paragraph": 39,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-040",
+      "scene": "execute-the-plan",
+      "paragraph": 40,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-041",
+      "scene": "execute-the-plan",
+      "paragraph": 41,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-042",
+      "scene": "execute-the-plan",
+      "paragraph": 42,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "execute-the-plan-043",
+      "scene": "execute-the-plan",
+      "paragraph": 43,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "run-the-query-001",
+      "scene": "run-the-query",
+      "paragraph": 1,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "run-the-query-002",
+      "scene": "run-the-query",
+      "paragraph": 2,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "run-the-query-003",
+      "scene": "run-the-query",
+      "paragraph": 3,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "run-the-query-004",
+      "scene": "run-the-query",
+      "paragraph": 4,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "run-the-query-005",
+      "scene": "run-the-query",
+      "paragraph": 5,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "run-the-query-006",
+      "scene": "run-the-query",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "run-the-query-007",
+      "scene": "run-the-query",
+      "paragraph": 7,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "run-the-query-008",
+      "scene": "run-the-query",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "run-the-query-009",
+      "scene": "run-the-query",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "run-the-query-010",
+      "scene": "run-the-query",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "run-the-query-011",
+      "scene": "run-the-query",
+      "paragraph": 11,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "run-the-query-012",
+      "scene": "run-the-query",
+      "paragraph": 12,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "materialized-execution-001",
+      "scene": "materialized-execution",
+      "paragraph": 1,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "materialized-execution-002",
+      "scene": "materialized-execution",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-003",
+      "scene": "materialized-execution",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-004",
+      "scene": "materialized-execution",
+      "paragraph": 4,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-005",
+      "scene": "materialized-execution",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-006",
+      "scene": "materialized-execution",
+      "paragraph": 6,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "materialized-execution-007",
+      "scene": "materialized-execution",
+      "paragraph": 7,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-008",
+      "scene": "materialized-execution",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-009",
+      "scene": "materialized-execution",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-010",
+      "scene": "materialized-execution",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-011",
+      "scene": "materialized-execution",
+      "paragraph": 11,
+      "pauseAfter": 0.7
+    },
+    {
+      "id": "materialized-execution-012",
+      "scene": "materialized-execution",
+      "paragraph": 12,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "materialized-execution-013",
+      "scene": "materialized-execution",
+      "paragraph": 13,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "relational-algebra-001",
+      "scene": "relational-algebra",
+      "paragraph": 1,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-002",
+      "scene": "relational-algebra",
+      "paragraph": 2,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-003",
+      "scene": "relational-algebra",
+      "paragraph": 3,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-004",
+      "scene": "relational-algebra",
+      "paragraph": 4,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-005",
+      "scene": "relational-algebra",
+      "paragraph": 5,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-006",
+      "scene": "relational-algebra",
+      "paragraph": 6,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-007",
+      "scene": "relational-algebra",
+      "paragraph": 7,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-008",
+      "scene": "relational-algebra",
+      "paragraph": 8,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-009",
+      "scene": "relational-algebra",
+      "paragraph": 9,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-010",
+      "scene": "relational-algebra",
+      "paragraph": 10,
+      "pauseAfter": 0.15
+    },
+    {
+      "id": "relational-algebra-011",
+      "scene": "relational-algebra",
+      "paragraph": 11,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "relational-algebra-012",
+      "scene": "relational-algebra",
+      "paragraph": 12,
+      "pauseAfter": 0.45
+    },
+    {
+      "id": "relational-algebra-013",
+      "scene": "relational-algebra",
+      "paragraph": 13,
+      "pauseAfter": 0.8
+    }
   ]
 }

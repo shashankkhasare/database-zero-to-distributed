@@ -10,6 +10,7 @@
     "book:build": "mdbook build",
     "book:verify": "node scripts/verify-book.mjs",
     "video:audio": "node video/scripts/generate-audio.mjs",
+    "video:voice-review": "node video/scripts/generate-voice-review.mjs",
     "video:audio-review": "node video/scripts/compose-audio.mjs",
     "video:music": "node video/scripts/generate-music.mjs",
     "video:thumbnail": "node video/scripts/render-thumbnail.mjs",

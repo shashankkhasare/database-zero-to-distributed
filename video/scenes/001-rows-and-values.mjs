@@ -12,7 +12,7 @@ import {
   windowOpacity,
 } from "../components/scene-utils.mjs";
 
-export const duration = 82.9;
+export const duration = 114.85;
 
 export function renderScene(root, requestedTime) {
   const time = clamp(requestedTime, 0, duration);
@@ -23,14 +23,14 @@ export function renderScene(root, requestedTime) {
   const rowCard = createEmployeeRowCard(rows[0]);
   rowCard.classList.add("rows-values__hero-row");
   setStyle(rowCard, {
-    opacity: String(windowOpacity(time, 0, 1.2, 15.5, 17.5)),
-    transform: `translateX(-50%) scale(${lerp(1.12, 0.92, ease(fade(time, 31.0, 34.0)))})`,
+    opacity: String(windowOpacity(time, 0, 1.2, 18.5, 20.5)),
+    transform: `translateX(-50%) scale(${lerp(1.12, 0.92, ease(fade(time, 39.3, 43.4)))})`,
   });
   focusCells(rowCard, time);
   scene.append(rowCard);
 
   const cellCaption = element("div", "cell-caption", "A cell holds one value");
-  setStyle(cellCaption, { opacity: String(windowOpacity(time, 2.0, 4.0, 16.0, 17.0)) });
+  setStyle(cellCaption, { opacity: String(windowOpacity(time, 2.0, 4.0, 18.5, 20.0)) });
   scene.append(cellCaption);
 
   const valueGroup = element("section", "value-group");
@@ -42,7 +42,7 @@ export function renderScene(root, requestedTime) {
     element("div", "value-kind value-kind--text", "TEXT"),
   );
   setStyle(valueGroup, {
-    opacity: String(windowOpacity(time, 16.4, 18.5, 30.0, 31.5)),
+    opacity: String(windowOpacity(time, 19.3, 21.0, 42.8, 43.4)),
   });
   scene.append(valueGroup);
 
@@ -53,8 +53,8 @@ export function renderScene(root, requestedTime) {
     element("div", "row-model__note", "column name  +  value"),
   );
   setStyle(rowModel, {
-    opacity: String(windowOpacity(time, 31.0, 33.5, 52.0, 54.0)),
-    transform: `translateY(${lerp(24, 0, ease(fade(time, 31.0, 33.5)))}px)`,
+    opacity: String(windowOpacity(time, 43.4, 43.5, 78.1, 80.0)),
+    transform: `translateY(${lerp(24, 0, ease(fade(time, 43.4, 43.5)))}px)`,
   });
   scene.append(rowModel);
 
@@ -62,7 +62,7 @@ export function renderScene(root, requestedTime) {
   const abilityNames = ["CREATE", "FIND A VALUE", "KEEP SELECTED COLUMNS"];
   abilityNames.forEach((name, index) => {
     const ability = element("div", "ability-card", name);
-    setStyle(ability, { opacity: String(fade(time, 53 + index * 4.2, 55 + index * 4.2)) });
+    setStyle(ability, { opacity: String(fade(time, 80 + index * 5, 82 + index * 5)) });
     abilities.append(ability);
   });
   const projection = element("div", "ability-demo");
@@ -71,9 +71,9 @@ export function renderScene(root, requestedTime) {
     createArrow(),
     createEmployeeTable({ columns: ["name"], rows: [rows[0]], compact: true }),
   );
-  setStyle(projection, { opacity: String(fade(time, 65.0, 68.0)) });
+  setStyle(projection, { opacity: String(fade(time, 90.425, 94.0)) });
   abilities.append(projection);
-  setStyle(abilities, { opacity: String(windowOpacity(time, 52.0, 54.0, 73.0, 75.0)) });
+  setStyle(abilities, { opacity: String(windowOpacity(time, 78.1, 80.0, 108.125, 110.0)) });
   scene.append(abilities);
 
   const handoff = element("section", "rows-handoff");
@@ -86,9 +86,9 @@ export function renderScene(root, requestedTime) {
     element("div", "mini-operation", "?"),
   );
   handoff.append(stream, createArrow(), boxes);
-  const handoffProgress = ease(fade(time, 73.0, 78.0));
+  const handoffProgress = ease(fade(time, 108.125, 112.0));
   setStyle(handoff, {
-    opacity: String(fade(time, 72.5, 74.5)),
+    opacity: String(fade(time, 108.125, 110.0)),
     transform: `translateY(${lerp(35, 0, handoffProgress)}px)`,
   });
   scene.append(handoff);
@@ -97,7 +97,7 @@ export function renderScene(root, requestedTime) {
 
 function focusCells(rowCard, time) {
   const cells = rowCard.querySelectorAll(".employee-row-card__cell");
-  const active = time < 7 ? 0 : time < 13 ? 1 : -1;
+  const active = time < 4.95 ? 0 : time < 10.375 ? 1 : time < 18.5 ? 2 : -1;
   cells.forEach((cell, index) => {
     cell.classList.toggle("employee-row-card__cell--active", index === active);
   });
