@@ -131,14 +131,15 @@ before expanding its checklist here.
 - [x] Upload revision 2 privately as `jIuHtU4PjIs`
 - [x] Attach the custom thumbnail and serving English captions
 - [x] Verify successful processing and playlist placement
-- [ ] Review the processed upload and make it public manually
-- [ ] Retire public revision 1, `57IAZvOUHcg`, with the guarded command
-- [ ] Verify the replacement publicly and move the `lesson-001` tag
+- [x] Review the processed upload and make it public manually
+- [x] Retire public revision 1, `57IAZvOUHcg`, with the guarded command
+- [x] Verify the replacement publicly and move the `lesson-001` tag
 
-The previous upload must remain public until its replacement is reviewed and
-made public. The Google Cloud project is unaudited, so the API must not attempt
-to bypass YouTube's private-only upload restriction. A new agent can resume at
-the first unchecked item above, then continue milestone 002.
+The replacement is public, processed, serving English captions, and present in
+the public playlist. Revision 1 is unlisted and has no playlist entry. The
+Google Cloud project is unaudited, so future uploads must still be made public
+manually rather than attempting to bypass YouTube's private-only API
+restriction. New work resumes at milestone 002.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
 

@@ -36,6 +36,11 @@ console.log(`Replacement: https://youtu.be/${newVideoId} (${replacement.status?.
 console.log(`Old video: https://youtu.be/${oldVideoId} (${oldVideo.status?.privacyStatus})`);
 console.log(`Old playlist entries: ${oldPlaylistResponse.data.items?.length ?? 0}`);
 
+if (oldVideo.status?.privacyStatus === "unlisted" && (oldPlaylistResponse.data.items?.length ?? 0) === 0) {
+  console.log("The old video is already retired.");
+  process.exit(0);
+}
+
 if (replacement.processingDetails?.processingStatus !== "succeeded") {
   throw new Error("Refusing to retire the old video before replacement processing succeeds");
 }
