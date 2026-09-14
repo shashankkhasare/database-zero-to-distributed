@@ -61,6 +61,8 @@ outro:
 publishing:
   youtube:
     release: initial
+    video_id: InE6WfCcJK4
+    source_commit: 59ef57760a63286794e78278bfeaf93e5413246d
     playlist_id: PLSyokgEjsYrc
     title: "Relational Algebra Without the Math | Database: Zero to Distributed #2"
     description: |-

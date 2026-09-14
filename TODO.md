@@ -198,7 +198,8 @@ streaming execution, or new query operators.
 - [x] Write and review conceptual narration derived from the chapter
 - [x] Plan and implement the minimum visual scenes needed for the lesson
 - [x] Render, review, and verify the completed episode at 1920 by 1080 and 29.996 FPS
-- [ ] Upload the episode privately, verify processing, then make it public
+- [x] Upload the episode privately and verify processing, captions, thumbnail, and playlist placement
+- [ ] Make the processed episode public and verify its viewer-facing state
 - [ ] Tag the verified repository state as `lesson-002`
 
 ---
