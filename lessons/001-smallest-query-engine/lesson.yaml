@@ -49,9 +49,10 @@ thumbnail:
 
 publishing:
   youtube:
-    release: revision-2
-    video_id: jIuHtU4PjIs
-    replaces_video_id: 57IAZvOUHcg
+    release: revision-3
+    source_commit: 9428c8862cb62db4008ab4cdbbc27590bf96d7a4
+    video_id: 30QaYbZqZ4E
+    replaces_video_id: jIuHtU4PjIs
     playlist_id: PLSyokgEjsYrc
     title: "The Smallest Query Engine | Database: Zero to Distributed #1"
     description: |-
