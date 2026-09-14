@@ -151,7 +151,7 @@ command documented in `VIDEO.md`.
 
 ---
 
-# Current milestone: 002, Relational Algebra Without the Math
+# Completed milestone: 002, Relational Algebra Without the Math
 
 Lesson 002 uses relational algebra to answer the question promised by the
 Lesson 001 video: what makes two query plans mean the same thing? It should
@@ -199,8 +199,13 @@ streaming execution, or new query operators.
 - [x] Plan and implement the minimum visual scenes needed for the lesson
 - [x] Render, review, and verify the completed episode at 1920 by 1080 and 29.996 FPS
 - [x] Upload the episode privately and verify processing, captions, thumbnail, and playlist placement
-- [ ] Make the processed episode public and verify its viewer-facing state
-- [ ] Tag the verified repository state as `lesson-002`
+- [x] Make the processed episode public and verify its viewer-facing state
+- [x] Tag the verified repository state as `lesson-002`
+
+Lesson 002 was built from source commit
+`59ef57760a63286794e78278bfeaf93e5413246d`. The final 760.723-second video
+is public as `InE6WfCcJK4`, with its custom thumbnail, serving English
+captions, and public playlist placement verified on 2026-09-14.
 
 ---
 
@@ -209,7 +214,7 @@ streaming execution, or new query operators.
 ## Season 1 — Build the Smallest Query Engine
 
 - [x] 001 — The Smallest Query Engine
-- [ ] 002 — Relational Algebra Without the Math
+- [x] 002 — Relational Algebra Without the Math
 - [ ] 003 — SQL Is Just a Frontend
 - [ ] 004 — Binding and Expressions
 - [ ] 005 — Joins
