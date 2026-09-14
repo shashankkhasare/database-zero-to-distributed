@@ -56,25 +56,25 @@ is only one awkward detail: we have not built a database yet. Fortunately, an
 absent database gives us no old design that must be preserved.
 
 By the end of the chapter, we will have represented the table in Rust,
-described the required work, executed it, and tested each operation separately.
-That is not much of a database, but it is enough database to teach us how a
-query engine begins.
+described the required work, executed it, and checked the result. That is not
+much of a database, but it is enough database to teach us how a query engine
+begins.
 
 This chapter uses a small amount of Rust without pausing to teach the language.
 If any syntax is unfamiliar, keep [Appendix A](appendix-a-enough-rust.md) nearby
 and return here when the code is readable again.
 
-If you are building beside the book in an empty directory, create the Rust
-project first:
+Chapter 1 has no earlier lesson checkpoint. To build alongside it, begin in an
+empty directory and create the Rust project:
 
 ```bash
 cargo new --bin database-zero-to-distributed
 cd database-zero-to-distributed
 ```
 
-This command creates `Cargo.toml` and a starter `src/main.rs`. If you cloned the
-book's repository instead, those files already exist and you can continue from
-there.
+This command creates `Cargo.toml` and a starter `src/main.rs`. The
+`lesson-001` tag in the book's repository contains the completed chapter for
+comparison or recovery; it is the destination, not the starting point.
 
 ## 1.1 Begin without SQL
 
@@ -183,7 +183,13 @@ impl Row {
             values: owned_values,
         }
     }
+}
+```
 
+`src/row.rs`: add after the first `impl Row`
+
+```rust
+impl Row {
     pub fn get(&self, column: &str) -> Option<&Value> {
         for (name, value) in &self.values {
             if name == column {
@@ -193,7 +199,13 @@ impl Row {
 
         None
     }
+}
+```
 
+`src/row.rs`: add after the second `impl Row`
+
+```rust
+impl Row {
     pub fn project(&self, columns: &[String]) -> Self {
         let mut values = Vec::new();
 
@@ -277,7 +289,11 @@ impl fmt::Display for Row {
         write!(formatter, "}}")
     }
 }
+```
 
+`src/row.rs`: add after `impl fmt::Display for Row`
+
+```rust
 impl fmt::Display for Value {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -538,14 +554,12 @@ Plan::Filter {
 } => {
     let input_rows = input.execute();
     let mut output_rows = Vec::new();
-
     for row in input_rows {
         let value = match row.get(column) {
             Some(Value::Integer(value)) => value,
             Some(Value::Text(_)) => panic!("column is not an integer: {column}"),
             None => panic!("unknown column: {column}"),
         };
-
         if value > greater_than {
             output_rows.push(row);
         }
@@ -609,10 +623,10 @@ written from the outer project toward the inner scan. When it runs, results are
 produced in the opposite order: scan, filter, then project.
 
 Finally, the program executes the completed plan and prints every result row.
-Here is the complete entry point, including the employee data, plan, and output
-loop.
+We will assemble the entry point in short pieces, beginning with the modules
+and a function that creates one employee row.
 
-`src/main.rs`: create this file
+`src/main.rs`: replace the temporary file
 
 ```rust
 mod plan;
@@ -621,34 +635,50 @@ mod row;
 use plan::Plan;
 use row::{Row, Value};
 
-fn main() {
-    let employees = vec![
-        Row::new(vec![
-            ("id", Value::Integer(1)),
-            ("name", Value::Text("Ada".to_string())),
-            ("salary", Value::Integer(70_000)),
-        ]),
-        Row::new(vec![
-            ("id", Value::Integer(2)),
-            ("name", Value::Text("Linus".to_string())),
-            ("salary", Value::Integer(50_000)),
-        ]),
-        Row::new(vec![
-            ("id", Value::Integer(3)),
-            ("name", Value::Text("Grace".to_string())),
-            ("salary", Value::Integer(72_000)),
-        ]),
-    ];
+fn employee(id: i64, name: &str, salary: i64) -> Row {
+    Row::new(vec![
+        ("id", Value::Integer(id)),
+        ("name", Value::Text(name.to_string())),
+        ("salary", Value::Integer(salary)),
+    ])
+}
+```
 
+Now create the three-row table with that function.
+
+`src/main.rs`: add after `employee()`
+
+```rust
+fn employee_rows() -> Vec<Row> {
+    vec![
+        employee(1, "Ada", 70_000),
+        employee(2, "Linus", 50_000),
+        employee(3, "Grace", 72_000),
+    ]
+}
+```
+
+The entry point connects those rows to the plan.
+
+`src/main.rs`: add after `employee_rows()`
+
+```rust
+fn main() {
     let plan = Plan::Project {
         columns: vec!["name".to_string()],
         input: Box::new(Plan::Filter {
             column: "salary".to_string(),
             greater_than: 50_000,
-            input: Box::new(Plan::Scan { rows: employees }),
+            input: Box::new(Plan::Scan {
+                rows: employee_rows(),
+            }),
         }),
     };
+```
 
+`src/main.rs`: finish `main()`
+
+```rust
     println!("Employees earning more than 50,000:");
     for row in plan.execute() {
         println!("{row}");
@@ -673,10 +703,6 @@ Linus is absent because equality is not enough for `>`. Each result contains
 only a name, showing that projection ran after filtering. Together, these rows
 confirm that the scan read the employees, the filter applied the strict salary
 condition, and the project removed the columns we did not request.
-
-The repository also tests scan, filter, and project separately, followed by the
-complete plan. This lets us distinguish a broken operation from a mistake in
-how the nodes were connected.
 
 ## 1.6 What we deliberately did not build
 
@@ -722,8 +748,7 @@ These experiments stay within the ideas from this chapter:
 4. Add an employee who earns 50,001 and confirm that the strict comparison
    includes the new row.
 
-Restore the original deterministic demo after experimenting so the repository
-continues to match the chapter.
+Restore the original employee rows after experimenting, then continue.
 
 ## 1.8 We accidentally built some algebra
 

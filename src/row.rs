@@ -23,7 +23,9 @@ impl Row {
             values: owned_values,
         }
     }
+}
 
+impl Row {
     pub fn get(&self, column: &str) -> Option<&Value> {
         for (name, value) in &self.values {
             if name == column {
@@ -33,7 +35,9 @@ impl Row {
 
         None
     }
+}
 
+impl Row {
     pub fn project(&self, columns: &[String]) -> Self {
         let mut values = Vec::new();
 
