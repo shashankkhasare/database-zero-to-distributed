@@ -358,15 +358,6 @@ Try to decide the answer before running the code.
 
 </details>
 
-The completed `lesson-002` checkpoint contains tests for the safe early
-projection, the counterexample, and duplicate-preserving projection. They stay
-outside the main narrative because the visible tables and plans carry the
-argument here. Run the complete suite before moving on:
-
-```bash
-cargo test
-```
-
 ## 2.9 From SQL to a plan
 
 We can now read a logical plan as transformations of relations and compare two
