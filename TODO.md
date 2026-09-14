@@ -135,6 +135,14 @@ before expanding its checklist here.
 - [x] Retire public revision 1, `57IAZvOUHcg`, with the guarded command
 - [x] Verify the replacement publicly and move the `lesson-001` tag
 
+### Revision 3 outro correction
+
+- [x] Add the book and GitHub URLs to the Lesson 001 outro
+- [x] Keep configured bookend music in review previews without doubling it during final composition
+- [ ] Rebuild and verify the complete Lesson 001 delivery artifacts
+- [ ] Upload and verify the replacement privately
+- [ ] Make the replacement public, retire revision 2, and move `lesson-001`
+
 The replacement is public, processed, serving English captions, and present in
 the public playlist. Revision 1 is unlisted and has no playlist entry. The
 Google Cloud project is unaudited, so future uploads must still be made public

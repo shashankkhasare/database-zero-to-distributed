@@ -49,9 +49,8 @@ thumbnail:
 
 publishing:
   youtube:
-    release: revision-2
-    video_id: jIuHtU4PjIs
-    replaces_video_id: 57IAZvOUHcg
+    release: revision-3
+    replaces_video_id: jIuHtU4PjIs
     playlist_id: PLSyokgEjsYrc
     title: "The Smallest Query Engine | Database: Zero to Distributed #1"
     description: |-

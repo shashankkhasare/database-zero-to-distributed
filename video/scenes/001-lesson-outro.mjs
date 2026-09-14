@@ -40,7 +40,8 @@ export function renderScene(root, requestedTime) {
   const eyebrow = element("div", "lesson-outro__eyebrow", "NEXT LESSON");
   const title = element("div", "lesson-outro__title", "Relational Algebra Without the Math");
   const question = element("div", "lesson-outro__question", "What makes two query plans mean the same thing?");
-  const footer = element("div", "lesson-outro__footer", "Database: Zero to Distributed");
+  const footer = element("div", "lesson-outro__footer");
+  footer.innerHTML = "BOOK · shashankkhasare.github.io/database-zero-to-distributed<br>CODE · github.com/shashankkhasare/database-zero-to-distributed";
   const cardReveal = ease(fade(time, 2.45, 3.35));
   const titleReveal = ease(fade(time, 2.8, 3.75));
   const leave = ease(fade(time, 6.25, 6.95));
@@ -48,7 +49,7 @@ export function renderScene(root, requestedTime) {
   setStyle(eyebrow, { marginTop: "130px", opacity: String(cardReveal) });
   setStyle(title, { opacity: String(titleReveal), transform: `translateY(${lerp(22, 0, titleReveal)}px)` });
   setStyle(question, { opacity: String(fade(time, 3.65, 4.55)) });
-  setStyle(footer, { opacity: String(fade(time, 4.35, 5.25)) });
+  setStyle(footer, { opacity: String(fade(time, 4.35, 5.25)), lineHeight: "1.65" });
   scene.append(diagram, eyebrow, title, question, footer);
   root.append(scene);
 }
