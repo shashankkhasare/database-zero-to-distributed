@@ -210,6 +210,72 @@ captions, and public playlist placement verified on 2026-09-14.
 
 ---
 
+# Current milestone: 003, SQL Is Just a Frontend
+
+Lesson 003 replaces hand-built plans with the smallest visible SQL frontend.
+It accepts one deliberately narrow query shape, converts it through tokens and
+an AST into the existing logical plan, and executes that plan. It does not add
+binding, general expressions, joins, optimizer rules, or full SQL-89 support.
+
+## Learning outcome and scope
+
+- [ ] Begin with Chapter 2's unanswered need for a convenient plan language
+- [ ] Follow one query through `SQL -> tokens -> AST -> logical plan -> rows`
+- [ ] Explain the distinct jobs of a lexer, parser, AST, and logical plan
+- [ ] Define the exact grammar supported by the lesson
+- [ ] Accept `SELECT <column> FROM <table> WHERE <column> > <integer>;`
+- [ ] Reject unsupported or malformed syntax with clear, deterministic errors
+- [ ] Keep keywords case-insensitive while preserving identifier spelling
+- [ ] Translate the parsed employee query into the existing plan explicitly
+- [ ] Execute the SQL input and reproduce Ada and Grace
+- [ ] Identify binding and general expressions as deliberate future work
+- [ ] Avoid aliases, qualified names, Boolean expressions, joins, and subqueries
+
+## Book
+
+- [x] Add the Chapter 3 skeleton and contents entry
+- [x] Continue directly from Chapter 2 before beginning Section 3.1
+- [ ] Select and verify an opening epigraph or replace the provisional line
+- [ ] Explain tokenization with the exact employee query
+- [ ] Introduce the grammar before its parser implementation
+- [ ] Explain the AST as a representation rather than an executable plan
+- [ ] Show complete, file-labelled, copy-pasteable Rust snippets
+- [ ] Add only diagrams that materially clarify the frontend stages
+- [ ] Add a real try-it section with verifiable exercises
+- [ ] Collect unsupported syntax and teaching simplifications in one section
+- [ ] Update `book/TERMS.md` when lexer, token, parser, grammar, and AST appear
+- [ ] Review the complete chapter for continuity and non-specialist readability
+- [ ] Build the web book and verify links, code rendering, and responsive layout
+
+## Implementation and verification
+
+- [ ] Add the smallest token enum required by the supported grammar
+- [ ] Implement deterministic tokenization without a parser dependency
+- [ ] Add readable lexer tests, including whitespace and keyword case
+- [ ] Add a small AST that represents only the supported query shape
+- [ ] Implement parsing with explicit end-of-input and syntax errors
+- [ ] Add parser tests for the valid query and representative invalid inputs
+- [ ] Convert the AST into the existing `Plan` without redesigning the executor
+- [ ] Add an end-to-end test from SQL text to result rows
+- [ ] Update the executable demo and expected output
+- [ ] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
+- [ ] Run the deterministic demo and compare its output with the lesson artifact
+
+## Video and publication
+
+- [ ] Create Lesson 003 metadata after the chapter's teaching sequence is approved
+- [ ] Write and review conceptual narration rather than reading parser code aloud
+- [ ] Generate narration beats and review pronunciation at normal speed
+- [ ] Plan the minimum scenes needed to show characters becoming structure
+- [ ] Implement lesson-prefixed scenes and a dedicated thumbnail
+- [ ] Render and review scene previews before the final frame sequence
+- [ ] Build and verify the final 1080p episode with selectable captions
+- [ ] Upload privately and verify processing, thumbnail, captions, and playlist placement
+- [ ] Make the reviewed episode public and verify its viewer-facing state
+- [ ] Record the exact source commit and tag the verified state as `lesson-003`
+
+---
+
 # Curriculum milestones
 
 ## Season 1 — Build the Smallest Query Engine
