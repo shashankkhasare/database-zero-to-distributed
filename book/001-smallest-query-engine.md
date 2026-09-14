@@ -56,9 +56,9 @@ is only one awkward detail: we have not built a database yet. Fortunately, an
 absent database gives us no old design that must be preserved.
 
 By the end of the chapter, we will have represented the table in Rust,
-described the required work, executed it, and tested each operation separately.
-That is not much of a database, but it is enough database to teach us how a
-query engine begins.
+described the required work, executed it, and checked the result. That is not
+much of a database, but it is enough database to teach us how a query engine
+begins.
 
 This chapter uses a small amount of Rust without pausing to teach the language.
 If any syntax is unfamiliar, keep [Appendix A](appendix-a-enough-rust.md) nearby
@@ -704,10 +704,6 @@ only a name, showing that projection ran after filtering. Together, these rows
 confirm that the scan read the employees, the filter applied the strict salary
 condition, and the project removed the columns we did not request.
 
-The repository also tests scan, filter, and project separately, followed by the
-complete plan. This lets us distinguish a broken operation from a mistake in
-how the nodes were connected.
-
 ## 1.6 What we deliberately did not build
 
 Our query engine runs, but calling it a database in polite company would be
@@ -752,8 +748,7 @@ These experiments stay within the ideas from this chapter:
 4. Add an employee who earns 50,001 and confirm that the strict comparison
    includes the new row.
 
-Restore the original deterministic demo after experimenting so the repository
-continues to match the chapter.
+Restore the original employee rows after experimenting, then continue.
 
 ## 1.8 We accidentally built some algebra
 
