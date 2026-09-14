@@ -12,9 +12,12 @@ tag remain the authority for what the database accepts today.
 ## B.1 Notation
 
 Quoted words and symbols are written in SQL. A name such as `expression`
-refers to another rule. Parentheses group alternatives, `|` means “or,” `?`
+refers to another rule. Parentheses group subexpressions, `|` means “or,” `?`
 means optional, `*` means zero or more repetitions, and `+` means one or more.
-These notation marks are not typed into a query.
+Each suffix applies to the token or parenthesized group immediately before it.
+For example, `"OUTER"?` accepts zero or one `OUTER`, while
+`("," identifier)*` accepts any number of additional identifiers. These
+notation marks are not typed into a query.
 
 Keywords are case-insensitive. Identifiers retain their original spelling.
 
@@ -30,6 +33,7 @@ statement          = query_statement
                    | insert_statement
                    | update_statement
                    | delete_statement
+                   | start_statement
                    | commit_statement
                    | rollback_statement
                    | grant_statement
@@ -47,26 +51,34 @@ query              = with_clause? query_expression order_by_clause?
                      limit_clause? ;
 query_expression   = select_query (("UNION" | "INTERSECT" | "EXCEPT")
                      "ALL"? select_query)* ;
-with_clause        = "WITH" named_query ("," named_query)* ;
+with_clause        = "WITH" "RECURSIVE"? named_query ("," named_query)* ;
 named_query        = identifier "AS" "(" query ")" ;
 select_query       = "SELECT" set_quantifier? select_list
                      "FROM" table_reference ("," table_reference)*
                      where_clause? group_by_clause? having_clause? ;
 
 set_quantifier     = "DISTINCT" | "ALL" ;
-select_list        = "*" | select_item ("," select_item)* ;
-select_item        = expression alias? ;
+select_list        = select_item ("," select_item)* ;
+select_item        = "*" | qualified_star | expression alias? ;
+qualified_star     = identifier "." "*" ;
 alias              = "AS"? identifier ;
 table_reference    = table_primary join_clause* ;
-table_primary      = identifier alias? | "(" query ")" alias ;
-join_clause        = ("INNER" | "LEFT" "OUTER"? | "RIGHT" "OUTER"?)?
+table_primary      = identifier alias? | "(" query ")" alias
+                   | "(" table_reference ")" ;
+join_clause        = ("INNER" | "LEFT" "OUTER"? | "RIGHT" "OUTER"?
+                   | "FULL" "OUTER"?)?
                      "JOIN" table_primary "ON" expression ;
 where_clause       = "WHERE" expression ;
-group_by_clause    = "GROUP" "BY" expression ("," expression)* ;
+group_by_clause    = "GROUP" "BY" grouping_element
+                     ("," grouping_element)* ;
+grouping_element   = expression
+                   | "ROLLUP" "(" expression ("," expression)* ")"
+                   | "CUBE" "(" expression ("," expression)* ")" ;
 having_clause      = "HAVING" expression ;
 order_by_clause    = "ORDER" "BY" ordering ("," ordering)* ;
-ordering           = expression ("ASC" | "DESC")? ;
-limit_clause       = "LIMIT" integer ;
+ordering           = expression ("ASC" | "DESC")?
+                     ("NULLS" ("FIRST" | "LAST"))? ;
+limit_clause       = "LIMIT" integer ("OFFSET" integer)? ;
 ```
 
 `LIMIT` is a documented modern extension, not SQL-89 syntax.
@@ -81,27 +93,50 @@ or_expression       = and_expression ("OR" and_expression)* ;
 and_expression      = not_expression ("AND" not_expression)* ;
 not_expression      = "NOT" not_expression | predicate ;
 predicate           = value_expression comparison_operator value_expression
-                    | value_expression "BETWEEN" value_expression
+                    | value_expression "NOT"? "BETWEEN" value_expression
                       "AND" value_expression
-                    | value_expression "LIKE" value_expression
+                    | value_expression "NOT"? "LIKE" value_expression
                     | value_expression "IS" "NOT"? "NULL"
-                    | value_expression ("NOT"? "IN") "(" query ")"
+                    | value_expression "NOT"? "IN" "(" in_value ")"
                     | "EXISTS" "(" query ")"
                     | "(" expression ")" ;
 comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
-value_expression    = term (("+" | "-") term)* ;
+in_value            = query | expression ("," expression)* ;
+value_expression    = concatenation ;
+concatenation       = additive ("||" additive)* ;
+additive            = term (("+" | "-") term)* ;
 term                = factor (("*" | "/") factor)* ;
 factor              = ("+" | "-") factor | primary ;
 primary             = column_reference | literal | function_call
-                    | case_expression
+                    | case_expression | extract_expression | cast_expression
+                    | substring_expression
                     | "(" query ")" | "(" value_expression ")" ;
 column_reference    = (identifier ".")? identifier ;
-literal             = integer | decimal | string | date_literal | "NULL" ;
+literal             = integer | decimal | string | date_literal
+                    | timestamp_literal | interval_literal | "NULL" ;
 date_literal        = "DATE" string ;
+timestamp_literal   = "TIMESTAMP" string ;
+interval_literal    = "INTERVAL" string interval_unit ;
+interval_unit       = "YEAR" | "MONTH" | "DAY" | "HOUR" | "MINUTE"
+                    | "SECOND" ;
 function_call       = identifier "(" ("*" | set_quantifier? expression
-                      ("," expression)*)? ")" ;
-case_expression     = "CASE" ("WHEN" expression "THEN" expression)+
+                      ("," expression)*)? ")" over_clause? ;
+extract_expression  = "EXTRACT" "(" identifier "FROM" expression ")" ;
+cast_expression     = "CAST" "(" expression "AS" data_type ")" ;
+substring_expression = "SUBSTRING" "(" expression "FROM" expression
+                       ("FOR" expression)? ")" ;
+case_expression     = "CASE" expression?
+                      ("WHEN" expression "THEN" expression)+
                       ("ELSE" expression)? "END" ;
+over_clause         = "OVER" "(" partition_by_clause? order_by_clause?
+                      window_frame? ")" ;
+partition_by_clause = "PARTITION" "BY" expression ("," expression)* ;
+window_frame        = ("ROWS" | "RANGE") frame_extent ;
+frame_extent        = frame_bound
+                    | "BETWEEN" frame_bound "AND" frame_bound ;
+frame_bound         = "UNBOUNDED" ("PRECEDING" | "FOLLOWING")
+                    | "CURRENT" "ROW"
+                    | integer ("PRECEDING" | "FOLLOWING") ;
 ```
 
 The first implementation supports only integer comparison with `>`. The wider
@@ -114,8 +149,9 @@ Introduced when writable storage needs table definitions:
 
 ```text
 create_table_statement = "CREATE" "TABLE" identifier
-                         "(" column_definition
-                         ("," column_definition)* ")" ";" ;
+                         "(" table_element
+                         ("," table_element)* ")" ";" ;
+table_element      = column_definition | table_constraint ;
 column_definition  = identifier data_type column_constraint* ;
 data_type          = "INTEGER"
                    | "BIGINT"
@@ -125,8 +161,16 @@ data_type          = "INTEGER"
                    | "DATE"
                    | "TIMESTAMP" ;
 column_constraint  = "NOT" "NULL" | "UNIQUE" | "PRIMARY" "KEY"
+                   | "DEFAULT" expression
                    | "REFERENCES" identifier "(" identifier ")"
                    | "CHECK" "(" expression ")" ;
+table_constraint   = ("CONSTRAINT" identifier)?
+                     ("PRIMARY" "KEY" column_list
+                     | "UNIQUE" column_list
+                     | "FOREIGN" "KEY" column_list "REFERENCES"
+                       identifier column_list
+                     | "CHECK" "(" expression ")") ;
+column_list        = "(" identifier ("," identifier)* ")" ;
 ```
 
 ### Data mutation
@@ -137,8 +181,9 @@ transaction chapters can make their effects and failure behavior visible:
 ```text
 insert_statement   = "INSERT" "INTO" identifier
                      ("(" identifier ("," identifier)* ")")?
-                     "VALUES" row_value ("," row_value)* ";" ;
-row_value          = "(" literal ("," literal)* ")" ;
+                     insert_source ";" ;
+insert_source      = "VALUES" row_value ("," row_value)* | query ;
+row_value          = "(" expression ("," expression)* ")" ;
 update_statement   = "UPDATE" identifier "SET" assignment
                      ("," assignment)* where_clause? ";" ;
 assignment         = identifier "=" expression ;
@@ -150,6 +195,8 @@ delete_statement   = "DELETE" "FROM" identifier where_clause? ";" ;
 Introduced with transactions:
 
 ```text
+start_statement    = "BEGIN" ("TRANSACTION" | "WORK")? ";"
+                   | "START" "TRANSACTION" ";" ;
 commit_statement   = "COMMIT" ";" ;
 rollback_statement = "ROLLBACK" ";" ;
 ```
@@ -182,7 +229,7 @@ whitespace         = " " | tab | carriage_return | newline ;
 
 A doubled quote inside a string represents one quote character. Quoted
 identifiers, comments, Unicode identifier rules, and numeric forms beyond
-non-negative integers are not currently planned.
+integers and fixed-point decimals are not currently planned.
 
 ## B.4 Grammar implemented at each checkpoint
 

@@ -220,48 +220,51 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
 ## Learning outcome and scope
 
-- [ ] Begin with Chapter 2's unanswered need for a convenient plan language
-- [ ] Follow one query through `SQL -> tokens -> AST -> logical plan -> rows`
-- [ ] Explain the distinct jobs of a lexer, parser, AST, and logical plan
-- [ ] Define the exact grammar supported by the lesson
-- [ ] Accept `SELECT <column> FROM <table> WHERE <column> > <integer>;`
-- [ ] Reject unsupported or malformed syntax with clear, deterministic errors
-- [ ] Keep keywords case-insensitive while preserving identifier spelling
-- [ ] Translate the parsed employee query into the existing plan explicitly
-- [ ] Execute the SQL input and reproduce Ada and Grace
-- [ ] Identify binding and general expressions as deliberate future work
-- [ ] Avoid aliases, qualified names, Boolean expressions, joins, and subqueries
+- [x] Begin with Chapter 2's unanswered need for a convenient plan language
+- [x] Follow one query through `SQL -> tokens -> AST -> logical plan -> rows`
+- [x] Explain the distinct jobs of a lexer, parser, AST, and logical plan
+- [x] Define the exact grammar supported by the lesson
+- [x] Accept `SELECT <column> FROM <table> WHERE <column> > <integer>;`
+- [x] Reject unsupported or malformed syntax with clear, deterministic errors
+- [x] Keep keywords case-insensitive while preserving identifier spelling
+- [x] Translate the parsed employee query into the existing plan explicitly
+- [x] Execute the SQL input and reproduce Ada and Grace
+- [x] Identify binding and general expressions as deliberate future work
+- [x] Avoid aliases, qualified names, Boolean expressions, joins, and subqueries
 
 ## Book
 
 - [x] Add the Chapter 3 skeleton and contents entry
 - [x] Continue directly from Chapter 2 before beginning Section 3.1
 - [x] Add Appendix B as the living, implementation-backed SQL grammar reference
-- [ ] Select and verify an opening epigraph or replace the provisional line
-- [ ] Explain tokenization with the exact employee query
-- [ ] Introduce the grammar before its parser implementation
-- [ ] Explain the AST as a representation rather than an executable plan
-- [ ] Show complete, file-labelled, copy-pasteable Rust snippets
-- [ ] Add only diagrams that materially clarify the frontend stages
-- [ ] Add a real try-it section with verifiable exercises
-- [ ] Collect unsupported syntax and teaching simplifications in one section
-- [ ] Update `book/TERMS.md` when lexer, token, parser, grammar, and AST appear
+- [x] Select and verify an opening epigraph or replace the provisional line
+- [x] Explain tokenization with the exact employee query
+- [x] Introduce the grammar before its parser implementation
+- [x] Explain the AST as a representation rather than an executable plan
+- [x] Show complete, file-labelled, copy-pasteable Rust snippets
+- [x] Add only diagrams that materially clarify the frontend stages
+- [x] Define the minimum Chapter 3 illustration set and record reproducible prompts
+- [x] Generate and review the Chapter 3 opening, tokenization, and AST-to-plan images
+- [x] Place the approved images with useful alt text and captions
+- [x] Add a real try-it section with verifiable exercises
+- [x] Collect unsupported syntax and teaching simplifications in one section
+- [x] Update `book/TERMS.md` when lexer, token, parser, grammar, and AST appear
 - [ ] Review the complete chapter for continuity and non-specialist readability
-- [ ] Build the web book and verify links, code rendering, and responsive layout
+- [x] Build the web book and verify links, code rendering, and responsive layout
 
 ## Implementation and verification
 
-- [ ] Add the smallest token enum required by the supported grammar
-- [ ] Implement deterministic tokenization without a parser dependency
-- [ ] Add readable lexer tests, including whitespace and keyword case
-- [ ] Add a small AST that represents only the supported query shape
-- [ ] Implement parsing with explicit end-of-input and syntax errors
-- [ ] Add parser tests for the valid query and representative invalid inputs
-- [ ] Convert the AST into the existing `Plan` without redesigning the executor
-- [ ] Add an end-to-end test from SQL text to result rows
-- [ ] Update the executable demo and expected output
-- [ ] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
-- [ ] Run the deterministic demo and compare its output with the lesson artifact
+- [x] Add the smallest token enum required by the supported grammar
+- [x] Implement deterministic tokenization without a parser dependency
+- [x] Add readable lexer tests, including whitespace and keyword case
+- [x] Add a small AST that represents only the supported query shape
+- [x] Implement parsing with explicit end-of-input and syntax errors
+- [x] Add parser tests for the valid query and representative invalid inputs
+- [x] Convert the AST into the existing `Plan` without redesigning the executor
+- [x] Add an end-to-end test from SQL text to result rows
+- [x] Update the executable demo and expected output
+- [x] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
+- [x] Run the deterministic demo and compare its output with the lesson artifact
 
 ## Video and publication
 

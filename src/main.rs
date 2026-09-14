@@ -1,7 +1,9 @@
+mod lexer;
+mod parser;
 mod plan;
 mod row;
 
-use plan::Plan;
+use parser::parse;
 use row::{Row, Value};
 
 fn main() {
@@ -23,14 +25,10 @@ fn main() {
         ]),
     ];
 
-    let plan = Plan::Project {
-        columns: vec!["name".to_string()],
-        input: Box::new(Plan::Filter {
-            column: "salary".to_string(),
-            greater_than: 50_000,
-            input: Box::new(Plan::Scan { rows: employees }),
-        }),
-    };
+    let sql = "SELECT name FROM employees WHERE salary > 50000;";
+    let plan = parse(sql)
+        .expect("the lesson query should parse")
+        .into_plan(employees);
 
     println!("Employees earning more than 50,000:");
     for row in plan.execute() {

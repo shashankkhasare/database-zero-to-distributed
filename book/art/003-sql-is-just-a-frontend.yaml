@@ -1,0 +1,65 @@
+lesson: "003"
+style: book/art/STYLE.md
+
+images:
+  - id: sql-becomes-a-plan
+    kind: generated-raster
+    output: book/images/003-sql-becomes-a-plan.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: A short SQL request enters a database and emerges as a Scan, Filter, and Project plan.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening illustration for a
+      technical book chapter about SQL as a database frontend. On the left,
+      show one broad paper query card with the exact three lines
+      "SELECT name", "FROM employees", and "WHERE salary > 50000". Let the
+      card enter a large teal database built from stacked cylindrical disks.
+      In a cutaway window inside the database, show the request reorganized
+      into three vertically stacked rounded cards, with "PROJECT" at the top,
+      "FILTER" in the middle, and "SCAN" at the bottom. Straight connecting
+      paths should make the transformation from written request to structured
+      plan immediately clear. Follow book/art/STYLE.md exactly. Wide landscape
+      composition with generous quiet margins. Render only the specified SQL
+      and three operator labels, spelled exactly. No extra text, people, logos,
+      watermark, photorealism, factory machinery, or glossy 3D rendering.
+
+  - id: query-becomes-tokens
+    kind: generated-raster
+    output: book/images/003-query-becomes-tokens.png
+    placement: section 3.2 after the token sequence
+    alt: A continuous SQL query strip separates into distinct keyword, identifier, symbol, integer, and semicolon token cards.
+    prompt: >-
+      Use case: scientific-educational. Asset type: tokenization illustration
+      for a technical database book. At the top, show one continuous paper
+      strip containing exactly "SELECT name FROM employees WHERE salary >
+      50000;". Below it, show the strip gently separating into nine distinct
+      aligned cards containing exactly "SELECT", "name", "FROM",
+      "employees", "WHERE", "salary", ">", "50000", and ";". Use subtle
+      color families to distinguish keywords, identifiers, the comparison
+      symbol, the integer, and the terminator, without adding a legend. Make
+      the one-to-many transformation obvious and orderly. Between the query
+      strip and the complete row of token cards, draw one centered downward
+      arrow labeled exactly "LEXER". Do not draw individual arrows between
+      query words and token cards. Follow
+      book/art/STYLE.md exactly. Wide landscape composition, large readable
+      text, generous margins. No other text, database machinery, people,
+      logos, watermark, photorealism, or glossy 3D rendering.
+
+  - id: ast-becomes-plan
+    kind: generated-raster
+    output: book/images/003-ast-becomes-plan.png
+    placement: section 3.6 after mapping the Query AST to the logical plan
+    alt: Four parsed query fields on the left map into Project, Filter, and Scan plan nodes on the right.
+    prompt: >-
+      Use case: scientific-educational. Asset type: conceptual transformation
+      illustration for a technical database book. On the left, show one tidy
+      record card titled exactly "QUERY" with four rows: "name",
+      "employees", "salary", and "50000". On the right, show three vertically
+      aligned rounded cards connected by straight upward paths: bottom "SCAN",
+      middle "FILTER", and top "PROJECT". Four simple colored threads leave
+      the record fields and join the appropriate plan cards, making it clear
+      that parsed information is used to construct the plan. Keep every line
+      away from text and card interiors except at clean endpoints. Follow
+      book/art/STYLE.md exactly. Wide landscape composition with generous
+      margins. Render only the specified labels and values, spelled exactly.
+      No extra text, people, logos, watermark, photorealism, factory
+      machinery, or glossy 3D rendering.

@@ -24,6 +24,12 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | physical plan | Chapter 2, §2.3 | A description of how the database will perform the work |
 | equivalent plans | Chapter 2, §2.4 | Plans that produce the same result for every valid input |
 | counterexample | Chapter 2, §2.5.3 | One valid input that disproves an equivalence claim |
+| token | Chapter 3, §3.2 | One meaningful unit recognized in SQL source text |
+| lexer | Chapter 3, §3.2 | The frontend component that groups source characters into tokens |
+| grammar | Chapter 3, §3.3 | Rules describing which token structures form valid input |
+| parser | Chapter 3, §3.3 | The frontend component that checks tokens against the grammar and constructs an AST |
+| abstract syntax tree (AST) | Chapter 3, §3.4 | Data that preserves the meaningful structure parsed from source text |
+| binding | Chapter 3, §3.10 | Connecting names in an AST to actual database objects and checking their use |
 
 ## Maintenance rule
 
