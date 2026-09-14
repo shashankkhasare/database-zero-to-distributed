@@ -22,6 +22,17 @@ textbook set projection and this engine's duplicate-preserving Project.
   <figcaption>Different paths can preserve the same answer.</figcaption>
 </figure>
 
+To build alongside this chapter, begin from the completed Chapter 1
+checkpoint:
+
+```bash
+git switch --create chapter-002 lesson-001
+```
+
+The `lesson-002` tag contains the completed version for comparison or
+recovery. This chapter does not add another operator. It uses the existing
+engine to investigate which plan transformations preserve its result.
+
 Chapter 1 left us with a working query engine and one unanswered question:
 how can we tell whether two query plans still produce the same result? This
 question matters whenever a database rearranges work. A different arrangement
@@ -276,43 +287,10 @@ Any salary greater than 60,000 is already greater than 50,000. We learn which
 condition is removable from their meanings, not from the particular rows in
 our first table.
 
-The repository records the counterexample in a complete test.
-
-`src/plan.rs`: inside `mod tests`, the complete counterexample test
-
-```rust
-#[test]
-fn dropping_a_filter_based_on_one_input_changes_other_results() {
-    let original_rows = employees();
-    assert_eq!(
-        strict_and_weak_salary_filters(original_rows.clone()).execute(),
-        salary_filter(original_rows, 50_000).execute()
-    );
-
-    let revealing_rows = vec![Row::new(vec![
-        ("id", Value::Integer(4)),
-        ("name", Value::Text("Edsger".to_string())),
-        ("salary", Value::Integer(55_000)),
-    ])];
-
-    assert_ne!(
-        strict_and_weak_salary_filters(revealing_rows.clone()).execute(),
-        salary_filter(revealing_rows, 50_000).execute()
-    );
-}
-```
-
-This code is copied from the real test module, where `employees`,
-`salary_filter`, and `strict_and_weak_salary_filters` construct the plans named
-in the test. Run it with:
-
-```bash
-cargo test dropping_a_filter_based_on_one_input_changes_other_results
-```
-
-A passing test supplies evidence about its examples. The general argument must
-still come from the operations: which rows they keep, which columns they need,
-and whether changing their order can alter either fact.
+A test can preserve this counterexample, but passing examples are not a general
+proof. The general argument must still come from the operations: which rows
+they keep, which columns they need, and whether changing their order can alter
+either fact.
 
 ## 2.6 Why equivalent plans matter
 
@@ -380,28 +358,13 @@ Try to decide the answer before running the code.
 
 </details>
 
-The final behavior also has a repository test. It prevents a future refactor
-from silently making the educational operator claim untrue.
+The completed `lesson-002` checkpoint contains tests for the safe early
+projection, the counterexample, and duplicate-preserving projection. They stay
+outside the main narrative because the visible tables and plans carry the
+argument here. Run the complete suite before moving on:
 
-`src/plan.rs`: duplicate-preserving projection
-
-```rust
-#[test]
-fn project_preserves_duplicate_rows() {
-    let rows = vec![
-        Row::new(vec![("name", Value::Text("Ada".to_string()))]),
-        Row::new(vec![("name", Value::Text("Ada".to_string()))]),
-    ];
-    let plan = Plan::Project {
-        columns: vec!["name".to_string()],
-        input: Box::new(Plan::Scan { rows }),
-    };
-
-    let result = plan.execute();
-
-    assert_eq!(result.len(), 2);
-    assert_eq!(result[0], result[1]);
-}
+```bash
+cargo test
 ```
 
 ## 2.9 From SQL to a plan
