@@ -881,7 +881,7 @@ Good:
 
 ```rust
 // We intentionally materialize the entire child relation here.
-// Streaming execution is introduced in lesson 009.
+// Streaming execution is introduced in lesson 010.
 ```
 
 Less useful:

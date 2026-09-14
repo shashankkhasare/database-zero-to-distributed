@@ -25,6 +25,7 @@ not design distant lessons prematurely.
 - [x] Publish Rust orientation as optional Appendix A instead of lesson 000
 - [x] Use one movable `lesson-NNN` tag per verified lesson while the series is in active development
 - [x] Define the smallest lesson directory only when lesson 001 needs it
+- [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
 
 ---
 
@@ -145,20 +146,11 @@ before expanding its checklist here.
 
 The replacement is public, processed, serving English captions, and present in
 the public playlist. Revisions 1 and 2 are unlisted and have no playlist
-entries. The
-Google Cloud project is unaudited, so future uploads must still be made public
-manually rather than attempting to bypass YouTube's private-only API
-restriction. New work resumes at milestone 002.
+entries. The Google Cloud project is unaudited, so future uploads must still
+be made public manually rather than attempting to bypass YouTube's
+private-only API restriction. New work resumes at milestone 002.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
-
-### Pending Lesson 001 maintenance
-
-- [ ] Rebuild Lesson 001 with the book and GitHub URLs in its outro
-- [ ] Review the corrected historical lesson state and move `lesson-001`
-- [ ] Replace the public Lesson 001 upload and verify its captions, thumbnail, and playlist entry
-
----
 
 # Completed milestone: 002, Relational Algebra Without the Math
 
@@ -229,95 +221,96 @@ captions, and public playlist placement verified on 2026-09-14.
 - [ ] 005 — Joins
 - [ ] 006 — GROUP BY and Aggregation
 - [ ] 007 — Sort, DISTINCT and LIMIT
+- [ ] 008 — Subqueries Are Plans Inside Plans
 
 ## Season 2 — How Query Engines Execute
 
-- [ ] 008 — Materialize Everything
-- [ ] 009 — Stop Materializing Everything
-- [ ] 010 — Logical Plan vs Physical Plan
+- [ ] 009 — Materialize Everything
+- [ ] 010 — Stop Materializing Everything
+- [ ] 011 — Logical Plan vs Physical Plan
 
 ## Season 3 — Query Optimization
 
-- [ ] 011 — The First Query Optimizer
-- [ ] 012 — Statistics
-- [ ] 013 — Cost
-- [ ] 014 — Join Ordering
+- [ ] 012 — The First Query Optimizer
+- [ ] 013 — Statistics
+- [ ] 014 — Cost
+- [ ] 015 — Join Ordering
 
 ## Season 4 — Parallel Execution
 
-- [ ] 015 — Split the Table Into Partitions
-- [ ] 016 — The Plan Becomes a DAG
-- [ ] 017 — Build a Scheduler
+- [ ] 016 — Split the Table Into Partitions
+- [ ] 017 — The Plan Becomes a DAG
+- [ ] 018 — Build a Scheduler
 
 ## Season 5 — Distributed Query Execution
 
-- [ ] 018 — Our First Multi-Node Query
-- [ ] 019 — Why Distributed Joins Break
-- [ ] 020 — Invent Exchange
-- [ ] 021 — Build a Shuffle
-- [ ] 022 — Distributed Aggregation
-- [ ] 023 — Distributed Hash Join
-- [ ] 024 — Broadcast Join
-- [ ] 025 — Distributed Physical Planning
-- [ ] 026 — When Synchronous Networking Stops Scaling
-- [ ] 027 — Failures Are Normal
-- [ ] 028 — Lost Shuffle Data
-- [ ] 029 — Data Skew
-- [ ] 030 — Memory Is Finite
-- [ ] 031 — Spill to Disk
-- [ ] 032 — What Did We Build?
+- [ ] 019 — Our First Multi-Node Query
+- [ ] 020 — Why Distributed Joins Break
+- [ ] 021 — Invent Exchange
+- [ ] 022 — Build a Shuffle
+- [ ] 023 — Distributed Aggregation
+- [ ] 024 — Distributed Hash Join
+- [ ] 025 — Broadcast Join
+- [ ] 026 — Distributed Physical Planning
+- [ ] 027 — When Synchronous Networking Stops Scaling
+- [ ] 028 — Failures Are Normal
+- [ ] 029 — Lost Shuffle Data
+- [ ] 030 — Data Skew
+- [ ] 031 — Memory Is Finite
+- [ ] 032 — Spill to Disk
+- [ ] 033 — What Did We Build?
 
 ## Season 6 — Build a Storage Engine
 
-- [ ] 033 — A Database Starts With Bytes
-- [ ] 034 — Slotted Pages
-- [ ] 035 — Heap Files
-- [ ] 036 — The Buffer Pool
-- [ ] 037 — Build a B+ Tree
-- [ ] 038 — Connect Query Execution to Storage
+- [ ] 034 — A Database Starts With Bytes
+- [ ] 035 — Slotted Pages
+- [ ] 036 — Heap Files
+- [ ] 037 — The Buffer Pool
+- [ ] 038 — Build a B+ Tree
+- [ ] 039 — Connect Query Execution to Storage
 
 ## Season 7 — Transactions and ACID
 
-- [ ] 039 — Break the Database
-- [ ] 040 — Write-Ahead Logging
-- [ ] 041 — Crash Recovery
-- [ ] 042 — Concurrency Control With Locks
-- [ ] 043 — Deadlocks
-- [ ] 044 — MVCC
-- [ ] 045 — Isolation Levels
-- [ ] 046 — ACID, Finally
+- [ ] 040 — Break the Database
+- [ ] 041 — Write-Ahead Logging
+- [ ] 042 — Crash Recovery
+- [ ] 043 — Concurrency Control With Locks
+- [ ] 044 — Deadlocks
+- [ ] 045 — MVCC
+- [ ] 046 — Isolation Levels
+- [ ] 047 — ACID, Finally
 
 ## Season 8 — Distributed Storage
 
-- [ ] 047 — Replication
-- [ ] 048 — Replication Lag
-- [ ] 049 — The Primary Dies
-- [ ] 050 — Build Raft
-- [ ] 051 — Strongly Consistent Replicated Storage
+- [ ] 048 — Replication
+- [ ] 049 — Replication Lag
+- [ ] 050 — The Primary Dies
+- [ ] 051 — Build Raft
+- [ ] 052 — Strongly Consistent Replicated Storage
 
 ## Season 9 — Sharding
 
-- [ ] 052 — One Node Cannot Hold Everything
-- [ ] 053 — Range Sharding
-- [ ] 054 — Routing
-- [ ] 055 — Rebalancing
+- [ ] 053 — One Node Cannot Hold Everything
+- [ ] 054 — Range Sharding
+- [ ] 055 — Routing
+- [ ] 056 — Rebalancing
 
 ## Season 10 — Distributed Transactions
 
-- [ ] 056 — One Transaction, Two Shards
-- [ ] 057 — Two-Phase Commit
-- [ ] 058 — Coordinator Failure
-- [ ] 059 — Distributed MVCC
-- [ ] 060 — Serializable Distributed Transactions
+- [ ] 057 — One Transaction, Two Shards
+- [ ] 058 — Two-Phase Commit
+- [ ] 059 — Coordinator Failure
+- [ ] 060 — Distributed MVCC
+- [ ] 061 — Serializable Distributed Transactions
 
 ## Season 11 — Bring Everything Together
 
-- [ ] 061 — Distributed SQL Over Distributed Storage
-- [ ] 062 — One SQL Query, End to End
-- [ ] 063 — One Transaction, End to End
-- [ ] 064 — Benchmark It
-- [ ] 065 — Break Everything
-- [ ] 066 — Where Real Databases Go Further
+- [ ] 062 — Distributed SQL Over Distributed Storage
+- [ ] 063 — One SQL Query, End to End
+- [ ] 064 — One Transaction, End to End
+- [ ] 065 — Benchmark It
+- [ ] 066 — Break Everything
+- [ ] 067 — Where Real Databases Go Further
 
 ---
 
