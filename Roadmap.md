@@ -170,6 +170,12 @@ control; and add `GRANT` and `REVOKE` only when the system has identities and
 an authorization boundary. Assign their exact lesson numbers when those
 milestones become active instead of designing their implementations early.
 
+The final benchmark suite should exercise TPC-style analytical and
+transactional workloads. SQL-89 is not sufficient for that destination:
+TPC-H defines its query functions in SQL-92, while TPC-DS uses SQL:1999 core
+with OLAP features. Add later-standard constructs only when a benchmark or
+database lesson motivates them, and record each extension in Appendix B.
+
 ---
 
 ## 003 — SQL Is Just a Frontend
@@ -1323,6 +1329,19 @@ Commit
 ## 065 — Benchmark It
 
 Build a small repeatable benchmark suite inspired by analytical and transactional workloads.
+
+Include a staged compatibility matrix:
+
+- run the complete TPC-H query set when its required SQL and data types exist
+- run selected TPC-DS queries first, then expand coverage without hiding
+  unsupported SQL behind manual plan construction
+- run a TPC-C-inspired transaction mix after concurrency control, durability,
+  and exact decimal arithmetic exist
+
+Use official schemas, data generators, and validation rules where their terms
+permit. Clearly label educational or scaled-down runs. Do not describe a result
+as an official TPC result unless every applicable compliance and disclosure
+requirement has been satisfied.
 
 Measure:
 

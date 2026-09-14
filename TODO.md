@@ -26,6 +26,7 @@ not design distant lessons prematurely.
 - [x] Use one movable `lesson-NNN` tag per verified lesson while the series is in active development
 - [x] Define the smallest lesson directory only when lesson 001 needs it
 - [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
+- [x] Record staged TPC-H, TPC-DS, and TPC-C coverage as long-term validation targets
 
 ---
 
@@ -235,6 +236,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
 - [x] Add the Chapter 3 skeleton and contents entry
 - [x] Continue directly from Chapter 2 before beginning Section 3.1
+- [x] Add Appendix B as the living, implementation-backed SQL grammar reference
 - [ ] Select and verify an opening epigraph or replace the provisional line
 - [ ] Explain tokenization with the exact employee query
 - [ ] Introduce the grammar before its parser implementation

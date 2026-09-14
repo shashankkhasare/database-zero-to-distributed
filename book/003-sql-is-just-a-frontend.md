@@ -16,8 +16,7 @@ logical plan. They also understand that accepting one deliberately tiny SQL
 shape is not a claim of SQL-89 compliance.
 -->
 
-> A database cannot execute punctuation. First, it must discover the structure
-> hiding inside the text.
+> SQL lets us write a plan without drawing the tree ourselves.
 
 Chapter 2 ended with a plan that our engine could inspect and execute. There
 was only one inconvenience: we had to construct that plan ourselves. A person
@@ -50,8 +49,9 @@ Rows
 
 We will support only the query shown above and other queries with the same
 shape. That narrow boundary lets us see every stage without hiding parsing
-inside a library. Later chapters will expand the language when aliases,
-expressions, joins, aggregation, sorting, and subqueries give us a reason.
+inside a library. Appendix B records the complete accepted grammar as it
+grows. Later chapters will expand it when aliases, expressions, joins,
+aggregation, sorting, and subqueries give us a reason.
 
 ## 3.1 SQL begins as characters
 
@@ -65,8 +65,19 @@ integer literal, comparison symbol, and semicolon in the employee query.
 
 ## 3.3 Give the tokens a shape
 
-Define the one grammar accepted in this lesson and show how a parser checks
-that the token sequence follows it.
+The complete course grammar lives in Appendix B, but our first parser needs
+only these productions:
+
+```text
+query          = select_clause from_clause where_clause ";" ;
+select_clause  = "SELECT" identifier ;
+from_clause    = "FROM" identifier ;
+where_clause   = "WHERE" identifier ">" integer ;
+```
+
+This local grammar is small enough to keep beside the code that implements it.
+The parser checks that the tokens follow this shape and rejects a query as soon
+as the next token cannot satisfy the expected rule.
 
 ## 3.4 Keep the parsed query as data
 
