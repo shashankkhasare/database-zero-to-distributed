@@ -148,6 +148,186 @@ body,
   justify-content: center;
 }
 
+.equivalence-question__stage {
+  top: 165px;
+  bottom: 145px;
+}
+
+.equivalence-question__recap,
+.equivalence-question__comparison,
+.equivalence-question__final {
+  position: absolute;
+  inset: 0;
+}
+
+.equivalence-question__recap {
+  display: grid;
+  grid-template-columns: 590px 390px 330px;
+  align-items: center;
+  justify-content: center;
+  gap: 95px;
+}
+
+.equivalence-question__table-panel,
+.equivalence-question__result-panel,
+.equivalence-question__plan-column {
+  padding: 25px;
+  border: 1px solid rgba(126, 163, 161, 0.38);
+  border-radius: 22px;
+  background: rgba(18, 29, 36, 0.9);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+}
+
+.equivalence-question__table-panel .visual-label,
+.equivalence-question__result-panel .visual-label,
+.equivalence-question__plan-column > .visual-label {
+  margin-bottom: 17px;
+}
+
+.equivalence-question__recap-plan {
+  width: 390px;
+  transform: scale(0.82);
+}
+
+.equivalence-question__recap-plan .plan-edge {
+  width: 3px;
+  height: 34px;
+  background: rgba(126, 163, 161, 0.6);
+}
+
+.equivalence-question__comparison {
+  display: grid;
+  grid-template-columns: 520px 310px 520px;
+  align-items: center;
+  justify-content: center;
+  gap: 62px;
+}
+
+.equivalence-question__plan-column {
+  min-height: 585px;
+}
+
+.equivalence-question__compact-plan {
+  height: 390px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.equivalence-question__compact-node {
+  z-index: 1;
+  width: 390px;
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(126, 163, 161, 0.45);
+  border-radius: 16px;
+  background: #142129;
+  color: #efdfbd;
+  font-size: 21px;
+  font-weight: 780;
+  letter-spacing: 0.055em;
+  transition: none;
+}
+
+.equivalence-question__line {
+  width: 3px;
+  height: 34px;
+  flex: none;
+  background: rgba(126, 163, 161, 0.58);
+}
+
+.equivalence-question__plan-column--changed {
+  border-color: rgba(231, 180, 94, 0.55);
+}
+
+.equivalence-question__matching-result {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(102, 190, 151, 0.45);
+  border-radius: 13px;
+  background: rgba(48, 115, 91, 0.16);
+  color: #a7e0c7;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+}
+
+.equivalence-question__middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  color: #9fbab6;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.equivalence-question__question-mark {
+  color: #e9b35c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 78px;
+}
+
+.equivalence-question__everywhere {
+  max-width: 250px;
+  color: #e6d7b8;
+}
+
+.equivalence-question__final {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.equivalence-question__optimizer {
+  color: #e9b35c;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+}
+
+.equivalence-question__boundary {
+  width: 1500px;
+  min-height: 610px;
+  display: grid;
+  grid-template-columns: 440px 430px 440px;
+  align-items: center;
+  justify-content: center;
+  gap: 45px;
+  padding: 28px 42px;
+  border: 2px solid rgba(231, 180, 94, 0.48);
+  border-radius: 34px;
+  background: rgba(19, 30, 37, 0.58);
+}
+
+.equivalence-question__boundary .equivalence-question__plan-column {
+  min-height: 500px;
+}
+
+.equivalence-question__boundary .equivalence-question__compact-plan {
+  height: 410px;
+}
+
+.equivalence-question__boundary .equivalence-question__compact-node {
+  width: 330px;
+}
+
+.equivalence-question__final-question {
+  color: #f3ead8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 37px;
+  line-height: 1.22;
+  text-align: center;
+}
+
 /* Shared optical center for legacy scene compositions. Scene-specific
    transforms animate relative to this stable content-stage center. */
 .question-result .hero-table,
@@ -1424,4 +1604,259 @@ body,
 
 .closing-question {
   top: 470px;
+}
+
+/* Lesson 002 prototype refinements discovered by deterministic frame review. */
+.scene-title {
+  z-index: 5;
+}
+
+.equivalence-question .scene-title {
+  z-index: 5;
+}
+
+.equivalence-question__recap {
+  grid-template-columns: 560px 330px 300px;
+  gap: 70px;
+}
+
+.equivalence-question__recap-plan {
+  width: 330px;
+  transform: scale(0.76);
+}
+
+.relations-plan__stage {
+  top: 165px;
+  bottom: 145px;
+}
+
+.relations-plan__transformation,
+.relations-plan__composition {
+  position: absolute;
+  inset: 0;
+}
+
+.relations-plan__transformation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.relations-plan__state {
+  position: absolute;
+  width: 760px;
+  padding: 30px;
+  border: 1px solid rgba(126, 163, 161, 0.42);
+  border-radius: 24px;
+  background: rgba(18, 29, 36, 0.92);
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.24);
+}
+
+.relations-plan__state > .visual-label {
+  margin-bottom: 20px;
+}
+
+.relations-plan__state[data-state="projected"] {
+  width: 430px;
+}
+
+.relations-plan__relation-label {
+  margin-top: 20px;
+  color: #e9b35c;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+
+.relations-plan__annotation {
+  position: absolute;
+  width: 1020px;
+  height: 560px;
+  pointer-events: none;
+}
+
+.relations-plan__row-label,
+.relations-plan__column-label {
+  position: absolute;
+  color: #9fc0bc;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.relations-plan__row-label {
+  top: 270px;
+  left: 25px;
+  transform: rotate(-90deg);
+}
+
+.relations-plan__column-label {
+  top: 35px;
+  left: 455px;
+}
+
+.relations-plan__composition {
+  display: grid;
+  grid-template-columns: 430px 155px 430px 155px 300px;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.relations-plan__composition-card {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 25px;
+  border: 1px solid rgba(126, 163, 161, 0.4);
+  border-radius: 22px;
+  background: rgba(18, 29, 36, 0.9);
+}
+
+.relations-plan__operation {
+  margin-bottom: 22px;
+  color: #efdfbd;
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.relations-plan__shape {
+  margin-top: 20px;
+  color: #9fc0bc;
+  font-size: 18px;
+  text-align: center;
+}
+
+.relations-plan__small-relation {
+  margin-top: 12px;
+  color: #e9b35c;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.relations-plan__connector {
+  color: #9fbab6;
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.relations-plan__connector::after {
+  content: "  →";
+  color: #e9b35c;
+  font-size: 28px;
+}
+
+.lesson-002-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lesson-002-comparison,
+.lesson-002-split {
+  width: 100%;
+  display: grid;
+  align-items: stretch;
+  justify-content: center;
+  gap: 34px;
+}
+
+.lesson-002-comparison {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.lesson-002-split {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lesson-002-card {
+  min-height: 390px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 34px;
+  border: 2px solid rgba(126, 163, 161, 0.42);
+  border-radius: 24px;
+  background: rgba(18, 29, 36, 0.92);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.24);
+  text-align: center;
+}
+
+.lesson-002-card--good {
+  border-color: rgba(102, 190, 151, 0.62);
+}
+
+.lesson-002-card--bad {
+  border-color: rgba(201, 116, 103, 0.65);
+}
+
+.lesson-002-card .visual-label {
+  margin-bottom: 26px;
+}
+
+.lesson-002-card__title {
+  max-width: 520px;
+  color: #f3ead8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  line-height: 1.25;
+  white-space: pre-line;
+}
+
+.lesson-002-card__detail {
+  margin-top: 25px;
+  color: #9fc0bc;
+  font-size: 21px;
+  line-height: 1.4;
+}
+
+.lesson-002-symbol .lesson-002-card__title {
+  color: #e9b35c;
+  font-size: 105px;
+}
+
+.lesson-002-mini-plan {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lesson-002-mini-node {
+  min-height: 68px;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  border: 1px solid rgba(126, 163, 161, 0.48);
+  border-radius: 13px;
+  background: #142129;
+  color: #efdfbd;
+  font-size: 19px;
+  font-weight: 760;
+}
+
+.lesson-002-token-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.lesson-002-token {
+  padding: 14px 18px;
+  border: 1px solid rgba(231, 180, 94, 0.55);
+  border-radius: 11px;
+  background: rgba(231, 180, 94, 0.1);
+  color: #f3ead8;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 22px;
 }

@@ -143,6 +143,12 @@ restriction. New work resumes at milestone 002.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
 
+### Pending Lesson 001 maintenance
+
+- [ ] Rebuild Lesson 001 with the book and GitHub URLs in its outro
+- [ ] Review the corrected historical lesson state and move `lesson-001`
+- [ ] Replace the public Lesson 001 upload and verify its captions, thumbnail, and playlist entry
+
 ---
 
 # Current milestone: 002, Relational Algebra Without the Math
@@ -176,7 +182,7 @@ streaming execution, or new query operators.
 - [x] Use real Lesson 001 rows, plans, code, tests, and output as evidence
 - [x] Add only the diagrams needed to explain tree structure and equivalence
 - [x] Decide that only concept-focused tests are needed; keep production execution unchanged
-- [ ] Review the complete chapter for teaching flow and technical accuracy
+- [x] Review the complete chapter for teaching flow and technical accuracy
 - [x] Rebuild the revised chapter and verify links, layout, and responsive images
 
 ## Implementation and verification
@@ -188,10 +194,11 @@ streaming execution, or new query operators.
 
 ## Video and publication
 
-- [ ] Create lesson metadata only after the chapter's teaching sequence is approved
-- [ ] Write and review conceptual narration derived from the chapter
-- [ ] Plan and implement the minimum visual scenes needed for the lesson
-- [ ] Render, review, verify, and publish the completed episode
+- [x] Create lesson metadata after approval of the chapter's teaching sequence
+- [x] Write and review conceptual narration derived from the chapter
+- [x] Plan and implement the minimum visual scenes needed for the lesson
+- [x] Render, review, and verify the completed episode at 1920 by 1080 and 29.996 FPS
+- [ ] Upload the episode privately, verify processing, then make it public
 - [ ] Tag the verified repository state as `lesson-002`
 
 ---

@@ -1,0 +1,127 @@
+id: "002"
+title: Relational Algebra Without the Math
+chapter: book/002-relational-algebra-without-the-math.md
+narration: lessons/002-relational-algebra-without-the-math/narration.md
+narration_beats: lessons/002-relational-algebra-without-the-math/narration-beats.json
+scene_plan: lessons/002-relational-algebra-without-the-math/scenes.md
+demo: cargo run --quiet
+expected_output: lessons/002-relational-algebra-without-the-math/expected-output.txt
+
+audio:
+  model: onnx-community/Kokoro-82M-v1.0-ONNX
+  revision: 1939ad2a8e416c0acfeecc08a694d14ef25f2231
+  dtype: q8
+  device: cpu
+  voice: af_heart
+  speed: 0.82
+  format: wav
+  sample_rate: 24000
+  channels: 1
+
+video:
+  width: 1920
+  height: 1080
+  fps: 30
+  output: dist/videos/002-relational-algebra-without-the-math.mp4
+  caption_language: eng
+
+thumbnail:
+  module: video/scenes/002-thumbnail.mjs
+  width: 1280
+  height: 720
+  output: dist/thumbnails/002-relational-algebra-without-the-math.png
+
+music:
+  module: video/music/002-theme.mjs
+  sample_rate: 24000
+  ident:
+    file: build/video/002/music/ident.wav
+    gain_db: -18
+    fade_in: 0.25
+    fade_out: 0.8
+  outro:
+    file: build/video/002/music/outro.wav
+    gain_db: -17
+    fade_in: 0.4
+    fade_out: 1.2
+
+review:
+  checkpoints: [30.0, 60.62, 92.0, 124.57, 171.0, 205.0, 236.045, 275.0, 315.0, 350.0, 394.24, 432.0, 470.0, 518.53, 548.0, 576.96, 625.0, 674.62, 712.0, 748.68]
+
+ident:
+  id: project-ident
+  module: video/scenes/002-project-ident.mjs
+  duration: 5.0
+
+outro:
+  id: lesson-outro
+  module: video/scenes/002-lesson-outro.mjs
+  duration: 7.0
+
+publishing:
+  youtube:
+    release: initial
+    playlist_id: PLSyokgEjsYrc
+    title: "Relational Algebra Without the Math | Database: Zero to Distributed #2"
+    description: |-
+      When do two different query plans mean the same thing?
+
+      In lesson 2 of Database: Zero to Distributed, we use relations, selection, and projection to reason about equivalent logical plans. A counterexample shows why matching on one table is not enough, then a projection rewrite shows how dependencies determine whether a transformation is safe.
+
+      Read the free book:
+      https://shashankkhasare.github.io/database-zero-to-distributed/002-relational-algebra-without-the-math.html
+
+      Source code for this lesson:
+      https://github.com/shashankkhasare/database-zero-to-distributed/tree/lesson-002
+
+      Project repository:
+      https://github.com/shashankkhasare/database-zero-to-distributed
+
+      00:00 Introduction
+      00:05 The equivalence question
+      01:06 Relations through the plan
+      02:10 Selection and projection
+      04:01 Is matching output enough?
+      06:39 Moving projection
+      08:44 Two questions for every rewrite
+      09:42 Correctness before cost
+      11:20 Where does the plan come from?
+      12:34 Next lesson
+    tags:
+      - database
+      - distributed systems
+      - relational algebra
+      - query optimization
+      - logical plan
+      - Rust
+      - SQL
+      - database internals
+    category_id: "27"
+    default_language: en
+    privacy_status: private
+    final_privacy_status: public
+    made_for_kids: false
+    embeddable: true
+    notify_subscribers: false
+    captions:
+      file: build/video/002/captions/lesson.srt
+      language: en
+      name: English
+
+scenes:
+  - id: the-equivalence-question
+    module: video/scenes/002-the-equivalence-question.mjs
+  - id: relations-through-the-plan
+    module: video/scenes/002-relations-through-the-plan.mjs
+  - id: selection-and-projection
+    module: video/scenes/002-selection-and-projection.mjs
+  - id: is-matching-output-enough
+    module: video/scenes/002-is-matching-output-enough.mjs
+  - id: moving-projection
+    module: video/scenes/002-moving-projection.mjs
+  - id: a-useful-way-to-reason
+    module: video/scenes/002-a-useful-way-to-reason.mjs
+  - id: why-equivalence-matters
+    module: video/scenes/002-why-equivalence-matters.mjs
+  - id: sql-handoff
+    module: video/scenes/002-sql-handoff.mjs

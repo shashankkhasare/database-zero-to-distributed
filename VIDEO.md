@@ -248,6 +248,12 @@ generated paths, levels, and fades in `lesson.yaml` so final audio can be
 reproduced. Mix ident and outro music during composition; changing music must
 not require visual frames to be rendered again.
 
+The review preview must contain the configured ident and outro music at the
+same levels and fades used by the final video. Each silent bookend scene mixes
+its own music while its preview clip is composed. Final composition then keeps
+that reviewed audio unchanged while attaching captions, preventing a second
+music mix from doubling the volume.
+
 # Source and artifact ownership
 
 Commit these durable sources:

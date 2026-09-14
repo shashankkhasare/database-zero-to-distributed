@@ -1,0 +1,971 @@
+{
+  "beats": [
+    {
+      "id": "the-equivalence-question-001",
+      "scene": "the-equivalence-question",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-002",
+      "scene": "the-equivalence-question",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-003",
+      "scene": "the-equivalence-question",
+      "paragraph": 3,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-004",
+      "scene": "the-equivalence-question",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-005",
+      "scene": "the-equivalence-question",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-006",
+      "scene": "the-equivalence-question",
+      "paragraph": 6,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "the-equivalence-question-007",
+      "scene": "the-equivalence-question",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-008",
+      "scene": "the-equivalence-question",
+      "paragraph": 8,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "the-equivalence-question-009",
+      "scene": "the-equivalence-question",
+      "paragraph": 9,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "the-equivalence-question-010",
+      "scene": "the-equivalence-question",
+      "paragraph": 10,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-011",
+      "scene": "the-equivalence-question",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-012",
+      "scene": "the-equivalence-question",
+      "paragraph": 12,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "the-equivalence-question-013",
+      "scene": "the-equivalence-question",
+      "paragraph": 13,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "relations-through-the-plan-001",
+      "scene": "relations-through-the-plan",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-002",
+      "scene": "relations-through-the-plan",
+      "paragraph": 2,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "relations-through-the-plan-003",
+      "scene": "relations-through-the-plan",
+      "paragraph": 3,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-004",
+      "scene": "relations-through-the-plan",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-005",
+      "scene": "relations-through-the-plan",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-006",
+      "scene": "relations-through-the-plan",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-007",
+      "scene": "relations-through-the-plan",
+      "paragraph": 7,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "relations-through-the-plan-008",
+      "scene": "relations-through-the-plan",
+      "paragraph": 8,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-009",
+      "scene": "relations-through-the-plan",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-010",
+      "scene": "relations-through-the-plan",
+      "paragraph": 10,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-011",
+      "scene": "relations-through-the-plan",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "relations-through-the-plan-012",
+      "scene": "relations-through-the-plan",
+      "paragraph": 12,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "selection-and-projection-001",
+      "scene": "selection-and-projection",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-002",
+      "scene": "selection-and-projection",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-003",
+      "scene": "selection-and-projection",
+      "paragraph": 3,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "selection-and-projection-004",
+      "scene": "selection-and-projection",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-005",
+      "scene": "selection-and-projection",
+      "paragraph": 5,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "selection-and-projection-006",
+      "scene": "selection-and-projection",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-007",
+      "scene": "selection-and-projection",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-008",
+      "scene": "selection-and-projection",
+      "paragraph": 8,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-009",
+      "scene": "selection-and-projection",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-010",
+      "scene": "selection-and-projection",
+      "paragraph": 10,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "selection-and-projection-011",
+      "scene": "selection-and-projection",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-012",
+      "scene": "selection-and-projection",
+      "paragraph": 12,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "selection-and-projection-013",
+      "scene": "selection-and-projection",
+      "paragraph": 13,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-014",
+      "scene": "selection-and-projection",
+      "paragraph": 14,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "selection-and-projection-015",
+      "scene": "selection-and-projection",
+      "paragraph": 15,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "selection-and-projection-016",
+      "scene": "selection-and-projection",
+      "paragraph": 16,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "selection-and-projection-017",
+      "scene": "selection-and-projection",
+      "paragraph": 17,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-018",
+      "scene": "selection-and-projection",
+      "paragraph": 18,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-019",
+      "scene": "selection-and-projection",
+      "paragraph": 19,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-020",
+      "scene": "selection-and-projection",
+      "paragraph": 20,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-021",
+      "scene": "selection-and-projection",
+      "paragraph": 21,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-022",
+      "scene": "selection-and-projection",
+      "paragraph": 22,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "selection-and-projection-023",
+      "scene": "selection-and-projection",
+      "paragraph": 23,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "is-matching-output-enough-001",
+      "scene": "is-matching-output-enough",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-002",
+      "scene": "is-matching-output-enough",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-003",
+      "scene": "is-matching-output-enough",
+      "paragraph": 3,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-004",
+      "scene": "is-matching-output-enough",
+      "paragraph": 4,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "is-matching-output-enough-005",
+      "scene": "is-matching-output-enough",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-006",
+      "scene": "is-matching-output-enough",
+      "paragraph": 6,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-007",
+      "scene": "is-matching-output-enough",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-008",
+      "scene": "is-matching-output-enough",
+      "paragraph": 8,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-009",
+      "scene": "is-matching-output-enough",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-010",
+      "scene": "is-matching-output-enough",
+      "paragraph": 10,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "is-matching-output-enough-011",
+      "scene": "is-matching-output-enough",
+      "paragraph": 11,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-012",
+      "scene": "is-matching-output-enough",
+      "paragraph": 12,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "is-matching-output-enough-013",
+      "scene": "is-matching-output-enough",
+      "paragraph": 13,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-014",
+      "scene": "is-matching-output-enough",
+      "paragraph": 14,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-015",
+      "scene": "is-matching-output-enough",
+      "paragraph": 15,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "is-matching-output-enough-016",
+      "scene": "is-matching-output-enough",
+      "paragraph": 16,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-017",
+      "scene": "is-matching-output-enough",
+      "paragraph": 17,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-018",
+      "scene": "is-matching-output-enough",
+      "paragraph": 18,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-019",
+      "scene": "is-matching-output-enough",
+      "paragraph": 19,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-020",
+      "scene": "is-matching-output-enough",
+      "paragraph": 20,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-021",
+      "scene": "is-matching-output-enough",
+      "paragraph": 21,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-022",
+      "scene": "is-matching-output-enough",
+      "paragraph": 22,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-023",
+      "scene": "is-matching-output-enough",
+      "paragraph": 23,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-024",
+      "scene": "is-matching-output-enough",
+      "paragraph": 24,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-025",
+      "scene": "is-matching-output-enough",
+      "paragraph": 25,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-026",
+      "scene": "is-matching-output-enough",
+      "paragraph": 26,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-027",
+      "scene": "is-matching-output-enough",
+      "paragraph": 27,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-028",
+      "scene": "is-matching-output-enough",
+      "paragraph": 28,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-029",
+      "scene": "is-matching-output-enough",
+      "paragraph": 29,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "is-matching-output-enough-030",
+      "scene": "is-matching-output-enough",
+      "paragraph": 30,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-031",
+      "scene": "is-matching-output-enough",
+      "paragraph": 31,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-032",
+      "scene": "is-matching-output-enough",
+      "paragraph": 32,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-033",
+      "scene": "is-matching-output-enough",
+      "paragraph": 33,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-034",
+      "scene": "is-matching-output-enough",
+      "paragraph": 34,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-035",
+      "scene": "is-matching-output-enough",
+      "paragraph": 35,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "is-matching-output-enough-036",
+      "scene": "is-matching-output-enough",
+      "paragraph": 36,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-037",
+      "scene": "is-matching-output-enough",
+      "paragraph": 37,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-038",
+      "scene": "is-matching-output-enough",
+      "paragraph": 38,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-039",
+      "scene": "is-matching-output-enough",
+      "paragraph": 39,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-040",
+      "scene": "is-matching-output-enough",
+      "paragraph": 40,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "moving-projection-001",
+      "scene": "moving-projection",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-002",
+      "scene": "moving-projection",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-003",
+      "scene": "moving-projection",
+      "paragraph": 3,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "moving-projection-004",
+      "scene": "moving-projection",
+      "paragraph": 4,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-005",
+      "scene": "moving-projection",
+      "paragraph": 5,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "moving-projection-006",
+      "scene": "moving-projection",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-007",
+      "scene": "moving-projection",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-008",
+      "scene": "moving-projection",
+      "paragraph": 8,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-009",
+      "scene": "moving-projection",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-010",
+      "scene": "moving-projection",
+      "paragraph": 10,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "moving-projection-011",
+      "scene": "moving-projection",
+      "paragraph": 11,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "moving-projection-012",
+      "scene": "moving-projection",
+      "paragraph": 12,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-013",
+      "scene": "moving-projection",
+      "paragraph": 13,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-014",
+      "scene": "moving-projection",
+      "paragraph": 14,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-015",
+      "scene": "moving-projection",
+      "paragraph": 15,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-016",
+      "scene": "moving-projection",
+      "paragraph": 16,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-017",
+      "scene": "moving-projection",
+      "paragraph": 17,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-018",
+      "scene": "moving-projection",
+      "paragraph": 18,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-019",
+      "scene": "moving-projection",
+      "paragraph": 19,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-020",
+      "scene": "moving-projection",
+      "paragraph": 20,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-021",
+      "scene": "moving-projection",
+      "paragraph": 21,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-022",
+      "scene": "moving-projection",
+      "paragraph": 22,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-023",
+      "scene": "moving-projection",
+      "paragraph": 23,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "moving-projection-024",
+      "scene": "moving-projection",
+      "paragraph": 24,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-025",
+      "scene": "moving-projection",
+      "paragraph": 25,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-026",
+      "scene": "moving-projection",
+      "paragraph": 26,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-027",
+      "scene": "moving-projection",
+      "paragraph": 27,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "moving-projection-028",
+      "scene": "moving-projection",
+      "paragraph": 28,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-029",
+      "scene": "moving-projection",
+      "paragraph": 29,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "a-useful-way-to-reason-001",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-002",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-003",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 3,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "a-useful-way-to-reason-004",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-005",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-006",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-007",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 7,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "a-useful-way-to-reason-008",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 8,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "a-useful-way-to-reason-009",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-010",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 10,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "a-useful-way-to-reason-011",
+      "scene": "a-useful-way-to-reason",
+      "paragraph": 11,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "why-equivalence-matters-001",
+      "scene": "why-equivalence-matters",
+      "paragraph": 1,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "why-equivalence-matters-002",
+      "scene": "why-equivalence-matters",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-003",
+      "scene": "why-equivalence-matters",
+      "paragraph": 3,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-004",
+      "scene": "why-equivalence-matters",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-005",
+      "scene": "why-equivalence-matters",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-006",
+      "scene": "why-equivalence-matters",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-007",
+      "scene": "why-equivalence-matters",
+      "paragraph": 7,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "why-equivalence-matters-008",
+      "scene": "why-equivalence-matters",
+      "paragraph": 8,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "why-equivalence-matters-009",
+      "scene": "why-equivalence-matters",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-010",
+      "scene": "why-equivalence-matters",
+      "paragraph": 10,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "why-equivalence-matters-011",
+      "scene": "why-equivalence-matters",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-012",
+      "scene": "why-equivalence-matters",
+      "paragraph": 12,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-013",
+      "scene": "why-equivalence-matters",
+      "paragraph": 13,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-014",
+      "scene": "why-equivalence-matters",
+      "paragraph": 14,
+      "pauseAfter": 0.35
+    },
+    {
+      "id": "why-equivalence-matters-015",
+      "scene": "why-equivalence-matters",
+      "paragraph": 15,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-016",
+      "scene": "why-equivalence-matters",
+      "paragraph": 16,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-017",
+      "scene": "why-equivalence-matters",
+      "paragraph": 17,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-018",
+      "scene": "why-equivalence-matters",
+      "paragraph": 18,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "sql-handoff-001",
+      "scene": "sql-handoff",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-002",
+      "scene": "sql-handoff",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-003",
+      "scene": "sql-handoff",
+      "paragraph": 3,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-004",
+      "scene": "sql-handoff",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-005",
+      "scene": "sql-handoff",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-006",
+      "scene": "sql-handoff",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-007",
+      "scene": "sql-handoff",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-008",
+      "scene": "sql-handoff",
+      "paragraph": 8,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-009",
+      "scene": "sql-handoff",
+      "paragraph": 9,
+      "pauseAfter": 0.25
+    },
+    {
+      "id": "sql-handoff-010",
+      "scene": "sql-handoff",
+      "paragraph": 10,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-011",
+      "scene": "sql-handoff",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-012",
+      "scene": "sql-handoff",
+      "paragraph": 12,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-013",
+      "scene": "sql-handoff",
+      "paragraph": 13,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "sql-handoff-014",
+      "scene": "sql-handoff",
+      "paragraph": 14,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "sql-handoff-015",
+      "scene": "sql-handoff",
+      "paragraph": 15,
+      "pauseAfter": 0.8
+    }
+  ]
+}
+

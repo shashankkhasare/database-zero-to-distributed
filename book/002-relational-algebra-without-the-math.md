@@ -34,8 +34,8 @@ let us explain why one rearrangement is safe and another is not.
 
 We will not build an optimizer yet. Season 3 will automate plan rewriting and
 compare the costs of valid alternatives. This chapter establishes the rule
-that work depends on: two plans may look different only when they preserve the
-same meaning.
+that work depends on: two plans are equivalent if and only if they preserve
+the same meaning, regardless of how different their trees look.
 
 ## 2.1 We already have the pieces
 
@@ -328,7 +328,8 @@ shape as much as useful, but do not change the meaning.
 
 Season 3 will turn that freedom into a query optimizer. It will apply rewrite
 rules, estimate costs, and choose among equivalent alternatives. Correctness
-comes first because cost can choose only among plans that are allowed.
+comes first because the optimizer can choose only among plans that preserve
+the query's meaning.
 
 ## 2.7 What we deliberately did not build
 

@@ -113,13 +113,14 @@ async function hasCompleteClip(clipPath, statePath, fingerprint, frameRate) {
 
 async function sceneFingerprint(scene, beats, frameRate) {
   const sharedDirectories = ["video/components", "video/styles"];
-  const paths = [scene.module, "video/player.html", "video/player.mjs"];
+  const paths = [scene.module, "video/player.html", "video/player.mjs", "video/scripts/compose-scene-preview.mjs"];
+  if (lesson.music?.module) paths.push(lesson.music.module);
   for (const directory of sharedDirectories) {
     const entries = await readdir(join(REPOSITORY_ROOT, directory), { withFileTypes: true });
     paths.push(...entries.filter((entry) => entry.isFile()).map((entry) => `${directory}/${entry.name}`));
   }
   const hash = createHash("sha256");
-  hash.update(JSON.stringify({ scene, beats, frameRate, width: 1920, height: 1080 }));
+  hash.update(JSON.stringify({ scene, beats, frameRate, music: lesson.music, width: 1920, height: 1080 }));
   for (const path of paths.sort()) {
     hash.update(path);
     hash.update(await readFile(join(REPOSITORY_ROOT, path)));
