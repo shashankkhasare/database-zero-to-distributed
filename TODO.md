@@ -140,7 +140,7 @@ before expanding its checklist here.
 - [x] Add the book and GitHub URLs to the Lesson 001 outro
 - [x] Keep configured bookend music in review previews without doubling it during final composition
 - [x] Rebuild and verify the complete Lesson 001 delivery artifacts
-- [ ] Upload and verify the replacement privately
+- [x] Upload and verify the replacement privately
 - [ ] Make the replacement public, retire revision 2, and move `lesson-001`
 
 The replacement is public, processed, serving English captions, and present in
