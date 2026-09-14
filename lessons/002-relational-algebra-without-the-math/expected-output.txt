@@ -1,0 +1,3 @@
+Employees earning more than 50,000:
+{name: "Ada"}
+{name: "Grace"}

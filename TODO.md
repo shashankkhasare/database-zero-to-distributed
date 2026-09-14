@@ -152,9 +152,15 @@ restriction. New work resumes at milestone 002.
 Generated files are intentionally ignored and can be recreated with the clean
 command documented in `VIDEO.md`.
 
+### Pending Lesson 001 maintenance
+
+- [ ] Rebuild Lesson 001 with the book and GitHub URLs in its outro
+- [ ] Review the corrected historical lesson state and move `lesson-001`
+- [ ] Replace the public Lesson 001 upload and verify its captions, thumbnail, and playlist entry
+
 ---
 
-# Current milestone: 002, Relational Algebra Without the Math
+# Completed milestone: 002, Relational Algebra Without the Math
 
 Lesson 002 uses relational algebra to answer the question promised by the
 Lesson 001 video: what makes two query plans mean the same thing? It should
@@ -185,7 +191,7 @@ streaming execution, or new query operators.
 - [x] Use real Lesson 001 rows, plans, code, tests, and output as evidence
 - [x] Add only the diagrams needed to explain tree structure and equivalence
 - [x] Decide that only concept-focused tests are needed; keep production execution unchanged
-- [ ] Review the complete chapter for teaching flow and technical accuracy
+- [x] Review the complete chapter for teaching flow and technical accuracy
 - [x] Rebuild the revised chapter and verify links, layout, and responsive images
 
 ## Implementation and verification
@@ -197,11 +203,18 @@ streaming execution, or new query operators.
 
 ## Video and publication
 
-- [ ] Create lesson metadata only after the chapter's teaching sequence is approved
-- [ ] Write and review conceptual narration derived from the chapter
-- [ ] Plan and implement the minimum visual scenes needed for the lesson
-- [ ] Render, review, verify, and publish the completed episode
-- [ ] Tag the verified repository state as `lesson-002`
+- [x] Create lesson metadata after approval of the chapter's teaching sequence
+- [x] Write and review conceptual narration derived from the chapter
+- [x] Plan and implement the minimum visual scenes needed for the lesson
+- [x] Render, review, and verify the completed episode at 1920 by 1080 and 29.996 FPS
+- [x] Upload the episode privately and verify processing, captions, thumbnail, and playlist placement
+- [x] Make the processed episode public and verify its viewer-facing state
+- [x] Tag the verified repository state as `lesson-002`
+
+Lesson 002 was built from source commit
+`59ef57760a63286794e78278bfeaf93e5413246d`. The final 760.723-second video
+is public as `InE6WfCcJK4`, with its custom thumbnail, serving English
+captions, and public playlist placement verified on 2026-09-14.
 
 ---
 
@@ -210,7 +223,7 @@ streaming execution, or new query operators.
 ## Season 1 — Build the Smallest Query Engine
 
 - [x] 001 — The Smallest Query Engine
-- [ ] 002 — Relational Algebra Without the Math
+- [x] 002 — Relational Algebra Without the Math
 - [ ] 003 — SQL Is Just a Frontend
 - [ ] 004 — Binding and Expressions
 - [ ] 005 — Joins
