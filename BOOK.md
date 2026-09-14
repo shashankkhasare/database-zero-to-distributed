@@ -391,6 +391,7 @@ Code listings should:
 - name the source file they come from
 - include enough unchanged surrounding code to show where an edit belongs
 - use a nearby type, function, match arm, or closing brace as a placement anchor
+- keep each visible snippet at 20 lines or fewer
 - stay short enough to discuss meaningfully
 - omit unrelated details explicitly when shortened
 - compile in their complete repository context
@@ -401,11 +402,29 @@ could reasonably wonder where it belongs. Mark omitted existing code clearly,
 and explain temporary placeholders when an incremental snippet is not yet the
 final implementation.
 
+Build the program in the order a learner would type it. Introduce every helper,
+data source, import, and module before a later snippet relies on it. The lesson
+tag holds the complete verified files; the chapter should reveal their body in
+small edits instead of reproducing a long final file all at once.
+
+Tests remain mandatory in the repository, but they do not belong throughout
+the chapter by default. Show a test only when its assertion materially teaches
+the current concept better than a runnable example. Otherwise, keep the tests
+in the tagged source, mention the relevant coverage near verification, and let
+the main narration follow the implementation itself.
+
 When a chapter requires the reader to make several edits, its latest verified
 `lesson-NNN` tag remains the final reference implementation for that stage.
 During active series development, an accepted correction may move that tag
 after the complete lesson is verified again. Never point an older lesson tag at
 a main-branch state that already includes later lessons.
+
+A reader building the database alongside Chapter N should begin from the
+completed state of Chapter N - 1. For example, Chapter 3 begins at
+`lesson-002`; following its edits produces the state recorded by `lesson-003`.
+The newer tag is a completed reference and recovery point, not the chapter's
+starting point. Chapter 1 is the exception and must state its initial setup
+directly because no earlier lesson tag exists.
 
 ---
 

@@ -49,14 +49,9 @@ struct Parser {
 
 impl Parser {
     fn query(&mut self) -> Result<Query, ParseError> {
-        self.expect(Token::Select, "expected SELECT")?;
-        let selected_column = self.identifier("expected a column name after SELECT")?;
-        self.expect(Token::From, "expected FROM after selected column")?;
-        let table = self.identifier("expected a table name after FROM")?;
-        self.expect(Token::Where, "expected WHERE after table name")?;
-        let filter_column = self.identifier("expected a column name after WHERE")?;
-        self.expect(Token::GreaterThan, "expected > after filter column")?;
-        let greater_than = self.integer("expected an integer after >")?;
+        let selected_column = self.parse_select_clause()?;
+        let table = self.parse_from_clause()?;
+        let (filter_column, greater_than) = self.parse_where_clause()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
 
         if self.current != self.tokens.len() {
@@ -69,6 +64,24 @@ impl Parser {
             filter_column,
             greater_than,
         })
+    }
+
+    fn parse_select_clause(&mut self) -> Result<String, ParseError> {
+        self.expect(Token::Select, "expected SELECT")?;
+        self.identifier("expected a column name after SELECT")
+    }
+
+    fn parse_from_clause(&mut self) -> Result<String, ParseError> {
+        self.expect(Token::From, "expected FROM after selected column")?;
+        self.identifier("expected a table name after FROM")
+    }
+
+    fn parse_where_clause(&mut self) -> Result<(String, i64), ParseError> {
+        self.expect(Token::Where, "expected WHERE after table name")?;
+        let column = self.identifier("expected a column name after WHERE")?;
+        self.expect(Token::GreaterThan, "expected > after filter column")?;
+        let value = self.integer("expected an integer after >")?;
+        Ok((column, value))
     }
 
     fn expect(&mut self, expected: Token, message: &str) -> Result<(), ParseError> {

@@ -25,7 +25,7 @@ images:
   - id: query-becomes-tokens
     kind: generated-raster
     output: book/images/003-query-becomes-tokens.png
-    placement: section 3.2 after the token sequence
+    placement: section 3.3 after the token sequence
     alt: A continuous SQL query strip separates into distinct keyword, identifier, symbol, integer, and semicolon token cards.
     prompt: >-
       Use case: scientific-educational. Asset type: tokenization illustration
@@ -47,7 +47,7 @@ images:
   - id: ast-becomes-plan
     kind: generated-raster
     output: book/images/003-ast-becomes-plan.png
-    placement: section 3.6 after mapping the Query AST to the logical plan
+    placement: section 3.7 after mapping the Query AST to the logical plan
     alt: Four parsed query fields on the left map into Project, Filter, and Scan plan nodes on the right.
     prompt: >-
       Use case: scientific-educational. Asset type: conceptual transformation

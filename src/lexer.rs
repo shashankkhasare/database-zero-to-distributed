@@ -47,16 +47,7 @@ pub fn tokenize(sql: &str) -> Result<Vec<Token>, LexError> {
             }
 
             let word: String = characters[start..current].iter().collect();
-            let token = if word.eq_ignore_ascii_case("SELECT") {
-                Token::Select
-            } else if word.eq_ignore_ascii_case("FROM") {
-                Token::From
-            } else if word.eq_ignore_ascii_case("WHERE") {
-                Token::Where
-            } else {
-                Token::Identifier(word)
-            };
-            tokens.push(token);
+            tokens.push(word_token(word));
         } else if character.is_ascii_digit() {
             let start = current;
             current += 1;
@@ -87,6 +78,18 @@ pub fn tokenize(sql: &str) -> Result<Vec<Token>, LexError> {
     }
 
     Ok(tokens)
+}
+
+fn word_token(word: String) -> Token {
+    if word.eq_ignore_ascii_case("SELECT") {
+        Token::Select
+    } else if word.eq_ignore_ascii_case("FROM") {
+        Token::From
+    } else if word.eq_ignore_ascii_case("WHERE") {
+        Token::Where
+    } else {
+        Token::Identifier(word)
+    }
 }
 
 #[cfg(test)]

@@ -222,6 +222,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
 - [x] Begin with Chapter 2's unanswered need for a convenient plan language
 - [x] Follow one query through `SQL -> tokens -> AST -> logical plan -> rows`
+- [x] Provide an interactive SQL prompt without sacrificing the deterministic demo
 - [x] Explain the distinct jobs of a lexer, parser, AST, and logical plan
 - [x] Define the exact grammar supported by the lesson
 - [x] Accept `SELECT <column> FROM <table> WHERE <column> > <integer>;`
@@ -242,6 +243,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Introduce the grammar before its parser implementation
 - [x] Explain the AST as a representation rather than an executable plan
 - [x] Show complete, file-labelled, copy-pasteable Rust snippets
+- [x] Show the complete lexer, parser checkpoint, and final REPL shell in build order
 - [x] Add only diagrams that materially clarify the frontend stages
 - [x] Define the minimum Chapter 3 illustration set and record reproducible prompts
 - [x] Generate and review the Chapter 3 opening, tokenization, and AST-to-plan images
@@ -263,6 +265,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Convert the AST into the existing `Plan` without redesigning the executor
 - [x] Add an end-to-end test from SQL text to result rows
 - [x] Update the executable demo and expected output
+- [x] Route the fixed demonstration and repeated prompt queries through one SQL entry point
 - [x] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
 - [x] Run the deterministic demo and compare its output with the lesson artifact
 
