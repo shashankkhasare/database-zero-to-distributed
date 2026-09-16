@@ -64,16 +64,19 @@ This chapter uses a small amount of Rust without pausing to teach the language.
 If any syntax is unfamiliar, keep [Appendix A](appendix-a-enough-rust.md) nearby
 and return here when the code is readable again.
 
-Chapter 1 has no earlier lesson checkpoint. To build alongside it, begin in an
-empty directory and create the Rust project:
+To build alongside this chapter, clone the repository and create a working
+branch from the pre-code checkpoint:
 
 ```bash
-cargo new --bin database-zero-to-distributed
+git clone https://github.com/shashankkhasare/database-zero-to-distributed.git
 cd database-zero-to-distributed
+git switch --create chapter-001 lesson-000
+cargo init --bin .
 ```
 
-This command creates `Cargo.toml` and a starter `src/main.rs`. The
-`lesson-001` tag in the book's repository contains the completed chapter for
+The `lesson-000` checkpoint contains the project documentation but no Rust
+package. `cargo init` adds `Cargo.toml` and a starter `src/main.rs` to the
+existing directory. The `lesson-001` tag contains the completed chapter for
 comparison or recovery; it is the destination, not the starting point.
 
 ## 1.1 Begin without SQL
