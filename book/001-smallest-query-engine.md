@@ -74,10 +74,9 @@ git switch --create chapter-001 lesson-000
 cargo init --bin .
 ```
 
-The `lesson-000` checkpoint contains the project documentation but no Rust
-package. `cargo init` adds `Cargo.toml` and a starter `src/main.rs` to the
-existing directory. The `lesson-001` tag contains the completed chapter for
-comparison or recovery; it is the destination, not the starting point.
+`cargo init` adds `Cargo.toml` and a starter `src/main.rs` to the existing
+directory. The `lesson-001` tag contains the completed chapter for comparison
+or recovery; it is the destination, not the starting point.
 
 ## 1.1 Begin without SQL
 
@@ -115,8 +114,6 @@ compare or display it. We will begin with a type named `Value`.
 `src/row.rs`: create this file
 
 ```rust
-use std::fmt;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     Integer(i64),
@@ -125,17 +122,12 @@ pub enum Value {
 ```
 
 Rust compiles a source file only after it is included in the program's module
-tree. Add the new `row` module at the top of the starter file. The row types are
-not used yet, but `cargo check` can now confirm that the declarations compile.
+tree. Add the new `row` module at the top of the starter file.
 
 `src/main.rs`: add at the top of the file
 
 ```rust
 mod row;
-```
-
-```bash
-cargo check
 ```
 
 `Integer` and `Text` cover every cell in our employee table. Keeping the two
@@ -171,6 +163,11 @@ rows for the employee table, find a value when the filter asks for a column,
 and build a smaller row when the project selects columns. We will add one
 method for each job.
 
+Callers will provide short column names such as `"id"` and `"salary"`.
+`Row::new()` converts each name into an owned `String` and stores it beside the
+corresponding value. Owning the names lets the completed row keep its data
+independently of the arguments used to construct it.
+
 `src/row.rs`: add after `Row`
 
 ```rust
@@ -189,6 +186,10 @@ impl Row {
 }
 ```
 
+A filter knows the name of the column it needs, not its position in the row.
+`Row::get()` searches the stored pairs and returns the matching value. It
+returns `None` when the requested column does not exist.
+
 `src/row.rs`: add after the first `impl Row`
 
 ```rust
@@ -204,6 +205,11 @@ impl Row {
     }
 }
 ```
+
+A project receives a list of columns to retain. `Row::project()` looks up each
+one in that order, copies the value, and places the pair in a new, smaller row.
+For now, an unknown column stops the program because plans are still written
+directly by the programmer.
 
 `src/row.rs`: add after the second `impl Row`
 
@@ -226,9 +232,8 @@ impl Row {
 }
 ```
 
-`Row::new()` constructs a row from named values. `Row::get()` searches for one
-column. `Row::project()` uses that search to build a new row containing only
-the requested columns, in the requested order.
+Together, these methods let the engine construct rows, inspect named values,
+and retain selected columns.
 
 We can now represent Ada's complete employee row:
 
@@ -273,6 +278,15 @@ For example, projecting Ada's row to the `name` column should produce:
 The following formatting code establishes that output. It preserves the order
 of values stored in the row, which also preserves the order requested by a
 project.
+
+Rust's formatting interfaces live in the standard library's `fmt` module.
+Import it at the top of `row.rs` before adding the display implementations.
+
+`src/row.rs`: add at the top of the file
+
+```rust
+use std::fmt;
+```
 
 `src/row.rs`: add after `impl Row`
 
