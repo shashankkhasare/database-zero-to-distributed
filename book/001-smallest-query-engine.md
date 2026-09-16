@@ -163,11 +163,6 @@ rows for the employee table, find a value when the filter asks for a column,
 and build a smaller row when the project selects columns. We will add one
 method for each job.
 
-Callers will provide short column names such as `"id"` and `"salary"`.
-`Row::new()` converts each name into an owned `String` and stores it beside the
-corresponding value. Owning the names lets the completed row keep its data
-independently of the arguments used to construct it.
-
 `src/row.rs`: add after `Row`
 
 ```rust
@@ -186,9 +181,7 @@ impl Row {
 }
 ```
 
-A filter knows the name of the column it needs, not its position in the row.
-`Row::get()` searches the stored pairs and returns the matching value. It
-returns `None` when the requested column does not exist.
+`Row::new()` stores each column name as an owned `String` beside its value.
 
 `src/row.rs`: add after the first `impl Row`
 
@@ -206,10 +199,8 @@ impl Row {
 }
 ```
 
-A project receives a list of columns to retain. `Row::project()` looks up each
-one in that order, copies the value, and places the pair in a new, smaller row.
-For now, an unknown column stops the program because plans are still written
-directly by the programmer.
+`Row::get()` searches by column name and returns the matching value, or `None`
+when the column does not exist.
 
 `src/row.rs`: add after the second `impl Row`
 
@@ -232,8 +223,9 @@ impl Row {
 }
 ```
 
-Together, these methods let the engine construct rows, inspect named values,
-and retain selected columns.
+`Row::project()` copies the requested columns, in order, into a new row. An
+unknown column stops the program because plans are still written directly by
+the programmer.
 
 We can now represent Ada's complete employee row:
 
