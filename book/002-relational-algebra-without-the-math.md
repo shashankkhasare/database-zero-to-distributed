@@ -5,14 +5,14 @@ Chapter contract
 
 Continue directly from Chapter 1's closing question. Reuse vocabulary the
 reader already learned, then introduce selection, projection, logical plans,
-equivalence, and counterexamples when the employee example needs them.
+equivalence laws, and counterexamples when the employee example needs them.
 
 Visible outcome
 
 The reader can decide whether two small query plans mean the same thing. They
 understand that equivalence requires the same result for every valid input,
-not merely one example table. Tests also expose the difference between
-textbook set projection and this engine's duplicate-preserving Project.
+not merely one example table. They can apply three laws, check each law's
+conditions, and use a counterexample to reject an invalid transformation.
 -->
 
 > A plan is not a pile of operations. Its shape is part of the answer.
@@ -22,31 +22,35 @@ textbook set projection and this engine's duplicate-preserving Project.
   <figcaption>Different paths can preserve the same answer.</figcaption>
 </figure>
 
-To build alongside this chapter, begin from the completed Chapter 1
-checkpoint:
-
-```bash
-git switch --create chapter-002 lesson-001
-```
-
-The `lesson-002` tag contains the completed version for comparison or
-recovery. This chapter does not add another operator. It uses the existing
-engine to investigate which plan transformations preserve its result.
-
 Chapter 1 left us with a working query engine and one unanswered question:
-how can we tell whether two query plans still produce the same result? This
-question matters whenever a database rearranges work. A different arrangement
-may be faster, but speed is useless if the answer changes.
+how can we tell whether two query plans mean the same thing? This matters
+because databases often rearrange operations to perform less work. A different
+arrangement is useful only when it preserves the original answer. Before we can
+build an optimizer, we need a reliable way to distinguish safe transformations
+from incorrect ones.
 
-The name relational algebra may suggest that rows are about to disappear
-behind equations. They are not. We will keep the employee table visible and
-give precise names to ideas already present in our program. Those names will
-let us explain why one rearrangement is safe and another is not.
+To compare plans, we need a precise way to describe what each operation means.
+**Relational algebra** provides that language. We will introduce it through the
+employee rows and operations already present in our program, then use it to
+explain why one plan rearrangement preserves the result while another changes
+it.
 
-We will not build an optimizer yet. Season 3 will automate plan rewriting and
-compare the costs of valid alternatives. This chapter establishes the rule
-that work depends on: two plans are equivalent if and only if they preserve
-the same meaning, regardless of how different their trees look.
+Instead of adding another operator, this chapter uses the engine we already
+have. We will define equivalence, learn three laws for transforming the
+operators our engine supports, and use counterexamples to reject
+transformations that satisfy no valid law.
+
+> **Build-along checkpoint**
+>
+> Begin with the completed Chapter 1 checkpoint:
+>
+> ```bash
+> git switch --create chapter-002 lesson-001
+> ```
+>
+> This chapter does not require source changes. We will use the existing engine
+> to compare plans and search for counterexamples. The `lesson-002` tag is the
+> completed Chapter 2 checkpoint.
 
 ## 2.1 We already have the pieces
 
@@ -77,8 +81,9 @@ feeds the node above it.
 
 The same structure could query products, books, or bank accounts. Only the
 source rows, predicate, and requested columns would change. This repeatable
-shape lets us compare plans instead of treating every query as unrelated
-code.
+shape lets us compare plans instead of treating every query as unrelated code.
+Because a plan is an expression built from smaller expressions, we can ask
+whether changing its structure preserves its meaning.
 
 ## 2.2 Intermediate results are relations too
 
@@ -99,7 +104,8 @@ long enough to feed the next operation, but it still has rows and columns.
 This shared shape is what lets operations connect. A filter accepts a relation
 and produces a relation. A project does the same. The output of one operation
 can therefore become the input of another without changing into a completely
-different kind of value.
+different kind of value. That makes rearrangement possible, although it does
+not make every rearrangement correct.
 
 Now we can name the two transformations more precisely.
 
@@ -162,7 +168,9 @@ logical and physical plans when there are real choices to represent.
 For now, the `Plan` enum serves both roles. Its `Scan` is the leaf that brings
 stored rows into execution, while its boxed inputs connect operations into the
 same tree shown above. Chapter 1 already followed `execute()` through that
-structure, so we do not need to draw it again.
+structure, so we do not need to draw it again. Once every node has a precise
+meaning, two differently shaped trees can be compared by the relations they
+produce.
 
 > **Production note: Projection and duplicate rows**
 >
@@ -181,25 +189,131 @@ structure, so we do not need to draw it again.
 Suppose two different plan trees both return Ada and Grace for our current
 table. That is encouraging, but it does not prove that they mean the same
 thing. They may agree only because these three rows do not expose their
-difference.
+difference. To rule out that possibility, we must compare them across every
+input that both plans can process.
 
-Two plans are **equivalent** when they produce the same result for every valid
-input. Valid means the input supplies the columns and value types required by
-both plans. The phrase “every valid input” prevents one convenient example
-from becoming a false proof.
+A plan can run only when its input contains the columns and value types its
+operations require. We call an input valid for two plans when both plans
+can run on it. The plans are **equivalent** when they produce the same result
+for every such input. This prevents one convenient example from becoming a
+false proof.
 
-An equivalent plan must keep the same rows and produce the same columns and
-values. For this chapter, our comparisons also preserve the order and number
-of rows because that is what the current engine exposes. We will collect the
-gap between this behavior and the mathematical model later in the chapter.
+For this chapter, the same result means the same number of rows in the same
+order, with the same columns and values, including the same duplicates. Those
+requirements describe what our current `Vec<Row>` engine exposes. Textbook
+relations use set semantics and do not promise row order, so their definition
+does not include all of these details.
 
-## 2.5 Rearranging a plan
+The formal study of this question goes much deeper. Aho, Sagiv, and Ullman
+studied equivalence for expressions built from selection, projection, and join
+with query optimization in mind. Their method represents expressions with
+tableaux and can account for functional dependencies. This chapter uses only
+the small fragment justified by the operators and behavior our engine already
+has. See [“Equivalences among Relational Expressions,” *SIAM Journal on
+Computing*, 1979](https://doi.org/10.1137/0208017).
+
+## 2.5 Three equivalence laws we can use
+
+An equivalence law describes a plan transformation that preserves the result
+whenever its conditions hold. The conditions matter as much as the shapes. A
+matching result for Ada, Linus, and Grace is evidence about one input; a law
+lets us reason about every valid input covered by its conditions.
+
+These are not all the laws of relational algebra. They are the first three
+supported by selection, projection, and the deliberately narrow semantics of
+our engine.
+
+### 2.5.1 Filters can exchange places
+
+Consider two predicates, `p` and `q`:
+
+```text
+Filter(p)              Filter(q)
+   │                      │
+Filter(q)      ≡       Filter(p)
+   │                      │
+   R                      R
+```
+
+A row reaches either root exactly when both predicates are true. The compact
+relational-algebra law is:
+
+<p class="relational-expression"><code>σ<sub>p</sub>(σ<sub>q</sub>(R)) ≡ σ<sub>q</sub>(σ<sub>p</sub>(R))</code></p>
+
+Both filters must be able to evaluate every input row. In our engine, that
+means each named column exists and contains an integer. Each filter then
+compares that integer with a fixed boundary without changing the row or
+anything else. Swapping the filters may change which predicate runs first, but
+it cannot change which rows satisfy both predicates.
+
+### 2.5.2 Nested projections can collapse
+
+Suppose projection `A` keeps a subset of the columns kept by projection `B`:
+
+```text
+Project(A)              Project(A)
+    │                       │
+Project(B)      ≡           R
+    │
+    R
+```
+
+The inner projection removes nothing that the outer projection needs, so it
+cannot affect the final row:
+
+<p class="relational-expression"><code>π<sub>A</sub>(π<sub>B</sub>(R)) ≡ π<sub>A</sub>(R), when A ⊆ B</code></p>
+
+For our engine, `A` keeps the same final column order on both sides, and each
+projection produces one output row for every input row. The law therefore also
+preserves the duplicates and row order that our implementation exposes.
+
+### 2.5.3 An early projection can remove unused columns
+
+The final projection cannot simply move below the filter. The filter may need
+columns that do not belong in the final answer. Instead, we keep the final
+projection and introduce another projection below the filter:
+
+```text
+Project(A)              Project(A)
+    │                       │
+Filter(p)       ≡       Filter(p)
+    │                       │
+    R               Project(A ∪ cols(p))
+                            │
+                            R
+```
+
+Let `A` be the columns required in the final result, and let `cols(p)` be the
+columns read by predicate `p`. The lower projection must retain both groups:
+
+<p class="relational-expression"><code>π<sub>A</sub>(σ<sub>p</sub>(R)) ≡ π<sub>A</sub>(σ<sub>p</sub>(π<sub>A ∪ cols(p)</sub>(R)))</code></p>
+
+For the employee query:
+
+```text
+A           = {name}
+cols(p)     = {salary}
+A ∪ cols(p) = {name, salary}
+```
+
+The lower projection may remove `id`, but it must preserve both `name` for the
+answer and `salary` for the filter. Every column in `A ∪ cols(p)` must exist in
+the input relation.
+
+The lower projection removes only columns needed by neither the filter nor the
+final result. The filter therefore sees the same predicate values and makes
+the same decisions. The outer projection then returns the same final columns
+in the same order. This argument applies to every valid input, not only the
+table currently in front of us, and gives us a reusable criterion for the safe
+and unsafe rearrangements ahead.
+
+## 2.6 Apply the laws
 
 The order of nodes is part of a plan's meaning. Moving an operation changes
 which columns and rows are available to the next operation. We can see the
 difference by trying one unsafe rearrangement and one safe one.
 
-### 2.5.1 An unsafe projection
+### 2.6.1 An unsafe projection
 
 The working plan filters before removing columns. Now place
 `Project(name)` below the filter:
@@ -218,11 +332,12 @@ removes `salary`. When the filter receives those smaller rows, its predicate
 asks for a column that no longer exists. Our engine stops with
 `unknown column: salary`.
 
-The nodes have familiar names, but the plan cannot perform the request. A
-rearrangement is valid only if every operation still receives the information
-it needs.
+The nodes have familiar names, but the plan cannot perform the request. This
+transformation does not satisfy the projection law because the lower project
+omits `salary`, a column in `cols(p)`. A rearrangement is valid only if every
+operation still receives the information it needs.
 
-### 2.5.2 A safe projection
+### 2.6.2 A safe projection
 
 Removing columns early was not the mistake. Removing a required column was.
 An early projection may discard `id` while retaining `name` for the final
@@ -240,10 +355,11 @@ Scan(employees)                  Project(name, salary)
                                  Scan(employees)
 ```
 
-The lower project removes only `id`. The filter can still read `salary`, and
-the upper project still returns `name`. This reasoning does not depend on Ada,
-Linus, or Grace. For every valid employee input, removing `id` early cannot
-change a filtering decision or a returned value.
+Here, `A` is `{name}` and `cols(p)` is `{salary}`. Their union is
+`{name, salary}`, exactly what the lower project retains. The filter can still
+read `salary`, and the upper project still returns `name`. The transformation
+satisfies the projection law, so its correctness does not depend on Ada,
+Linus, or Grace.
 
 <figure class="book-illustration book-diagram">
   <img src="images/002-safe-and-unsafe-projection.png" alt="An unsafe plan removes salary before filtering, while a safe plan removes only id and keeps salary until after filtering.">
@@ -254,7 +370,7 @@ We have justified one meaning-preserving transformation. We have not taught
 the database to discover or apply it. Automatic rewriting belongs to the
 optimizer we will build in Season 3.
 
-### 2.5.3 A counterexample
+### 2.6.3 A counterexample
 
 Testing several inputs can expose an invalid claim. Suppose one plan contains
 two salary filters while another accidentally drops the stricter filter:
@@ -280,36 +396,35 @@ Now add Edsger:
 The first plan removes Edsger; the second keeps him. This row is a
 **counterexample**, one valid input that proves the plans are not equivalent.
 Equivalence requires agreement for every valid input, so one disagreement is
-enough to reject it.
+enough to reject the transformation. An optimizer may not use it as a general
+rewrite rule.
 
 There is a redundant condition in the first plan, but it is the weaker one.
 Any salary greater than 60,000 is already greater than 50,000. We learn which
 condition is removable from their meanings, not from the particular rows in
 our first table.
 
-A test can preserve this counterexample, but passing examples are not a general
-proof. The general argument must still come from the operations: which rows
-they keep, which columns they need, and whether changing their order can alter
-either fact.
+Passing examples are not a general proof. A law and its conditions justify a
+transformation; a counterexample rejects a false one.
 
-## 2.6 Why equivalent plans matter
+## 2.7 Why equivalent plans matter
 
 A database often has several ways to answer the same query. One plan may
 remove unused columns early. Another may delay that work. Joins will eventually
 create choices with much larger consequences. Different arrangements may
 process fewer rows, use less memory, or finish sooner.
 
-The database can choose among those plans only after establishing that they
-preserve the requested answer. A fast plan that returns different rows is not
-an optimization. It is a bug. Equivalence is the safety boundary: change the
-shape as much as useful, but do not change the meaning.
+An optimizer does not rearrange plans arbitrarily. It applies transformations
+whose equivalence conditions are known to hold. A fast plan that returns
+different rows is not an optimization. It is a bug. Equivalence is the safety
+boundary: change the shape as much as useful, but do not change the meaning.
 
 Season 3 will turn that freedom into a query optimizer. It will apply rewrite
 rules, estimate costs, and choose among equivalent alternatives. Correctness
 comes first because the optimizer can choose only among plans that preserve
 the query's meaning.
 
-## 2.7 What we deliberately did not build
+## 2.8 What we deliberately did not build
 
 This chapter gives our small plans a logical interpretation, but the engine is
 still intentionally incomplete:
@@ -321,49 +436,71 @@ still intentionally incomplete:
   mathematical relation.
 - Its `Project` preserves duplicates instead of implementing textbook `π`.
 - Its predicates only read a column and compare an integer. We have not
-  considered errors, nondeterministic expressions, or side effects.
+  introduced nulls, expressions that can fail while being evaluated,
+  functions that may return a different answer each time, or expressions that
+  change data or other state.
+- We did not implement the paper's tableaux or its procedures for deciding
+  equivalence.
+- We have not introduced joins or functional dependencies, even though both
+  belong to the broader formal treatment.
+- These three laws do not cover full relational algebra or SQL. Additional
+  operators and different duplicate semantics can add conditions to otherwise
+  familiar transformations.
+
+Those missing predicate behaviors matter to equivalence. An expression might
+fail because it divides by zero or converts invalid text. A function based on
+the current time or a random value may not return the same answer twice. An
+expression that changes data, increments a counter, or writes output changes
+something beyond its own true-or-false result. If predicates can behave in
+these ways, swapping two filters may change which failures or changes occur.
+The filter law therefore needs more conditions in a richer language than it
+does in our current engine.
 
 These limitations matter, but solving them together would hide the idea we
 needed first. This chapter asks whether a transformation is correct. Later
 lessons can ask how to represent alternatives, find them, and choose among
 them.
 
-## 2.8 Try it
+## 2.9 Try it
 
-Use the current `Plan`, `Row`, and `Value` types for these experiments. For the
-first three, write a test that executes both plans against more than one input.
-Try to decide the answer before running the code.
+Use the current `Plan`, `Row`, and `Value` types as a concrete model for these
+experiments. Try to decide each answer before opening the explanation.
 
-1. Build two filters, `salary > 50000` and `id > 1`, then swap their order. Are
-   the plans equivalent for every valid employee relation?
-2. Place a projection below those two filters. What is the smallest set of
-   columns it must retain for the plan to keep working and return names?
-3. Construct a wrong early projection, then find the smallest input that
-   exposes the mistake.
-4. Add two employees named Ada and run `Project(name)`. How does the result
+1. Build two filters, `salary > 50000` and `id > 1`, then swap their order.
+   Which law permits the transformation, and which conditions does it assume?
+2. Place a projection below those two filters. Use the projection law to find
+   the smallest set of columns it must retain while still returning names.
+3. Explain which condition is violated when `Project(name)` is placed below
+   `Filter(salary > 50000)`.
+4. Remove one filter from the two-filter plan in Section 2.6.3. Find the
+   smallest counterexample that shows the new plan is not equivalent.
+5. Add two employees named Ada and run `Project(name)`. How does the result
    differ from textbook `π`?
 
 <details>
 <summary>Check your reasoning</summary>
 
-1. The filters are equivalent in either order. A row reaches the root only
-   when both predicates are true.
-2. The early projection must retain `id`, `salary`, and `name`: two columns for
-   the predicates and one for the final answer. It cannot remove anything from
-   our three-column rows.
-3. For example, keeping only `name` before `salary > 50000` fails on a
-   one-row input because the predicate cannot find `salary`.
-4. Our project returns two identical `{name: "Ada"}` rows. Textbook projection
+1. Filters can exchange places. Both predicates must be deterministic, valid
+   for the input rows, free of side effects, and able to read their columns.
+2. The final result needs `name`, while the predicates need `salary` and `id`.
+   Their union is `{name, salary, id}`, so nothing can be removed from our
+   three-column rows.
+3. The projection law requires the lower project to retain `cols(p)`. Keeping
+   only `name` removes `salary`, so the filter cannot evaluate its predicate.
+4. One employee earning 55,000 is enough. The two-filter plan removes that
+   row, while the plan containing only `salary > 50000` keeps it.
+5. Our project returns two identical `{name: "Ada"}` rows. Textbook projection
    produces one because mathematical relations do not contain duplicates.
 
 </details>
 
-## 2.9 From SQL to a plan
+## 2.10 From SQL to a plan
 
-We can now read a logical plan as transformations of relations and compare two
-plans by their meaning. Yet every plan in the program is still assembled from
-Rust enum values. A person should not need to write
-`Box::new(Plan::Filter { ... })` merely to ask for employee names.
+We can now assign meaning to a small logical plan, apply three justified
+transformations, and reject a false one with a counterexample. Yet every plan
+in the program is still assembled from Rust enum values. A person should not
+need to write `Box::new(Plan::Filter { ... })` merely to ask for employee
+names.
 
 SQL provides a convenient way to express the request. Its words and
 punctuation are not the plan itself. They are source text from which the
