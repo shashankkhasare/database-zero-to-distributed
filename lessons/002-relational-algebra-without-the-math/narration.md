@@ -34,7 +34,7 @@ Start again with the employee table.
 
 It contains rows and columns.
 
-In the previous lesson, we called this kind of table-shaped object a **relation**.
+In the previous lesson, we called this kind of table-shaped object a relation.
 
 Now watch what happens as the data moves through the plan.
 
@@ -56,11 +56,11 @@ And now that we can see the structure, we can give these two transformations the
 
 ## Selection and projection
 
-Our Rust engine calls one operation `Filter`.
+Our Rust engine calls one operation Filter.
 
 It checks a condition for each row and keeps the rows where that condition is true.
 
-Relational algebra calls this **selection**.
+Relational algebra calls this selection.
 
 It is written using the Greek letter sigma.
 
@@ -70,15 +70,15 @@ keep the rows whose salary is greater than fifty thousand.
 
 There is one naming trap worth noticing.
 
-In relational algebra, selection chooses **rows**.
+In relational algebra, selection chooses rows.
 
-That is different from SQL's `SELECT`, which appears near the columns being returned.
+That is different from SQL's SELECT, which appears near the columns being returned.
 
-Our other operation is `Project`.
+Our other operation is Project.
 
 It keeps certain columns and removes the rest.
 
-Relational algebra calls this **projection**.
+Relational algebra calls this projection.
 
 It is written using the Greek letter pi.
 
@@ -86,9 +86,9 @@ So pi name means:
 
 keep only the name column.
 
-Selection changes **which rows remain**.
+Selection changes which rows remain.
 
-Projection changes **what those rows contain**.
+Projection changes what those rows contain.
 
 If we nest those two operations around the employees relation, we get a compact description of the same work performed by our Rust plan.
 
@@ -172,17 +172,59 @@ So those two plans were never equivalent.
 
 Our original table simply hid the difference.
 
-Edsger's row is a **counterexample**.
+Edsger's row is a counterexample.
 
 One valid input is enough to prove that two plans are not equivalent.
 
 And this gives us the stronger definition we were looking for.
 
-Two plans are equivalent only if they produce the same result for **every valid input**.
+A plan can run only when its input contains the columns and value types its operations require.
 
-Not just one table or ten tests, but every valid input.
+An input is valid for two plans when both plans can run on it.
 
-That word *every* is doing a lot of work.
+The plans are equivalent only when they produce the same result for every such input.
+
+Not just one table or ten examples, but every valid input.
+
+That word every is doing a lot of work.
+
+## Three laws we can use
+
+The definition tells us what equivalence requires.
+
+But it does not yet tell us which changes are safe.
+
+Database researchers have studied that question formally for decades.
+
+A foundational paper by Aho, Sagiv, and Ullman examined equivalence for expressions built from selection, projection, and join.
+
+We do not need its full machinery yet.
+
+Our engine supports enough structure to understand three useful laws.
+
+First, two filters can exchange places.
+
+Suppose one checks salary and another checks I.D.
+
+A row reaches the top only when both conditions are true.
+
+Changing which filter asks first cannot change which rows satisfy both conditions.
+
+Second, nested projections can collapse.
+
+Suppose one projection keeps name and salary, and the next keeps only name.
+
+The inner projection removed nothing needed by the outer one.
+
+Keeping name directly produces the same final rows.
+
+Third, we may add an early projection below a filter, but only if it keeps everything still needed.
+
+That means the columns required by the final answer, together with the columns read by the predicate.
+
+This third law is easy to misuse.
+
+So let us apply it carefully to our employee plan.
 
 ## Moving projection
 
@@ -190,13 +232,15 @@ Now let us try a different kind of rewrite.
 
 Our working plan filters by salary first and projects the name column afterward.
 
-What if we move the projection earlier?
+What if we add a projection earlier?
 
 At first, that sounds reasonable.
 
 If the final query only needs the name column, why carry all the other columns through the plan?
 
-So imagine projecting only the name immediately after the scan.
+Keep the final name projection where it is, and add another projection immediately after the scan.
+
+Suppose that earlier projection keeps only the name.
 
 The scan produces complete employee rows.
 
@@ -218,11 +262,17 @@ In fact, our engine cannot even execute it.
 
 The important point is not that projection is dangerous.
 
-The problem is **which columns it removes**.
+The problem is which columns it removes.
 
 So let us try again.
 
-Instead of projecting only the name, suppose the early projection keeps both name and salary.
+The final answer needs name.
+
+The predicate needs salary.
+
+Their union is name and salary.
+
+So instead of projecting only the name, suppose the early projection keeps both name and salary.
 
 It removes only I.D.
 
@@ -244,7 +294,7 @@ But their meaning is the same.
 
 That is the kind of rewrite an optimizer wants.
 
-## A useful way to reason
+## Laws and counterexamples
 
 Notice what happened in these two examples.
 
@@ -256,15 +306,19 @@ In the second, we asked whether removing a column could affect anything later in
 
 Because no later operation depended on I.D., removing it early was safe.
 
-So when thinking about rewrites, there are two useful questions.
+These examples give us two different forms of reasoning.
 
-Can I construct an input where the plans disagree?
+A law proves a transformation safe when its conditions hold.
 
-And if I cannot, can I explain why every later operation receives all the information it needs?
+A counterexample proves a proposed equivalence false.
 
-The first question helps us find counterexamples.
+For an early projection, the condition is precise.
 
-The second helps us justify safe transformations.
+Keep the columns required by the final result and every column required by the predicate.
+
+For a claimed equivalence, the challenge is equally precise.
+
+Can any valid input make the plans disagree?
 
 This is much stronger than simply running the plans on whatever data happens to be available.
 
@@ -300,9 +354,15 @@ Our engine is still simple.
 
 Its rows live in a vector, and it preserves both order and duplicates.
 
-Textbook relational algebra usually treats relations as sets, so projection removes duplicate rows. Our `Project` operation keeps them. In this course, we will reason about the behavior our engine actually implements and point out where it differs from the textbook model.
+Textbook relational algebra usually treats relations as sets, so projection removes duplicate rows. Our Project operation keeps them. In this course, we will reason about the behavior our engine actually implements and point out where it differs from the textbook model.
 
 So for now, equivalence means preserving the behavior that this engine actually exposes.
+
+Its predicates are also simple integer comparisons.
+
+In a richer language, expressions may fail, depend on the current time, or change some state while they run.
+
+Those behaviors can make the order of evaluation observable, so familiar laws need additional conditions.
 
 That is enough for us to reason carefully about the plans we can build today.
 
@@ -322,11 +382,11 @@ But there is still something artificial about our engine.
 
 Every plan is being assembled by hand in Rust.
 
-A user should not need to construct nested `Plan` values just to ask for employee names.
+A user should not need to construct nested Plan values just to ask for employee names.
 
 They should be able to write something like:
 
-`SELECT name FROM employees WHERE salary > 50000`
+Select name from employees where salary is greater than fifty thousand.
 
 And let the database figure out the tree.
 
@@ -334,6 +394,6 @@ So the next question is no longer about rearranging a plan.
 
 It is about where the plan comes from.
 
-How do the characters in `SELECT`, `FROM`, and `WHERE` become the logical structure our engine already knows how to execute?
+How do the words SELECT, FROM, and WHERE become the logical structure our engine already knows how to execute?
 
 That is the material for the next chapter.

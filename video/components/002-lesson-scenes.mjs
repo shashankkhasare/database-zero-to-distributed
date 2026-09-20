@@ -4,8 +4,9 @@ import { clamp, createContentStage, createScene, element, setStyle } from "./sce
 const TITLES = {
   "selection-and-projection": "Selection and projection",
   "is-matching-output-enough": "One result is not enough",
-  "moving-projection": "Moving projection",
-  "a-useful-way-to-reason": "Two questions for every rewrite",
+  "three-laws-we-can-use": "Three laws we can use",
+  "moving-projection": "Adding an early projection",
+  "laws-and-counterexamples": "Laws and counterexamples",
   "why-equivalence-matters": "Correctness before cost",
   "sql-handoff": "Where does the plan come from?",
 };
@@ -30,9 +31,10 @@ function phaseFor(time, sceneId, at) {
   const boundaries = {
     "selection-and-projection": [[10, 42.6], [18, 70.7]],
     "is-matching-output-enough": [[9, 32], [27, 106], [33, 130]],
-    "moving-projection": [[12, 47], [19, 76]],
-    "a-useful-way-to-reason": [[7, 31]],
-    "why-equivalence-matters": [[9, 40], [14, 66]],
+    "three-laws-we-can-use": [[7, 24], [11, 43], [15, 62]],
+    "moving-projection": [[7, 28], [14, 58], [19, 78]],
+    "laws-and-counterexamples": [[7, 31]],
+    "why-equivalence-matters": [[9, 40], [14, 66], [18, 82]],
     "sql-handoff": [[7, 32], [12, 55]],
   }[sceneId];
   return boundaries.reduce((value, [beat, fallback]) => value + Number(time >= at(beat, fallback)), 0);
@@ -41,8 +43,9 @@ function phaseFor(time, sceneId, at) {
 const renderers = {
   "selection-and-projection": renderSelection,
   "is-matching-output-enough": renderMatching,
+  "three-laws-we-can-use": renderLaws,
   "moving-projection": renderMoving,
-  "a-useful-way-to-reason": renderReasoning,
+  "laws-and-counterexamples": renderReasoning,
   "why-equivalence-matters": renderWhy,
   "sql-handoff": renderSql,
 };
@@ -63,6 +66,28 @@ function renderSelection(phase) {
     symbol("σ", "SELECT ROWS", "salary > 50,000"),
     symbol("π", "SELECT COLUMNS", "name"),
     logicalPlanExpression(),
+  ]);
+}
+
+function renderLaws(phase) {
+  if (phase === 0) return comparison([
+    concept("DEFINITION", "Same result", "for every valid input", "good"),
+    concept("FOUNDATIONAL PAPER", "Aho · Sagiv · Ullman", "Equivalences Among Relational Expressions · 1979"),
+  ]);
+  if (phase === 1) return split(
+    planPanel("PLAN A", ["FILTER I.D.", "FILTER salary", "SCAN"]),
+    concept("LAW 1", "Filters may swap", "both conditions must be true", "good"),
+    planPanel("PLAN B", ["FILTER salary", "FILTER I.D.", "SCAN"]),
+  );
+  if (phase === 2) return split(
+    planPanel("BEFORE", ["PROJECT name", "PROJECT name, salary", "SCAN"]),
+    concept("LAW 2", "Nested projections collapse", "keep name directly", "good"),
+    planPanel("AFTER", ["PROJECT name", "SCAN"]),
+  );
+  return comparison([
+    concept("FINAL ANSWER", "name", "columns returned"),
+    concept("PREDICATE READS", "salary", "columns still needed"),
+    concept("EARLY PROJECTION", "name, salary", "keep their union", "good"),
   ]);
 }
 
@@ -96,12 +121,17 @@ function renderMatching(phase) {
 function renderMoving(phase) {
   if (phase === 0) return split(
     planPanel("ORIGINAL", ["PROJECT name", "FILTER needs salary", "SCAN id, name, salary"]),
-    concept("QUESTION", "Move projection earlier?", "carry fewer columns"),
-    planPanel("TEMPTING REWRITE", ["FILTER needs salary", "PROJECT name", "SCAN id, name, salary"]),
+    concept("QUESTION", "Add an early projection?", "carry fewer columns"),
+    planPanel("TEMPTING REWRITE", ["PROJECT name", "FILTER needs salary", "PROJECT name", "SCAN id, name, salary"]),
   );
   if (phase === 1) return comparison([
-    planPanel("INVALID", ["FILTER needs salary", "✕ salary removed", "PROJECT keeps name"], [], "bad"),
+    planPanel("INVALID", ["PROJECT name", "FILTER needs salary", "✕ salary removed", "PROJECT keeps name"], [], "bad"),
     concept("BROKEN DEPENDENCY", "Filter asks for salary", "but salary is already gone", "bad"),
+  ]);
+  if (phase === 2) return comparison([
+    concept("FINAL ANSWER", "name", "columns returned"),
+    concept("PREDICATE READS", "salary", "columns needed by Filter"),
+    concept("KEEP EARLY", "name, salary", "the union of both sets", "good"),
   ]);
   return split(
     planPanel("ORIGINAL", ["PROJECT name", "FILTER salary > 50,000", "SCAN id, name, salary"]),
@@ -120,8 +150,8 @@ function renderReasoning(phase) {
     return layout;
   }
   return comparison([
-    concept("QUESTION 1", "Can any valid input make the plans disagree?", "search for a counterexample"),
-    concept("QUESTION 2", "Does every later operation retain what it needs?", "trace dependencies"),
+    concept("COUNTEREXAMPLE · DISPROVES", "Can any valid input make the plans disagree?", "one disagreement is enough", "bad"),
+    concept("LAW · PROVES", "Do the law's conditions hold?", "then the rewrite is safe", "good"),
   ]);
 }
 
@@ -136,10 +166,15 @@ function renderWhy(phase) {
     concept("EQUIVALENCE GATE", "valid plans only", "correctness comes first", "good"),
     concept("CHEAPEST VALID PLAN", "28 ms", "same meaning", "good"),
   );
-  return comparison([
+  if (phase === 2) return comparison([
     concept("THIS ENGINE", "vector rows", "simple owned data"),
     concept("OBSERVABLE", "order preserved", "rewrites must preserve it"),
     concept("OBSERVABLE", "duplicates preserved", "textbook projection removes them"),
+  ]);
+  return comparison([
+    concept("TODAY", "stable integer comparisons", "the three laws fit our predicates", "good"),
+    concept("RICHER EXPRESSIONS", "current time", "may change between evaluations"),
+    concept("RICHER EXPRESSIONS", "error or side effect", "evaluation order may become visible"),
   ]);
 }
 

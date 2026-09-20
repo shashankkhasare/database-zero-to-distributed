@@ -529,6 +529,126 @@
       "pauseAfter": 0.8
     },
     {
+      "id": "is-matching-output-enough-041",
+      "scene": "is-matching-output-enough",
+      "paragraph": 41,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "is-matching-output-enough-042",
+      "scene": "is-matching-output-enough",
+      "paragraph": 42,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "three-laws-we-can-use-001",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 1,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-002",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 2,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-003",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 3,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-004",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 4,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-005",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 5,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-006",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 6,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-007",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 7,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-008",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 8,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-009",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 9,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-010",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 10,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-011",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-012",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 12,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-013",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 13,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-014",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 14,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-015",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 15,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-016",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 16,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-017",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 17,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "three-laws-we-can-use-018",
+      "scene": "three-laws-we-can-use",
+      "paragraph": 18,
+      "pauseAfter": 0.8
+    },
+    {
       "id": "moving-projection-001",
       "scene": "moving-projection",
       "paragraph": 1,
@@ -598,7 +718,7 @@
       "id": "moving-projection-012",
       "scene": "moving-projection",
       "paragraph": 12,
-      "pauseAfter": 0.35
+      "pauseAfter": 0.55
     },
     {
       "id": "moving-projection-013",
@@ -688,7 +808,7 @@
       "id": "moving-projection-027",
       "scene": "moving-projection",
       "paragraph": 27,
-      "pauseAfter": 0.35
+      "pauseAfter": 0.55
     },
     {
       "id": "moving-projection-028",
@@ -703,69 +823,105 @@
       "pauseAfter": 0.8
     },
     {
-      "id": "a-useful-way-to-reason-001",
-      "scene": "a-useful-way-to-reason",
+      "id": "moving-projection-030",
+      "scene": "moving-projection",
+      "paragraph": 30,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-031",
+      "scene": "moving-projection",
+      "paragraph": 31,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-032",
+      "scene": "moving-projection",
+      "paragraph": 32,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "moving-projection-033",
+      "scene": "moving-projection",
+      "paragraph": 33,
+      "pauseAfter": 0.8
+    },
+    {
+      "id": "laws-and-counterexamples-001",
+      "scene": "laws-and-counterexamples",
       "paragraph": 1,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-002",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-002",
+      "scene": "laws-and-counterexamples",
       "paragraph": 2,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-003",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-003",
+      "scene": "laws-and-counterexamples",
       "paragraph": 3,
-      "pauseAfter": 0.35
+      "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-004",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-004",
+      "scene": "laws-and-counterexamples",
       "paragraph": 4,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-005",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-005",
+      "scene": "laws-and-counterexamples",
       "paragraph": 5,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-006",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-006",
+      "scene": "laws-and-counterexamples",
       "paragraph": 6,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-007",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-007",
+      "scene": "laws-and-counterexamples",
       "paragraph": 7,
-      "pauseAfter": 0.55
+      "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-008",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-008",
+      "scene": "laws-and-counterexamples",
       "paragraph": 8,
-      "pauseAfter": 0.55
+      "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-009",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-009",
+      "scene": "laws-and-counterexamples",
       "paragraph": 9,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-010",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-010",
+      "scene": "laws-and-counterexamples",
       "paragraph": 10,
       "pauseAfter": 0.18
     },
     {
-      "id": "a-useful-way-to-reason-011",
-      "scene": "a-useful-way-to-reason",
+      "id": "laws-and-counterexamples-011",
+      "scene": "laws-and-counterexamples",
       "paragraph": 11,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "laws-and-counterexamples-012",
+      "scene": "laws-and-counterexamples",
+      "paragraph": 12,
+      "pauseAfter": 0.55
+    },
+    {
+      "id": "laws-and-counterexamples-013",
+      "scene": "laws-and-counterexamples",
+      "paragraph": 13,
       "pauseAfter": 0.8
     },
     {
@@ -877,6 +1033,24 @@
       "pauseAfter": 0.8
     },
     {
+      "id": "why-equivalence-matters-019",
+      "scene": "why-equivalence-matters",
+      "paragraph": 19,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-020",
+      "scene": "why-equivalence-matters",
+      "paragraph": 20,
+      "pauseAfter": 0.18
+    },
+    {
+      "id": "why-equivalence-matters-021",
+      "scene": "why-equivalence-matters",
+      "paragraph": 21,
+      "pauseAfter": 0.8
+    },
+    {
       "id": "sql-handoff-001",
       "scene": "sql-handoff",
       "paragraph": 1,
@@ -968,4 +1142,3 @@
     }
   ]
 }
-
