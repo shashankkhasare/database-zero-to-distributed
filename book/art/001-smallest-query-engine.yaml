@@ -2,6 +2,39 @@ lesson: "001"
 style: book/art/STYLE.md
 
 images:
+  - id: direct-plan-and-rows
+    output: book/images/001-direct-plan-and-rows.png
+    placement: section 1.1 after the question about producing requested rows
+    alt: A faded SQL text and parser path leads toward a query plan, while solid inputs show that Chapter 1 builds the plan and employee rows directly before execution.
+    prompt: >-
+      Use case: scientific-educational. Asset type: precise editorial flow
+      illustration for a technical database book. Create one wide horizontal
+      composition on warm lightly textured paper. Across the upper half, show
+      five large cards connected left to right by straight arrows. The first
+      card says exactly "SQL" and the second says exactly "PARSER";
+      render both cards and their connecting arrows faint gray and partially
+      transparent to show that they are deferred. The third card says exactly
+      "QUERY PLAN", the fourth says exactly "EXECUTION", and the fifth says
+      exactly "RESULT"; render these three cards in clear deep teal and ochre.
+      Below "QUERY PLAN", place a solid card that says exactly "PLAN" with one
+      straight upward arrow touching the QUERY PLAN card. Below
+      "EXECUTION", show exactly three horizontal employee row cards, each
+      divided into three cells, grouped under the exact label "EMPLOYEE ROWS",
+      with one straight upward arrow touching the EXECUTION card. Enclose the
+      lower PLAN card and EMPLOYEE ROWS group together inside one broad,
+      hand-drawn ochre outline. Put the exact label "WE BUILD THESE" along the
+      bottom of that outline without touching either input or crossing an
+      arrow. Make these two solid upward inputs the visual focus and keep the
+      deferred SQL and parser route visibly secondary. The relationships must
+      be unmistakable at book-column width. Original editorial illustration
+      with hand-drawn ink contours, restrained gouache and watercolor fills,
+      subtle print texture, simplified geometry, and generous negative space.
+      Palette: warm ivory, charcoal, deep database teal, muted turquoise,
+      ochre gold, and faint gray for deferred steps. Render only the eight
+      specified labels, spelled exactly. No people, hands, machines, plants,
+      decorative objects, extra cards, extra arrows, curved connectors, crossed
+      lines, logos, watermark, photorealism, glossy 3D rendering, or humor.
+
   - id: opening-question
     output: book/images/001-opening-question.png
     placement: after the chapter epigraph and before the opening prose

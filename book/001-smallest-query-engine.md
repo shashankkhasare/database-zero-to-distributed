@@ -14,11 +14,12 @@ operations, and returns the result. A large database may spread this work across
 many processors and machines, but we will begin with a version small enough to
 hold in our heads.
 
-In this chapter, we will construct the plan ourselves and focus on executing
-it. Our first engine will know only three operations: read rows, remove rows
-that fail a condition, and remove columns that were not requested. Databases
-call these operations **scan**, **filter**, and **project**. Together they can
-answer an ordinary question such as this one:
+In this chapter, we will build a tiny database program. Instead of reading SQL,
+it will execute a plan that we construct ourselves. Our first engine will know
+only three operations: read rows, remove rows that fail a condition, and remove
+columns that were not requested. Databases call these operations **scan**,
+**filter**, and **project**. Together they can answer an ordinary question such
+as this one:
 
 ```sql
 SELECT name
@@ -42,7 +43,7 @@ Here is the complete `employees` table we will use:
 Ada and Grace earn more than 50,000, so their names belong in the result. Linus
 earns exactly 50,000. The query uses `>`, not `>=`, so equality is not enough
 and his row is removed. After removing the unrequested `id` and `salary`
-columns, the database should return:
+columns, our tiny database program should print:
 
 ```text
 Employees earning more than 50,000:
@@ -51,9 +52,7 @@ Employees earning more than 50,000:
 ```
 
 The work sounds manageable: read the employees, discard the row whose salary
-does not satisfy the condition, and remove every column except the name. There
-is only one awkward detail: we have not built a database yet. Fortunately, an
-absent database gives us no old design that must be preserved.
+does not satisfy the condition, and remove every column except the name.
 
 By the end of the chapter, we will have represented the table in Rust,
 described the required work, executed it, and checked the result. That is not
@@ -64,17 +63,19 @@ This chapter uses a small amount of Rust without pausing to teach the language.
 If any syntax is unfamiliar, keep [Appendix A](appendix-a-enough-rust.md) nearby
 and return here when the code is readable again.
 
-Chapter 1 has no earlier lesson checkpoint. To build alongside it, begin in an
-empty directory and create the Rust project:
+To build alongside this chapter, clone the repository and create a working
+branch from the pre-code checkpoint:
 
 ```bash
-cargo new --bin database-zero-to-distributed
+git clone https://github.com/shashankkhasare/database-zero-to-distributed.git
 cd database-zero-to-distributed
+git switch --create chapter-001 lesson-000
+cargo init --bin .
 ```
 
-This command creates `Cargo.toml` and a starter `src/main.rs`. The
-`lesson-001` tag in the book's repository contains the completed chapter for
-comparison or recovery; it is the destination, not the starting point.
+`cargo init` adds `Cargo.toml` and a starter `src/main.rs` to the existing
+directory. The `lesson-001` tag contains the completed chapter for comparison
+or recovery; it is the destination, not the starting point.
 
 ## 1.1 Begin without SQL
 
@@ -91,12 +92,18 @@ heart of this chapter:
 > Once the database knows which operations to perform, how does it produce the
 > requested rows?
 
-We will supply that internal description directly in Rust. A later chapter
-will translate SQL into the same form. We already know the input and expected
-answer. Before our program can connect the two, it needs a way to represent one
-row.
+We will construct that plan directly in Rust and create the employee rows
+ourselves. A later chapter will translate SQL into the same plan.
 
-## 1.2 Give a row somewhere to live
+<figure class="book-illustration">
+  <img src="images/001-direct-plan-and-rows.png" alt="A faded SQL text and parser path leads toward a query plan, while solid inputs show that Chapter 1 builds the plan and employee rows directly before execution.">
+  <figcaption>We build both inputs to execution: the query plan and the employee rows. Reading SQL comes later.</figcaption>
+</figure>
+
+We already know the input and expected answer. Before our program can connect
+the two, it needs a way to represent one row.
+
+## 1.2 Represent the table as rows
 
 A table is made of rows and columns. Each row represents one item, in this case
 one employee, and each column describes one fact about it. Database theory often
@@ -112,8 +119,6 @@ compare or display it. We will begin with a type named `Value`.
 `src/row.rs`: create this file
 
 ```rust
-use std::fmt;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     Integer(i64),
@@ -122,17 +127,12 @@ pub enum Value {
 ```
 
 Rust compiles a source file only after it is included in the program's module
-tree. Add the new `row` module at the top of the starter file. The row types are
-not used yet, but `cargo check` can now confirm that the declarations compile.
+tree. Add the new `row` module at the top of the starter file.
 
 `src/main.rs`: add at the top of the file
 
 ```rust
 mod row;
-```
-
-```bash
-cargo check
 ```
 
 `Integer` and `Text` cover every cell in our employee table. Keeping the two
@@ -186,6 +186,8 @@ impl Row {
 }
 ```
 
+`Row::new()` stores each column name as an owned `String` beside its value.
+
 `src/row.rs`: add after the first `impl Row`
 
 ```rust
@@ -201,6 +203,9 @@ impl Row {
     }
 }
 ```
+
+`Row::get()` searches by column name and returns the matching value, or `None`
+when the column does not exist.
 
 `src/row.rs`: add after the second `impl Row`
 
@@ -223,9 +228,9 @@ impl Row {
 }
 ```
 
-`Row::new()` constructs a row from named values. `Row::get()` searches for one
-column. `Row::project()` uses that search to build a new row containing only
-the requested columns, in the requested order.
+`Row::project()` copies the requested columns, in order, into a new row. An
+unknown column stops the program because plans are still written directly by
+the programmer.
 
 We can now represent Ada's complete employee row:
 
@@ -271,6 +276,15 @@ The following formatting code establishes that output. It preserves the order
 of values stored in the row, which also preserves the order requested by a
 project.
 
+Rust's formatting interfaces live in the standard library's `fmt` module.
+Import it at the top of `row.rs` before adding the display implementations.
+
+`src/row.rs`: add at the top of the file
+
+```rust
+use std::fmt;
+```
+
 `src/row.rs`: add after `impl Row`
 
 ```rust
@@ -309,7 +323,7 @@ a row or the way query operations process them. Appendix A explains Rust's
 formatting machinery in more detail. Our rows are now represented and readable;
 the next piece must describe what the engine should do with them.
 
-## 1.3 Make the work visible
+## 1.3 Describe the work as a plan
 
 We need three operations:
 
@@ -318,9 +332,9 @@ We need three operations:
 3. keep only the `name` column
 
 Databases commonly call these operations **scan**, **filter**, and **project**.
-Together they form a **query plan**, a description of the work used to answer a
-query. Our plan has a tree shape because each operation consumes the result of
-the operation beneath it:
+They must run in a particular order. The scan supplies rows to the filter, and
+the filter supplies its surviving rows to the project. We can connect them like
+this:
 
 ```text
 Project name
@@ -330,10 +344,16 @@ Filter salary > 50,000
 Scan employees
 ```
 
-The scan sits at the bottom because it needs no earlier result. A tree element
-without a child is called a **leaf**. The filter consumes the scan's rows, and
-the project consumes the filter's rows. The arrows point upward because rows
-flow from the scan toward the final result at the top.
+Each operation is a node, and the connected nodes form a **query plan**, a
+description of the work used to answer a query. This plan has only one path, so
+it looks like a chain. We still describe the structure as a tree because later
+operations, such as joins, can receive rows from more than one input and create
+branches.
+
+The scan sits at the bottom because it needs no earlier result. A node without
+a child is called a **leaf**. The filter consumes the scan's rows, and the
+project consumes the filter's rows. The arrows point upward because rows flow
+from the scan toward the final result at the top.
 
 Early diagrams will show these arrows explicitly. Once the convention is
 familiar, a plain connecting line may imply the same upward flow.
@@ -499,17 +519,20 @@ fn main() {
 cargo run --quiet
 ```
 
-The program stops at the first unfinished operation:
+Rust first prints warnings because this temporary program does not yet use all
+the row methods and plan variants we have defined. Those warnings are expected
+at this incomplete checkpoint. After them, the program stops at the first
+unfinished operation:
 
 ```text
 thread 'main' panicked:
 not yet implemented: execute scan
 ```
 
-Rust may also print the source location and a note about backtraces. The panic
-is useful here: it proves that execution reached the scan placeholder. We can
-now replace that placeholder with real behavior and continue upward through
-the plan.
+The exact output may also include a thread number, source location, and note
+about backtraces. The final panic is what matters: it proves that execution
+reached the scan placeholder. We can now replace that placeholder with real
+behavior and continue upward through the plan.
 
 ### 1.4.1 Scan returns its rows
 
@@ -598,10 +621,11 @@ Plan::Project { columns, input } => {
 }
 ```
 
-Like the filter, the project first executes its input and creates an empty
-output list. Unlike the filter, it adds one output row for every input row.
-`Row::project()` looks up the requested columns in order and copies them into a
-new row. Database theory calls this choice of columns **projection**.
+Like the filter, the project executes its input and creates an empty output
+list. The filter may discard an input row, but the project adds exactly one
+output row for every input row. `Row::project()` keeps the requested columns in
+the requested order and copies their values into a new row. Database theory
+calls this choice of columns **projection**.
 
 Scan can now return rows, filter can remove rows, and project can reshape rows.
 Each operation performs one small job. Their request-and-response pattern lets
@@ -616,11 +640,11 @@ specific relation and plan to execute. We will represent the three rows from
 the `employees` table in their original order. These rows become the source
 owned by the scan at the bottom of the plan.
 
-We then assemble the query from the source outward. The scan reads every
-employee, the filter keeps salaries greater than 50,000, and the project keeps
-only `name`. Each parent contains its child as `input`, so the Rust value is
-written from the outer project toward the inner scan. When it runs, results are
-produced in the opposite order: scan, filter, then project.
+Now we connect the operations. The scan contains every employee row. The
+filter uses the scan as its input and keeps salaries greater than 50,000. The
+project uses the filter as its input and keeps only `name`. In Rust, the scan
+is nested inside the filter, which is nested inside the project. Execution
+reaches the scan first, then returns through the filter and project.
 
 Finally, the program executes the completed plan and prints every result row.
 We will assemble the entry point in short pieces, beginning with the modules
@@ -763,11 +787,16 @@ Filter(salary > 50000)
 Scan(employees)
 ```
 
-This shape is more than a convenient Rust data structure. The operations are
-the beginnings of **relational algebra**, a small language for describing how
-relations are transformed. Once a query has this form, we can rearrange its
-operations and consider different ways to perform the work. But a
-different-looking plan is useful only if it preserves the query's meaning.
+This plan is more than a convenient Rust data structure. Its operations belong
+to **relational algebra**, a language for describing how relations are
+transformed. Relational algebra gives each operation a precise meaning, which
+lets us compare plans instead of treating them as arbitrary arrangements of
+Rust values.
 
-How can we tell whether two query plans still produce the same result? That is
-the question waiting for us in the next chapter.
+Two plans can have different shapes and still answer the same query. That
+matters because one arrangement may perform less work than another. But before
+we can choose a better plan, we must know that it preserves the original
+result.
+
+So the next chapter asks: when do two different query plans mean the same
+thing?
