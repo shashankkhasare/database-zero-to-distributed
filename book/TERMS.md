@@ -23,7 +23,7 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | logical plan | Chapter 2, §2.3 | A description of what result a query requires |
 | physical plan | Chapter 2, §2.3 | A description of how the database will perform the work |
 | equivalent plans | Chapter 2, §2.4 | Plans that produce the same result for every valid input |
-| counterexample | Chapter 2, §2.5.3 | One valid input that disproves an equivalence claim |
+| counterexample | Chapter 2, §2.6.3 | One valid input that disproves an equivalence claim |
 | read-evaluate-print loop (REPL) | Chapter 3, §3.1 | A prompt that repeatedly reads input, evaluates it, and prints the result |
 | token | Chapter 3, §3.3 | One meaningful unit recognized in SQL source text |
 | lexer | Chapter 3, §3.3 | The frontend component that groups source characters into tokens |

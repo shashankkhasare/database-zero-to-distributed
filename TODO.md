@@ -204,10 +204,13 @@ streaming execution, or new query operators.
 - [x] Make the processed episode public and verify its viewer-facing state
 - [x] Tag the verified repository state as `lesson-002`
 
-Lesson 002 was built from source commit
-`59ef57760a63286794e78278bfeaf93e5413246d`. The final 760.723-second video
-is public as `InE6WfCcJK4`, with its custom thumbnail, serving English
-captions, and public playlist placement verified on 2026-09-14.
+Lesson 002 revision 2 was built from source commit
+`0dac49c9df957a44a23cce405b0e453f727984e1`. The final 919.983-second,
+1920 by 1080 video runs at 29.995 FPS and contains H.264 video, AAC audio,
+and selectable English captions. It is public as `Xlwhbx8FMLU`, with its
+custom thumbnail, serving caption track, and public playlist placement
+verified on 2026-09-21. The superseded upload `InE6WfCcJK4` is unlisted and
+has been removed from the course playlist.
 
 ---
 

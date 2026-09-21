@@ -37,11 +37,12 @@ The instructional timeline begins after the five-second ident.
 | The equivalence question | `the-equivalence-question-001..013` | 0:00-1:00.620 | Recover Lesson 001's result and pose the optimizer's safety question |
 | Relations through the plan | `relations-through-the-plan-001..012` | 1:00.620-2:04.570 | Show that intermediate results are relations too |
 | Selection and projection | `selection-and-projection-001..023` | 2:04.570-3:56.045 | Connect familiar operators to names and notation |
-| Is matching output enough? | `is-matching-output-enough-001..040` | 3:56.045-6:34.240 | Use Edsger to expose a false equivalence |
-| Moving projection | `moving-projection-001..029` | 6:34.240-8:38.530 | Compare an unsafe and a safe projection pushdown |
-| A useful way to reason | `a-useful-way-to-reason-001..011` | 8:38.530-9:36.960 | Turn the examples into two reusable questions |
-| Why equivalence matters | `why-equivalence-matters-001..018` | 9:36.960-11:14.620 | Establish equivalence as the optimizer's safety boundary |
-| SQL handoff | `sql-handoff-001..015` | 11:14.620-12:28.680 | Move from hand-built plans toward SQL parsing |
+| Is matching output enough? | `is-matching-output-enough-001..042` | 3:56.040-6:48.995 | Use Edsger to expose a false equivalence and define valid input |
+| Three laws we can use | `three-laws-we-can-use-001..018` | 6:48.995-8:26.980 | Introduce three conditional equivalence laws and their provenance |
+| Moving projection | `moving-projection-001..033` | 8:26.980-10:47.855 | Apply the early-projection law incorrectly and then correctly |
+| Laws and counterexamples | `laws-and-counterexamples-001..013` | 10:47.855-11:54.635 | Separate proof by a law from disproof by a counterexample |
+| Why equivalence matters | `why-equivalence-matters-001..021` | 11:54.635-13:54.280 | Establish equivalence as the optimizer's safety boundary and qualify the laws |
+| SQL handoff | `sql-handoff-001..015` | 13:54.280-15:07.940 | Move from hand-built plans toward SQL parsing |
 
 ## Project ident
 
@@ -163,25 +164,61 @@ beat `027` says to add another employee. Send his row to both plans. Plan A
 rejects it at the stricter filter; Plan B keeps it. Replace the matching result
 cards with visibly different outputs and mark Edsger's row `COUNTEREXAMPLE`.
 
-### `033..040`: strengthen the definition
+### `033..042`: strengthen the definition
 
 Clear the detailed plans. Center two statements in sequence: `One input can
 disprove equivalence` and `Equivalent plans agree for every valid input`.
-Emphasize `every valid input` once, then hold it without repeated zooming.
+Before the second statement, show a small valid-input card containing the
+columns and value types required by both plans. Emphasize `every valid input`
+once, then hold it without repeated zooming.
 
-**Transition:** the definition moves into the title region while a projection
-node enters the working plan.
+**Transition:** the definition moves into the title region while three law
+cards enter one at a time.
+
+## Three laws we can use
+
+**Beats:** `three-laws-we-can-use-001..018`
+
+### `001..005`: from a definition to reusable laws
+
+Keep `same result for every valid input` small in the title region. Introduce
+the reference `Aho, Sagiv, and Ullman · 1979` beneath it without turning the
+scene into a bibliography slide. State that the paper studies equivalences
+among relational expressions, then clear the citation before the laws fill the
+stage.
+
+### `006..009`: filters exchange places
+
+Show two short plans side by side. One tests salary and then I.D.; the other
+tests I.D. and then salary. Feed the same row through both and place the same
+Boolean expression, `salary condition AND I.D. condition`, beneath them.
+Finish with a compact `FILTERS MAY SWAP` law card.
+
+### `010..013`: nested projections collapse
+
+Show a lower projection retaining `name, salary` and an upper projection
+retaining `name`. Collapse the two nodes into one projection retaining `name`.
+Keep the input and final relation fixed so the unchanged meaning is visible.
+
+### `014..018`: an early projection has a condition
+
+Begin with the original final projection at the top. Add, rather than move, a
+new projection below Filter. Then clear the plan and place three column sets
+across the stage: `final answer: name`, `predicate reads: salary`, and `early
+projection: name, salary`. Mark this as a conditional law, then carry the idea
+into the next scene for a concrete application.
 
 ## Moving projection
 
-**Beats:** `moving-projection-001..029`
+**Beats:** `moving-projection-001..033`
 
 ### `001..011`: the tempting rewrite
 
-Show the working plan with Projection above Filter. Move Projection below
-Filter while keeping only `name`. Let `salary` visibly disappear before the
-row reaches Filter. The filter asks for salary, and the missing cell creates a
-small red break between the nodes. Label the plan `INVALID`, not merely slow.
+Show the working plan with the final Projection above Filter. Keep it in
+place, then add a second Projection below Filter that retains only `name`.
+Let `salary` visibly disappear before the row reaches Filter. The filter asks
+for salary, and the missing cell creates a small red break between the nodes.
+Label the plan `INVALID`, not merely slow.
 
 ### `012..018`: identify the dependency
 
@@ -190,19 +227,20 @@ column labelled `needs salary`. State the rule visually: an earlier projection
 must keep every column required later. Clear the broken state before trying the
 safe rewrite.
 
-### `019..029`: preserve the needed columns
+### `019..033`: preserve the needed columns
 
 Build the safe plan in the same location. The early projection now keeps
 `name, salary` and removes only `id`. Let the row pass through Filter, then let
-the final projection keep only `name`. Place the original and safe plan side by
-side only at the end, with matching result relations and one equivalence mark
-between them.
+the unchanged final projection keep only `name`. Before running the plan, show
+`final answer: name`, `predicate reads: salary`, and their union
+`name, salary`. Place the original and safe plan side by side only at the end,
+with matching result relations and one equivalence mark between them.
 
 **Transition:** collapse both plans into two question cards.
 
-## A useful way to reason
+## Laws and counterexamples
 
-**Beats:** `a-useful-way-to-reason-001..011`
+**Beats:** `laws-and-counterexamples-001..013`
 
 ### `001..006`: recover the evidence
 
@@ -211,19 +249,20 @@ and salary disappearing before Filter. Do not replay either animation. Connect
 the first to `Find a counterexample` and the second to `Trace what later nodes
 need`.
 
-### `007..011`: two reusable questions
+### `007..013`: two reusable questions
 
 Clear the memories and center two balanced cards:
 
 1. `Can any valid input make the plans disagree?`
-2. `Does every later operation retain what it needs?`
+2. `Do the conditions of an equivalence law hold?`
 
-Hold both cards long enough to read. These are reasoning tools, not an
-algorithm, so do not add optimizer machinery.
+Label the first card `COUNTEREXAMPLE: disproves` and the second `LAW: proves
+when its conditions hold`. Hold both cards long enough to read. These are
+reasoning tools, not an algorithm, so do not add optimizer machinery.
 
 ## Why equivalence matters
 
-**Beats:** `why-equivalence-matters-001..018`
+**Beats:** `why-equivalence-matters-001..021`
 
 ### `001..008`: many possible plans
 
@@ -239,12 +278,16 @@ plans pass through it. Reject one faster but incorrect plan in muted red. Then
 allow the selection algorithm to choose the cheapest plan among the remaining
 valid plans.
 
-### `014..018`: name this engine's behavior
+### `014..021`: name this engine's behavior and the limits of the laws
 
 Clear the optimizer fan. Show three compact behavior cards: `vector rows`,
 `order preserved`, and `duplicates preserved`. Contrast the final card with a
 small textbook-set note stating that textbook projection removes duplicates.
 End on `preserve the behavior the engine exposes`.
+Then show a final compact qualification: this lesson's predicates are stable
+integer comparisons. Dim future examples such as `current time`, `error`, and
+`changes state` to show why richer expressions may make evaluation order
+observable. Do not imply that the three laws apply without conditions.
 
 **Transition:** the logical plan slides left and an empty SQL editor appears on
 the right.
@@ -289,8 +332,12 @@ background cleanly.
 - [x] Every relation remains visibly table-shaped during transformations.
 - [x] Sigma and pi appear only beside their plain-language meanings.
 - [x] Plan A and Plan B agree before Edsger and disagree after he is added.
+- [x] The definition of valid input appears before formal equivalence.
+- [x] Three laws are shown, with the 1979 paper credited briefly.
 - [x] The unsafe projection visibly removes salary before Filter needs it.
-- [x] The safe projection retains both name and salary until filtering ends.
+- [x] Both projection rewrites retain the final projection and add a lower one.
+- [x] The safe lower projection retains both name and salary until filtering ends.
+- [x] A law proves a rewrite under conditions; a counterexample disproves one.
 - [x] The equivalence gate appears before any cost comparison.
 - [x] Textbook duplicate removal is distinguished from this engine's behavior.
 - [x] SQL displays `>` while narration says `greater than`.
