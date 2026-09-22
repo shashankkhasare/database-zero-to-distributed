@@ -15,7 +15,7 @@ pub struct Query {
 impl Query {
     pub fn into_plan(self, rows: Vec<Row>) -> Plan {
         // The parser records the table name, but cannot resolve it yet.
-        // Lesson 004 introduces binding. For now the caller supplies the rows.
+        // Chapter 4 introduces binding. For now the caller supplies the rows.
         Plan::Project {
             columns: vec![self.selected_column],
             input: Box::new(Plan::Filter {
@@ -39,7 +39,7 @@ impl fmt::Display for ParseError {
 pub fn parse(sql: &str) -> Result<Query, ParseError> {
     let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
     let mut parser = Parser { tokens, current: 0 };
-    parser.query()
+    parser.parse_query()
 }
 
 struct Parser {
@@ -48,7 +48,7 @@ struct Parser {
 }
 
 impl Parser {
-    fn query(&mut self) -> Result<Query, ParseError> {
+    fn parse_query(&mut self) -> Result<Query, ParseError> {
         let selected_column = self.parse_select_clause()?;
         let table = self.parse_from_clause()?;
         let (filter_column, greater_than) = self.parse_where_clause()?;

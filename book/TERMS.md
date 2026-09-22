@@ -28,6 +28,7 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | token | Chapter 3, §3.3 | One meaningful unit recognized in SQL source text |
 | lexer | Chapter 3, §3.3 | The frontend component that groups source characters into tokens |
 | grammar | Chapter 3, §3.4 | Rules describing which token structures form valid input |
+| syntax-directed translation | Chapter 3, §3.4 | Translation in which recognized grammatical structure determines which meaning rule to apply |
 | parser | Chapter 3, §3.4 | The frontend component that checks tokens against the grammar and constructs an AST |
 | abstract syntax tree (AST) | Chapter 3, §3.5 | Data that preserves the meaningful structure parsed from source text |
 | binding | Chapter 3, §3.11 | Connecting names in an AST to actual database objects and checking their use |
