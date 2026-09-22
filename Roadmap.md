@@ -182,6 +182,11 @@ database lesson motivates them, and record each extension in Appendix B.
 
 Introduce SQL as a source language for producing our query tree.
 
+Frame the conversion as a meaning-preserving translation from SQL into
+relational work, following the boundary studied by Ceri and Gottlob. Use the
+reference to ground the idea, not to introduce their complete semantics or
+optimization treatment in this lesson.
+
 Build:
 
 ```text

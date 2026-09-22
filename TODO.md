@@ -245,6 +245,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Explain tokenization with the exact employee query
 - [x] Introduce the grammar before its parser implementation
 - [x] Explain the AST as a representation rather than an executable plan
+- [x] Ground SQL-to-plan translation in Ceri and Gottlob's semantics-preserving treatment
 - [x] Show complete, file-labelled, copy-pasteable Rust snippets
 - [x] Show the complete lexer, parser checkpoint, and final REPL shell in build order
 - [x] Add only diagrams that materially clarify the frontend stages

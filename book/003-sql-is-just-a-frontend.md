@@ -23,16 +23,6 @@ shape is not a claim of SQL-89 compliance.
 <figcaption>SQL is the request; the plan is the structure our engine can execute.</figcaption>
 </figure>
 
-To build along with this chapter, begin with the previous checkpoint:
-
-```bash
-git switch --create chapter-003 lesson-002
-```
-
-The `lesson-003` tag contains the completed version for comparison or
-recovery. The edits below take the code from `lesson-002` to that completed
-state.
-
 Chapter 2 ended with a plan that our engine could inspect and execute. There
 was only one inconvenience: we had to construct that plan ourselves. A person
 should be able to write a request like this instead:
@@ -46,7 +36,9 @@ WHERE salary > 50000;
 To us, the request already looks meaningful. To the program, it begins as a
 sequence of characters. Before the existing engine can run it, a new frontend
 must recognize the words and punctuation, discover how they fit together, and
-turn that structure into the logical plan we already understand.
+turn that structure into the logical plan we already understand. That
+translation must preserve the request's meaning: producing a plan is not
+enough if the plan answers a different question.
 
 This chapter follows that journey:
 
@@ -55,7 +47,7 @@ SQL
  ↓
 Tokens
  ↓
-Syntax tree
+Abstract syntax tree
  ↓
 Logical plan
  ↓
@@ -69,9 +61,20 @@ the plan root.
 
 We will support only the query shown above and other queries with the same
 shape. That narrow boundary lets us see every stage without hiding parsing
-inside a library. Appendix B records the complete planned grammar. Later
+inside a library. [Appendix B](appendix-b-sql-grammar.md) records the complete
+planned grammar. Later
 chapters will implement more of it when aliases, expressions, joins,
 aggregation, sorting, and subqueries give us a reason.
+
+Before changing the program, create a working branch from the completed
+Chapter 2 checkpoint:
+
+```bash
+git switch --create chapter-003 lesson-002
+```
+
+The existing executor will remain unchanged while we add the frontend above
+it.
 
 ## 3.1 Give the frontend a place to answer
 
@@ -101,10 +104,52 @@ something concrete to inspect before we add the next one.
 characters → tokens → Query AST → logical plan → rows
 ```
 
-The loop is only a thin shell. It must not contain lexing, parsing, or query
-execution rules itself. Keeping one function responsible for evaluating a SQL
-line means both the fixed demonstration and the prompt exercise the same
-frontend.
+The loop has only two jobs: read a line and print the response. It passes the
+line to another function that does the database work. At first that function
+will produce tokens, then an AST, and finally rows. The loop itself will not
+need to change as the frontend grows.
+
+Begin with a prompt that echoes each nonempty line. We will replace only
+`inspect_sql()` as the frontend gains meaning.
+
+`src/main.rs`: temporarily replace the file with this first block
+
+```rust
+use std::io::{self, Write};
+
+fn main() -> io::Result<()> {
+    run_prompt()
+}
+
+fn inspect_sql(sql: &str) {
+    println!("{}", sql.trim());
+}
+```
+
+The input loop reads until end-of-file and ignores empty lines.
+
+`src/main.rs`: add after `inspect_sql()`
+
+```rust
+fn run_prompt() -> io::Result<()> {
+    loop {
+        print!("sql> ");
+        io::stdout().flush()?;
+
+        let mut sql = String::new();
+        if io::stdin().read_line(&mut sql)? == 0 {
+            println!();
+            return Ok(());
+        }
+        if !sql.trim().is_empty() {
+            inspect_sql(&sql);
+        }
+    }
+}
+```
+
+Run `cargo run --quiet` and enter any line. The prompt prints that line and
+waits for another. It cannot understand SQL yet, but the input loop works.
 
 ## 3.2 SQL begins as characters
 
@@ -238,6 +283,9 @@ rest of that word before `word_token()` classifies it.
             tokens.push(word_token(word));
 ```
 
+`characters[start..current]` is the portion of the input occupied by the
+word. Calling `iter().collect()` gathers those characters into a `String`.
+
 A digit starts an integer. This branch consumes all adjacent digits and
 converts them together, so `50000` becomes one value instead of five tokens.
 
@@ -316,23 +364,24 @@ it does not decide whether a name exists or whether the sequence makes sense.
 
 ### 3.3.1 First prompt checkpoint
 
-We have enough code to make the prompt useful for the first time. Temporarily
-replace `main.rs` with this small shell. It reads one line, gives it to the
-lexer, and prints either the token list or the lexical error.
+We now have enough code to make the prompt recognize something. Keep the loop
+from Section 3.1 and connect the lexer above it.
 
-`src/main.rs`: replace the module declarations, imports, and `main()`
+`src/main.rs`: add at the top of the file
 
 ```rust
 mod lexer;
+```
 
-use std::io::{self, Write};
+`src/main.rs`: add after `use std::io::{self, Write};`
 
+```rust
 use lexer::tokenize;
+```
 
-fn main() -> io::Result<()> {
-    run_prompt()
-}
+`src/main.rs`: replace `inspect_sql()`
 
+```rust
 fn inspect_sql(sql: &str) {
     match tokenize(sql) {
         Ok(tokens) => println!("{tokens:#?}"),
@@ -341,36 +390,21 @@ fn inspect_sql(sql: &str) {
 }
 ```
 
-The loop handles terminal input and delegates each nonempty line to
-`inspect_sql()`.
+Run `cargo run --quiet` and enter:
 
-`src/main.rs`: add after `inspect_sql()`
-
-```rust
-fn run_prompt() -> io::Result<()> {
-    loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-
-        let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
-        }
-
-        if sql.trim().is_empty() {
-            continue;
-        }
-
-        inspect_sql(&sql);
-    }
-}
+```sql
+SELECT name FROM employees WHERE salary > 50000;
 ```
 
-Run `cargo run --quiet`, enter the employee query, and the prompt prints the
-nine tokens shown above. Enter `SELECT @;` next. The prompt reports the
-unexpected character and then asks for another line. We can now observe the
-lexer directly instead of trusting that an unfinished frontend works.
+The prompt prints the nine tokens shown above. Then enter `SELECT @;`. It
+prints:
+
+```text
+error: at character 8: unexpected character '@'
+```
+
+The prompt then asks for another line. We have now observed both successful
+tokenization and a lexical error.
 
 The tokens are correct, but they are still only a flat list. Nothing in that
 list says that `name` belongs after `SELECT`, or that `50000` must follow
@@ -380,8 +414,8 @@ sequences form a query.
 ## 3.4 Give the tokens a shape
 
 A **grammar** is a set of rules describing valid structure. The complete
-planned course grammar lives in Appendix B, but our first parser needs only
-four productions:
+planned course grammar lives in [Appendix B](appendix-b-sql-grammar.md), but
+our first parser needs only four productions:
 
 ```text
 query          = select_clause from_clause where_clause ";" ;
@@ -390,28 +424,55 @@ from_clause    = "FROM" identifier ;
 where_clause   = "WHERE" identifier ">" integer ;
 ```
 
+The unquoted semicolon at the end of each line marks the end of a grammar
+production. In the `query` rule, the quoted `";"` is different: it is the
+literal semicolon that must appear in the SQL input.
+
 Read the first rule as a recipe. A query contains a select clause, followed by
 a from clause, followed by a where clause and a semicolon. The other rules say
 what each clause contains. The quoted words and symbols must appear literally;
 `identifier` and `integer` refer to token categories.
 
-This grammar deliberately rejects useful SQL. It cannot select two columns,
-omit `WHERE`, compare text, or use another comparison operator. That is not a
-parser defect. It is the language boundary for this lesson, and an unsupported
-query should fail clearly instead of being interpreted approximately.
+These productions will do more than recognize valid text. Together they
+describe one complete query form, and in Section 3.7 we will give that form a
+meaning by translating it into relational operations. This approach is called
+**syntax-directed translation**: the recognized grammatical structure tells
+the frontend which translation rule to apply. As the grammar grows, each new
+query form will need both syntax and a meaning instead of a collection of
+special cases hidden in the parser.
+
+This grammar accepts only the query form needed in this lesson. It cannot yet
+select multiple columns, accept a query without a `WHERE` clause, compare
+text, or use another comparison operator. Those forms are outside the current
+language rather than parser mistakes. The parser should reject them clearly
+instead of guessing what the user intended.
 
 The component that checks tokens against these rules is a **parser**. A parser
 plays the grammar from the outer `query` rule inward, consuming one expected
 token at a time. When the next token cannot satisfy the current rule, parsing
 stops with a syntax error.
 
-## 3.5 Keep the parsed query as data
+Each production will become one parser method:
 
-Successfully checking the grammar is not enough. Later stages need the names
-and number found in the query. We store them in an **abstract syntax tree**,
-usually shortened to **AST**. An AST preserves the meaningful structure while
-discarding details, such as whitespace and keyword capitalization, that no
-longer matter.
+| Grammar production | Parser method | Information produced |
+| --- | --- | --- |
+| `query` | `parse_query()` | complete `Query` AST |
+| `select_clause` | `parse_select_clause()` | selected column |
+| `from_clause` | `parse_from_clause()` | table name |
+| `where_clause` | `parse_where_clause()` | filter column and integer |
+
+The clause methods will recover a selected column, a table name, a filter
+column, and an integer. The outer `parse_query()` method will gather those
+pieces.
+Before writing the methods, we need a value that can hold what they discover.
+
+## 3.5 Store what the parser discovers
+
+A parser must do more than report that the tokens follow the grammar. It must
+preserve the names and number needed by the next stage. We store them in an
+**abstract syntax tree**, usually shortened to **AST**. An AST preserves the
+meaningful structure while discarding details, such as whitespace and keyword
+capitalization, that no longer matter.
 
 Our grammar has no nesting yet, so its first AST looks more like a record than
 a branching tree:
@@ -433,21 +494,35 @@ For the employee query, the four fields contain `name`, `employees`,
 read a table, filtered a row, or chosen a column. An AST represents source
 language structure; the logical plan represents relational work.
 
-That distinction will become more obvious as SQL grows. Parentheses, aliases,
-and different spellings may produce different source structures while still
-leading to equivalent plans. Keeping the AST separate gives the frontend a
-place to understand SQL before the execution engine needs to care about it.
+That distinction matters as soon as SQL can express the same request in more
+than one way. Different ASTs may describe the same relational work and
+therefore translate into the same plan or into equivalent plans. Our grammar
+cannot produce those alternatives yet. Keeping the AST separate means that,
+when it can, the executor will still receive familiar relational operators
+instead of learning a special case for every SQL spelling.
+
+We now have all three ingredients:
+
+```text
+Tokens provide the input
+          ↓
+Grammar provides the recipe
+          ↓
+The Query AST stores the result
+```
+
+The parser connects them.
 
 ## 3.6 Parse one complete query
 
-The public parsing function first asks the lexer for tokens. If tokenization
-succeeds, it creates a parser positioned at the first token and asks for one
-complete query. Both lexical and syntax failures reach the caller through the
-same small error type.
+The parser follows the grammar, consumes the tokens in order, and fills the
+corresponding `Query` fields. The public parsing function first asks the lexer
+for tokens. If tokenization succeeds, it creates a parser positioned at the
+first token and asks for one complete query. Both lexical and syntax failures
+reach the caller through the same small error type.
 
-Here is the complete parser at this checkpoint. Replace the smaller `Query`
-file from the previous section with this listing, so there are no missing
-fields, helper methods, imports, or braces to infer.
+Keep the `Query` structure from the previous section and build the parser
+around it in the following short additions.
 
 Start by importing the lexer and defining the error returned to callers.
 
@@ -477,7 +552,7 @@ that parser for one query.
 pub fn parse(sql: &str) -> Result<Query, ParseError> {
     let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
     let mut parser = Parser { tokens, current: 0 };
-    parser.query()
+    parser.parse_query()
 }
 
 struct Parser {
@@ -486,8 +561,17 @@ struct Parser {
 }
 ```
 
+`tokenize()` returns a `LexError`, while `parse()` returns a `ParseError`.
+`map_err()` converts the lexical error, and `?` returns it immediately when
+tokenization fails.
+
 Each grammar clause gets a method. These first two consume a keyword followed
 by an identifier.
+
+```text
+select_clause = "SELECT" identifier ;
+from_clause   = "FROM" identifier ;
+```
 
 `src/parser.rs`: begin `impl Parser`
 
@@ -506,6 +590,10 @@ impl Parser {
 
 The `WHERE` clause returns both pieces needed by our filter.
 
+```text
+where_clause = "WHERE" identifier ">" integer ;
+```
+
 `src/parser.rs`: continue inside `impl Parser`
 
 ```rust
@@ -521,10 +609,14 @@ The `WHERE` clause returns both pieces needed by our filter.
 The outer rule calls those clause methods in grammar order and then requires
 the semicolon.
 
+```text
+query = select_clause from_clause where_clause ";" ;
+```
+
 `src/parser.rs`: continue inside `impl Parser`
 
 ```rust
-    fn query(&mut self) -> Result<Query, ParseError> {
+    fn parse_query(&mut self) -> Result<Query, ParseError> {
         let selected_column = self.parse_select_clause()?;
         let table = self.parse_from_clause()?;
         let (filter_column, greater_than) = self.parse_where_clause()?;
@@ -559,6 +651,10 @@ the other methods recover values stored inside tokens.
     }
 ```
 
+`self.tokens.get(self.current)` returns a reference to the next token.
+Borrowing `expected` as `&expected` lets the method compare the two token
+values without consuming the expected token first.
+
 `src/parser.rs`: add after `expect()`
 
 ```rust
@@ -589,7 +685,7 @@ the other methods recover values stored inside tokens.
 ```
 
 The parser stores the token list and the position of the next token. Its
-`query()` method follows the grammar in order. `expect()` consumes a fixed
+`parse_query()` method follows the grammar in order. `expect()` consumes a fixed
 token. The other two helpers recover values stored inside identifier and
 integer tokens. Each successful step advances the cursor, so the next call
 sees exactly what remains.
@@ -650,13 +746,35 @@ Parsing gives us a `Query`, but the executor from Chapter 1 accepts a `Plan`.
 The conversion is direct: the table supplies a scan, the `WHERE` clause
 supplies a filter, and the selected column supplies a project at the root.
 
+The conversion is the meaning of our complete query form, written as one rule:
+
+```text
+SELECT c FROM t WHERE p    →    π_c(σ_p(t))
+```
+
+Read the relational expression from the inside out. Begin with table `t`, keep
+the rows that satisfy predicate `p`, then retain column `c`. Substituting the
+four fields in our AST gives `employees`, `salary > 50000`, and `name`, which
+is exactly the plan we constructed by hand in Chapter 1.
+
+The rule is a promise about answers, not merely a convenient tree shape. If
+the translation loses the predicate or projects a different column, the plan
+may execute successfully while answering the wrong question. Our plan still
+preserves duplicates and row order as described in Chapter 2; the algebraic
+notation here names the operations without changing those engine semantics.
+
+This separation creates another useful boundary. A future optimizer can
+transform the logical plan while the SQL text and AST remain unchanged. It
+must still obey the equivalence conditions from Chapter 2, so a faster plan is
+acceptable only when it preserves the answer.
+
 ```text
 Query AST                         Logical plan
 
 selected_column: name             Project(name)
-table: employees                       |
+table: employees                       ↑
 filter_column: salary             Filter(salary > 50000)
-greater_than: 50000                    |
+greater_than: 50000                    ↑
                                   Scan(employee rows)
 ```
 
@@ -678,7 +796,7 @@ use crate::row::Row;
 impl Query {
     pub fn into_plan(self, rows: Vec<Row>) -> Plan {
         // The parser records the table name, but cannot resolve it yet.
-        // Lesson 004 introduces binding. For now the caller supplies the rows.
+        // Chapter 4 introduces binding. For now the caller supplies the rows.
 
         Plan::Project {
             columns: vec![self.selected_column],
@@ -698,6 +816,15 @@ catalog of named tables. The caller supplies the employee rows directly, and
 the table name remains unresolved. We keep that gap visible instead of
 pretending that parsing has solved name lookup.
 
+> **Further reading**
+>
+> Stefano Ceri and Georg Gottlob describe syntax-directed translation for a
+> larger SQL subset and use the resulting relational expressions to study
+> meaning, equivalence, and optimization. Our single rule is the fragment that
+> matches this chapter's language. See [“Translating SQL into Relational
+> Algebra: Optimization, Semantics, and Equivalence of SQL Queries,” *IEEE
+> Transactions on Software Engineering*, 1985](https://doi.org/10.1109/TSE.1985.232223).
+
 ## 3.8 Run SQL repeatedly
 
 The frontend can finally replace its hand-built plan with a query string. We
@@ -705,9 +832,11 @@ put the whole path in `execute_sql()`: parse the text, convert the AST into a
 plan, and execute that plan. Both entry points call this function, so the
 interactive prompt cannot quietly behave differently from the demonstration.
 
-Here is the complete application shell. The employee rows move into their own
-function so both the fixed demonstration and the interactive prompt can begin
-with the same table.
+### 3.8.1 Restore the fixed demonstration
+
+We will rebuild the application shell in short steps. The employee rows move
+into their own function so both the fixed demonstration and the interactive
+prompt can begin with the same table.
 
 Begin by restoring the database modules alongside the new frontend modules.
 `main()` creates the employee table explicitly, then chooses the fixed example
@@ -735,6 +864,16 @@ fn main() {
     }
 }
 ```
+
+`std::env::args().nth(1)` reads the first command-line argument after the
+program name. `as_deref()` lets us compare that optional `String` with the
+string slice `"--prompt"`. With that argument, the program opens the prompt;
+without it, the fixed demonstration runs.
+
+The temporary `inspect_sql()` function from the earlier checkpoints is no
+longer needed.
+
+`src/main.rs`: remove `inspect_sql()`
 
 The program still needs the same employee rows from Chapter 1. Begin with a
 small function that creates one employee row.
@@ -776,6 +915,10 @@ fn execute_sql(sql: &str, rows: &[Row]) -> Result<Vec<Row>, String> {
 }
 ```
 
+Returning `String` keeps this first shared entry point small, but it also
+erases whether an error came from lexing or parsing. A later error type can
+preserve that distinction when callers need it.
+
 The fixed demonstration calls it with the original query.
 
 `src/main.rs`: add after `execute_sql()`
@@ -792,10 +935,13 @@ fn run_demo(employees: &[Row]) {
 }
 ```
 
-The final prompt keeps the familiar input loop and sends each line to a small
-printing function.
+### 3.8.2 Connect the final prompt
 
-`src/main.rs`: add after `run_demo()`
+The final prompt keeps the familiar input loop and sends each line to a small
+printing function. Replace the earlier no-argument version so only one
+`run_prompt()` remains.
+
+`src/main.rs`: replace `run_prompt()`
 
 ```rust
 fn run_prompt(employees: &[Row]) -> io::Result<()> {
@@ -854,17 +1000,12 @@ the rows. We added a frontend that turns one human-facing representation into
 the logical representation the engine already knew. SQL is not the execution
 engine; it is one way to describe work to it.
 
-Before moving on, check that the program compiles and that the tests inherited
-from Chapter 2 still pass:
+Before moving on, check that the program compiles and that the earlier
+operator behavior still passes its tests:
 
 ```bash
 cargo test
 ```
-
-The completed `lesson-003` checkpoint also contains focused tests for the
-lexer, parser, errors, and the complete path from SQL to Ada and Grace. They
-remain outside the main narrative so we can follow the frontend itself without
-interrupting it with test listings.
 
 Now run the interactive path:
 
@@ -890,7 +1031,8 @@ Our first frontend is intentionally narrow:
 - It stops at the first lexical or syntax error.
 - It records names but does not resolve them against tables or columns.
 
-Appendix B shows where the language is heading, not what this version
+[Appendix B](appendix-b-sql-grammar.md) shows where the language is heading,
+not what this version
 already implements. Each later chapter will move a small group of rules into
 the executable language. Accepting syntax before we can give it correct
 database meaning would make the grammar look impressive while making the
