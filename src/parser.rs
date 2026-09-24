@@ -67,7 +67,7 @@ impl Parser {
     }
 
     fn parse_select_clause(&mut self) -> Result<String, ParseError> {
-        self.expect(Token::Select, "expected SELECT")?;
+        self.expect(Token::Select, "expected SELECT at start of query")?;
         self.identifier("expected a column name after SELECT")
     }
 

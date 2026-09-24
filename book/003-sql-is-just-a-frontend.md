@@ -54,11 +54,6 @@ Logical plan
 Rows
 ```
 
-The downward arrows follow source text as the frontend turns it into
-successively more useful representations. This differs from the plan diagrams
-in Chapters 1 and 2, where upward arrows show rows moving from a scan toward
-the plan root.
-
 We will support only the query shown above and other queries with the same
 shape. That narrow boundary lets us see every stage without hiding parsing
 inside a library. [Appendix B](appendix-b-sql-grammar.md) records the complete
@@ -105,9 +100,8 @@ characters → tokens → Query AST → logical plan → rows
 ```
 
 The loop has only two jobs: read a line and print the response. It passes the
-line to another function that does the database work. At first that function
-will produce tokens, then an AST, and finally rows. The loop itself will not
-need to change as the frontend grows.
+line to another function that does the database work. The loop itself will
+not need to change as the frontend grows.
 
 Begin with a prompt that echoes each nonempty line. We will replace only
 `inspect_sql()` as the frontend gains meaning.
@@ -153,16 +147,17 @@ waits for another. It cannot understand SQL yet, but the input loop works.
 
 ## 3.2 SQL begins as characters
 
-Place the query in a Rust string and it loses the structure that we see:
+Place the query in a Rust string:
 
 ```text
 SELECT name FROM employees WHERE salary > 50000;
 ```
 
-The computer receives an `S`, followed by an `E`, followed by an `L`, and
-so on. It does not begin with a `SELECT` clause, a table name, or a predicate.
-Those are interpretations that we bring to the text. The frontend must recover
-them before it can construct a plan.
+The string preserves every character, but it does not record where one word
+ends and another begins or what role each word plays. The computer receives an
+`S`, followed by an `E`, followed by an `L`, and so on. It does not begin with
+a `SELECT` clause, a table name, or a predicate. The frontend must recover
+those boundaries and roles before it can construct a plan.
 
 Trying to find each clause with string splitting would work for this one
 example, but small changes would quickly expose the trick. Extra spaces,
@@ -177,7 +172,38 @@ Read the query from left to right and collect characters that belong together.
 Such a unit is called a **token**. The component that produces tokens is a
 **lexer**, sometimes called a scanner.
 
-Our query becomes this sequence:
+We will build the lexer in three steps. First, we will decide how the program
+represents tokens and characters it cannot recognize. Next, we will walk
+through the SQL text and produce those tokens. Finally, we will connect the
+lexer to the prompt so we can see both successful output and errors.
+
+### 3.3.1 Represent tokens and lexical errors
+
+Begin with the seven kinds of token our query can contain.
+
+`src/lexer.rs`: create this file
+
+```rust
+use std::fmt;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Token {
+    Select,
+    From,
+    Where,
+    Identifier(String),
+    GreaterThan,
+    Integer(i64),
+    Semicolon,
+}
+```
+
+The keyword variants represent SQL words with fixed meanings. `Identifier`
+stores a name chosen by the user, while `Integer` stores a numeric value.
+`GreaterThan` and `Semicolon` represent the two punctuation marks supported by
+this chapter.
+
+Using these variants, the employee query becomes:
 
 ```text
 Select
@@ -196,30 +222,9 @@ Semicolon
   <figcaption>The lexer turns one stream of characters into meaningful units.</figcaption>
 </figure>
 
-Whitespace has disappeared because it separates units but does not affect this
-query's meaning. Keywords receive their own token variants. User-chosen names
-share `Identifier`, which retains their spelling. The number becomes an
-integer now, rather than remaining five unrelated digit characters.
-
-We will build the lexer in short passes. Begin with the seven kinds of token
-our query can contain.
-
-`src/lexer.rs`: create this file
-
-```rust
-use std::fmt;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Token {
-    Select,
-    From,
-    Where,
-    Identifier(String),
-    GreaterThan,
-    Integer(i64),
-    Semicolon,
-}
-```
+Whitespace does not appear in the sequence because it only separates tokens.
+The spelling of each identifier is preserved, while the five digits in
+`50000` have become one integer value.
 
 An invalid character needs a position and a readable explanation. Add the
 error value below `Token`.
@@ -244,8 +249,25 @@ impl fmt::Display for LexError {
 }
 ```
 
-Now start the lexer itself. It stores the source as characters, creates an
-empty token list, and advances one cursor through the input.
+`LexError` records where the unexpected character appeared and explains why
+the lexer stopped.
+
+### 3.3.2 Walk the input once
+
+The lexer keeps one cursor pointing at the next character to inspect. At each
+position, it performs one of five actions:
+
+```text
+whitespace             → skip it
+letter or underscore   → read one word
+digit                  → read one integer
+>                      → emit a greater-than token
+;                      → emit a semicolon token
+anything else          → return a lexical error
+```
+
+Start the lexer by storing the input SQL query as characters, creating an
+empty token list, and placing the cursor at the beginning.
 
 `src/lexer.rs`: add after `impl fmt::Display for LexError`
 
@@ -352,17 +374,12 @@ fn word_token(word: String) -> Token {
 }
 ```
 
-The cursor named `current` points at the next character to inspect. Whitespace
-advances it without producing a token. A letter begins a word, and a digit
-begins an integer. Everything else in this lesson must be either `>` or `;`.
-An unfamiliar character produces an error at the position where it appeared.
-
 Keywords ignore ASCII letter case, so `select` and `SELECT` produce the same
 token. Identifiers keep their original spelling because the next chapter must
 decide how names correspond to tables and columns. The lexer recognizes units;
 it does not decide whether a name exists or whether the sequence makes sense.
 
-### 3.3.1 First prompt checkpoint
+### 3.3.3 First prompt checkpoint
 
 We now have enough code to make the prompt recognize something. Keep the loop
 from Section 3.1 and connect the lexer above it.
@@ -396,8 +413,8 @@ Run `cargo run --quiet` and enter:
 SELECT name FROM employees WHERE salary > 50000;
 ```
 
-The prompt prints the nine tokens shown above. Then enter `SELECT @;`. It
-prints:
+The prompt prints the nine-token sequence shown in Section 3.3.1. Then enter
+`SELECT @;`. It prints:
 
 ```text
 error: at character 8: unexpected character '@'
@@ -434,8 +451,8 @@ what each clause contains. The quoted words and symbols must appear literally;
 `identifier` and `integer` refer to token categories.
 
 These productions will do more than recognize valid text. Together they
-describe one complete query form, and in Section 3.7 we will give that form a
-meaning by translating it into relational operations. This approach is called
+describe one complete query form, and later in this chapter we will give that
+form a meaning by translating it into relational operations. This approach is called
 **syntax-directed translation**: the recognized grammatical structure tells
 the frontend which translation rule to apply. As the grammar grows, each new
 query form will need both syntax and a meaning instead of a collection of
@@ -447,10 +464,11 @@ text, or use another comparison operator. Those forms are outside the current
 language rather than parser mistakes. The parser should reject them clearly
 instead of guessing what the user intended.
 
-The component that checks tokens against these rules is a **parser**. A parser
-plays the grammar from the outer `query` rule inward, consuming one expected
-token at a time. When the next token cannot satisfy the current rule, parsing
-stops with a syntax error.
+The component that checks tokens against these rules is a **parser**. We will
+write a **recursive-descent parser**, in which one method represents each
+grammar production. It begins with the outer `query` rule and consumes one
+expected token at a time. When the next token cannot satisfy the current rule,
+parsing stops with a syntax error.
 
 Each production will become one parser method:
 
@@ -461,10 +479,13 @@ Each production will become one parser method:
 | `from_clause` | `parse_from_clause()` | table name |
 | `where_clause` | `parse_where_clause()` | filter column and integer |
 
+The public `parse()` function will tokenize the SQL and then call
+`parse_query()` to begin applying these productions.
+
 The clause methods will recover a selected column, a table name, a filter
 column, and an integer. The outer `parse_query()` method will gather those
-pieces.
-Before writing the methods, we need a value that can hold what they discover.
+pieces. Before writing the methods, we need a value that can hold what they
+discover.
 
 ## 3.5 Store what the parser discovers
 
@@ -490,16 +511,8 @@ pub struct Query {
 ```
 
 For the employee query, the four fields contain `name`, `employees`,
-`salary`, and `50000`. This value describes what the text said. It has not
-read a table, filtered a row, or chosen a column. An AST represents source
-language structure; the logical plan represents relational work.
-
-That distinction matters as soon as SQL can express the same request in more
-than one way. Different ASTs may describe the same relational work and
-therefore translate into the same plan or into equivalent plans. Our grammar
-cannot produce those alternatives yet. Keeping the AST separate means that,
-when it can, the executor will still receive familiar relational operators
-instead of learning a special case for every SQL spelling.
+`salary`, and `50000`. The value records the structure recovered from the SQL;
+it has not read a table, filtered a row, or chosen a column.
 
 We now have all three ingredients:
 
@@ -515,14 +528,9 @@ The parser connects them.
 
 ## 3.6 Parse one complete query
 
-The parser follows the grammar, consumes the tokens in order, and fills the
-corresponding `Query` fields. The public parsing function first asks the lexer
-for tokens. If tokenization succeeds, it creates a parser positioned at the
-first token and asks for one complete query. Both lexical and syntax failures
-reach the caller through the same small error type.
-
 Keep the `Query` structure from the previous section and build the parser
-around it in the following short additions.
+around it. The parser will consume tokens in grammar order and fill the
+corresponding fields.
 
 Start by importing the lexer and defining the error returned to callers.
 
@@ -542,6 +550,9 @@ impl fmt::Display for ParseError {
     }
 }
 ```
+
+`ParseError(String)` is a tuple struct with one unnamed field. Inside its
+implementation, `.0` accesses that field.
 
 The public function turns SQL into tokens, places them in a `Parser`, and asks
 that parser for one query.
@@ -578,7 +589,7 @@ from_clause   = "FROM" identifier ;
 ```rust
 impl Parser {
     fn parse_select_clause(&mut self) -> Result<String, ParseError> {
-        self.expect(Token::Select, "expected SELECT")?;
+        self.expect(Token::Select, "expected SELECT at start of query")?;
         self.identifier("expected a column name after SELECT")
     }
 
@@ -607,7 +618,8 @@ where_clause = "WHERE" identifier ">" integer ;
 ```
 
 The outer rule calls those clause methods in grammar order and then requires
-the semicolon.
+the semicolon. It also confirms that no token follows the semicolon. The
+grammar describes one complete query, so anything remaining is extra input.
 
 ```text
 query = select_clause from_clause where_clause ";" ;
@@ -635,8 +647,9 @@ query = select_clause from_clause where_clause ";" ;
     }
 ```
 
-Three small cursor helpers finish the parser. `expect()` handles fixed tokens;
-the other methods recover values stored inside tokens.
+Each grammar method delegates token matching to one of three cursor helpers.
+`expect()` consumes a fixed token. `identifier()` and `integer()` recover the
+value stored inside a token while advancing the cursor.
 
 `src/parser.rs`: continue inside `impl Parser`
 
@@ -665,9 +678,12 @@ values without consuming the expected token first.
                 Ok(value.clone())
             }
             _ => Err(ParseError(message.to_string())),
-        }
     }
+}
 ```
+
+`clone()` gives the `Query` its own `String`; the parser's token list retains
+the original.
 
 `src/parser.rs`: finish `impl Parser`
 
@@ -684,11 +700,9 @@ values without consuming the expected token first.
 }
 ```
 
-The parser stores the token list and the position of the next token. Its
-`parse_query()` method follows the grammar in order. `expect()` consumes a fixed
-token. The other two helpers recover values stored inside identifier and
-integer tokens. Each successful step advances the cursor, so the next call
-sees exactly what remains.
+The parser stores the token list and the position of the next token. Each
+successful helper call advances that position, so the next call sees exactly
+what remains.
 
 ### 3.6.1 Second prompt checkpoint
 
@@ -728,15 +742,16 @@ semicolon, the parser also checks that no token remains. Without that final
 check, it could accept one valid query followed by arbitrary text and silently
 ignore the unwanted part.
 
-Errors describe the expectation that failed:
+To see the syntax error, enter the query without its final semicolon:
 
 ```text
-SELECT name FROM employees WHERE salary > 50000
-expected ; after query
+sql> SELECT name FROM employees WHERE salary > 50000
+error: expected ; after query
 ```
 
-This error does not attempt recovery because our program accepts only one
-statement. A later multi-statement interface may need to find the next safe
+The parser stops after reporting this error. It does not attempt recovery
+because our program accepts only one statement. A later multi-statement
+interface may need to find the next safe
 boundary after an error. Today, stopping at the first precise failure keeps
 both the implementation and its behavior easy to inspect.
 
@@ -745,6 +760,13 @@ both the implementation and its behavior easy to inspect.
 Parsing gives us a `Query`, but the executor from Chapter 1 accepts a `Plan`.
 The conversion is direct: the table supplies a scan, the `WHERE` clause
 supplies a filter, and the selected column supplies a project at the root.
+
+The two representations have different jobs. The AST records the structure of
+the SQL text, while the logical plan describes relational work. As the SQL
+language grows, different ASTs may describe the same work and translate into
+equivalent plans in the Chapter 2 sense. Keeping the representations separate
+means the executor can continue to receive familiar relational operators
+instead of learning a special case for every SQL spelling.
 
 The conversion is the meaning of our complete query form, written as one rule:
 
