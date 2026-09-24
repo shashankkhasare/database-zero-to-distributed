@@ -801,6 +801,16 @@ greater_than: 50000                    ↑
   <figcaption>The parsed fields supply the information stored by each plan node.</figcaption>
 </figure>
 
+Before `parser.rs` can refer to `crate::plan` and `crate::row`, declare those
+modules at the crate root.
+
+`src/main.rs`: add after `mod parser;`
+
+```rust
+mod plan;
+mod row;
+```
+
 `src/parser.rs`: add the two new imports near the top
 
 ```rust
@@ -853,15 +863,13 @@ update the interactive prompt so both paths use this function.
 ### 3.8.1 Restore the fixed demonstration
 
 We will restore the fixed demonstration first, giving us a runnable checkpoint
-before reconnecting the prompt. Bring back the `plan` and `row` modules from
-the earlier chapters alongside the new `lexer` and `parser` modules.
+before reconnecting the prompt. The `plan` and `row` modules are already
+declared for plan conversion. Import the row types needed to rebuild the
+employee table.
 
-`src/main.rs`: add alongside the existing module declarations and imports
+`src/main.rs`: add alongside the existing imports
 
 ```rust
-mod plan;
-mod row;
-
 use row::{Row, Value};
 ```
 
@@ -936,12 +944,6 @@ The query is fixed by the program, so failure here would indicate a mistake in
 the lesson code. `expect()` returns the rows on success; on failure, it stops
 the program and prints the supplied message with the error.
 
-The temporary prompt from the earlier checkpoints is no longer needed. Remove
-its I/O import and both functions; we will add the final prompt in the next
-subsection.
-
-`src/main.rs`: remove the I/O import, `inspect_sql()`, and `run_prompt()`
-
 Now replace the temporary prompt-only `main()` with a demonstration-only
 entry point.
 
@@ -953,6 +955,16 @@ fn main() {
     run_demo(&employees);
 }
 ```
+
+#### Remove the temporary prompt
+
+Before running this checkpoint, remove the prompt code left by Section 3.6.1:
+
+- remove `use std::io::{self, Write};`
+- remove the complete `inspect_sql()` function
+- remove the complete no-argument `run_prompt()` function
+
+Section 3.8.2 will add the final prompt after the demonstration works.
 
 #### Run the fixed demonstration
 
