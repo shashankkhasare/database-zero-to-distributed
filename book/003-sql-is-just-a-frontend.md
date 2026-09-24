@@ -664,10 +664,6 @@ value stored inside a token while advancing the cursor.
     }
 ```
 
-`self.tokens.get(self.current)` returns a reference to the next token.
-Borrowing `expected` as `&expected` lets the method compare the two token
-values without consuming the expected token first.
-
 `src/parser.rs`: add after `expect()`
 
 ```rust
