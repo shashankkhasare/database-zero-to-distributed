@@ -297,6 +297,81 @@ rows supplied by the caller. The next milestone will connect table and column
 names to a catalog, introduce general expressions and basic type checking, and
 turn those unresolved strings into a bound logical plan.
 
+## Chapter contract
+
+Begin with the false success exposed by Chapter 3:
+
+```sql
+SELECT name FROM missing_table WHERE salary > 50000;
+```
+
+Parsing can confirm that this has a valid shape, but it cannot determine
+whether the table and columns exist. Introduce a small catalog and a distinct
+binding step that resolves names before planning. Then replace the filter's
+special-purpose column and integer fields with a small expression tree.
+
+The representative successful query is:
+
+```sql
+SELECT e.name
+FROM employees AS e
+WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+```
+
+It should return Ada and Grace. The same path must reject an unknown table, an
+unknown column, an invalid qualifier, and an expression whose operand types do
+not make sense.
+
+This chapter owns the expression foundation promised by Appendix B:
+
+- qualified and unqualified column references
+- table aliases using optional `AS`
+- integer, text, and `NULL` literals
+- unary `+`, unary `-`, and `NOT`
+- arithmetic `+`, `-`, `*`, and `/`
+- comparisons `=`, `<>`, `<`, `<=`, `>`, and `>=`
+- `AND` and `OR`
+- `IS NULL` and `IS NOT NULL`
+- parentheses and explicit precedence
+- binding-time name and type errors
+- SQL three-valued Boolean evaluation
+
+Defer `BETWEEN`, `LIKE`, `IN`, function calls, `CASE`, `CAST`, dates,
+intervals, and windows to their assigned later chapters. Do not introduce a
+general optimizer, physical-plan split, or storage catalog.
+
+## Planned teaching sequence
+
+1. Reproduce the false success for `missing_table` and separate valid syntax
+   from valid meaning.
+2. Represent the available `employees` table with a minimal catalog containing
+   its name, columns, types, and rows.
+3. Parse table aliases and qualified column references without resolving them.
+4. Introduce an expression AST with precedence rather than adding more fields
+   to `Query`.
+5. Bind the table, qualifier, and column names against the catalog.
+6. Infer and check expression types while binding.
+7. Produce a bound logical plan whose scan owns the resolved rows and whose
+   filter and project nodes contain expressions.
+8. Evaluate expressions, including `NULL` and three-valued Boolean logic.
+9. Run valid and invalid queries through the prompt and summarize the remaining
+   language boundary.
+
+## Visible outcome and verification
+
+- [x] An existing table name resolves to its catalog entry
+- [x] A missing table fails before plan execution
+- [x] Qualified and unqualified columns bind to the intended table
+- [x] Missing columns and invalid qualifiers produce readable errors
+- [x] Operator precedence is visible in the parsed expression tree
+- [x] Invalid operand types fail during binding rather than panicking in execution
+- [x] `TRUE`, `FALSE`, and `UNKNOWN` follow SQL three-valued logic
+- [x] The representative query returns Ada and Grace
+- [x] The prompt remains usable after a binding or type error
+- [ ] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
+- [ ] Appendix B's implemented-checkpoint table is updated only after tests pass
+- [x] `cargo fmt --check`, `cargo clippy`, `cargo test`, and the deterministic demo pass
+
 ---
 
 # Curriculum milestones
