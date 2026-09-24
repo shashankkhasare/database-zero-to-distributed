@@ -27,6 +27,7 @@ not design distant lessons prematurely.
 - [x] Define the smallest lesson directory only when lesson 001 needs it
 - [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
 - [x] Record staged TPC-H, TPC-DS, and TPC-C coverage as long-term validation targets
+- [x] Make the book the complete curriculum and select videos by conceptual milestone rather than chapter count
 
 ---
 
@@ -44,14 +45,15 @@ Each lesson is complete only when all applicable items are satisfied:
 - [x] `cargo test` passes
 - [x] The book chapter is complete and matches the code
 - [x] Diagrams and expected output are reproducible
-- [x] The video lesson definition is complete
-- [x] Narration and pronunciation have been reviewed
-- [x] The generated episode has been rendered and checked
 - [x] Educational simplifications and tradeoffs are documented
 - [x] The completed state is tagged
 
 These boxes describe the shared completion standard. Lesson milestone boxes
 below should be checked only after this standard has been applied.
+
+Companion videos have their own milestone checklists. A lesson does not remain
+incomplete merely because it has no standalone episode; one video may synthesize
+several completed chapters.
 
 ---
 
@@ -273,18 +275,12 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Run `cargo fmt --check`, `cargo clippy`, and `cargo test`
 - [x] Run the deterministic demo and compare its output with the lesson artifact
 
-## Video and publication
+## Checkpoint and companion-video coverage
 
-- [ ] Create Lesson 003 metadata after the chapter's teaching sequence is approved
-- [ ] Write and review conceptual narration rather than reading parser code aloud
-- [ ] Generate narration beats and review pronunciation at normal speed
-- [ ] Plan the minimum scenes needed to show characters becoming structure
-- [ ] Implement lesson-prefixed scenes and a dedicated thumbnail
-- [ ] Render and review scene previews before the final frame sequence
-- [ ] Build and verify the final 1080p episode with selectable captions
-- [ ] Upload privately and verify processing, thumbnail, captions, and playlist placement
-- [ ] Make the reviewed episode public and verify its viewer-facing state
-- [ ] Record the exact source commit and tag the verified state as `lesson-003`
+- [x] Approve the Chapter 3 teaching sequence through a complete reader build-along
+- [x] Decide that Chapter 3 does not require a standalone episode
+- [ ] Cover SQL, tokens, ASTs, binding, and plans in a later milestone video such as “How SQL Becomes Rows”
+- [ ] Record the exact verified source commit and tag the completed state as `lesson-003`
 
 ---
 

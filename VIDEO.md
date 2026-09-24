@@ -1,16 +1,35 @@
 # Video Production
 
-This document defines how book lessons become reproducible video episodes.
-`TODO.md` records what has actually been implemented and verified. Do not treat
-the commands or directories described here as complete until their checklist
-items are checked.
+This document defines how selected curriculum milestones become reproducible
+companion videos. Videos do not mirror the book chapter by chapter. `TODO.md`
+records what has actually been implemented and verified. Do not treat the
+commands or directories described here as complete until their checklist items
+are checked.
+
+# Episode selection
+
+A chapter does not automatically require an episode. Create a video only when
+motion, visual comparison, a runnable demonstration, or a compressed mental
+model materially improves the explanation. One episode may draw from several
+chapters.
+
+Each episode should carry one central claim, one concrete example or failure,
+and the minimum visual model needed to remember it. Point viewers to the book
+for complete implementation steps, code listings, exercises, and reference
+material. Avoid turning a chapter outline into a spoken checklist.
+
+The first two lesson-aligned episodes remain valid published artifacts. They
+established the production pipeline and visual language; they do not require
+future chapters to follow the same one-to-one format.
 
 # Design principles
 
 - The repository implementation is the source of truth for code and output.
-- A video teaches the same concept as its chapter but uses a separate spoken
-  script suited to timing, motion, and listening.
-- Lesson directories contain episode-specific sources and configuration.
+- A video uses a separate spoken script suited to timing, motion, and
+  listening; it may synthesize several chapters around one idea.
+- Lesson directories currently contain episode-specific sources and
+  configuration. Keep that proven layout until a multi-chapter episode creates
+  a concrete reason to generalize it.
 - Shared scripts and templates belong to the video pipeline, not to individual
   lessons.
 - Generated audio, frames, captions, previews, models, and final videos are
