@@ -80,6 +80,7 @@ fn print_query_result(sql: &str, employees: &[Row]) {
 #[cfg(test)]
 mod tests {
     use super::{employee_rows, execute_sql};
+    use crate::row::{Row, Value};
 
     #[test]
     fn sql_entry_point_executes_repeated_queries_without_consuming_the_table() {
@@ -99,5 +100,24 @@ mod tests {
         assert_eq!(first.len(), 2);
         assert_eq!(second.len(), 1);
         assert_eq!(employees.len(), 3);
+    }
+
+    #[test]
+    fn unresolved_table_name_still_uses_supplied_rows() {
+        let employees = employee_rows();
+
+        let result = execute_sql(
+            "SELECT name FROM missing_table WHERE salary > 50000;",
+            &employees,
+        )
+        .unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                Row::new(vec![("name", Value::Text("Ada".to_string()))]),
+                Row::new(vec![("name", Value::Text("Grace".to_string()))]),
+            ]
+        );
     }
 }

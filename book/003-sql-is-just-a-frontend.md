@@ -1013,7 +1013,7 @@ terminal.
 The final prompt sends each line to a small printing function. Each line must
 contain one complete query; multi-line queries are outside this lesson.
 
-`src/main.rs`: add after `main()`
+`src/main.rs`: add after `run_demo()`
 
 ```rust
 fn run_prompt(employees: &[Row]) -> io::Result<()> {
