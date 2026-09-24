@@ -47,12 +47,17 @@ One roadmap lesson normally becomes:
 - one book chapter
 - one runnable demonstration
 - one set of concept-focused tests
-- one generated video episode
 
-The chapter and video teach the same concept but are not required to use the
-same wording. The chapter favors careful explanation and reference material.
-The video favors pacing, motion, and visual intuition. Both use the repository
-implementation as their source of truth.
+The book is the complete, sequential curriculum. A chapter does not
+automatically require a video. Companion videos are selected at larger
+conceptual milestones, and one episode may connect several chapters when that
+produces a clearer mental model than a chapter-by-chapter retelling.
+
+When a video accompanies one or more chapters, it favors pacing, motion,
+visual intuition, and a concrete demonstration. It should not reproduce every
+build step or read the chapter aloud. Both media use the repository
+implementation as their source of truth, but the book must remain complete
+without the video.
 
 `Roadmap.md` defines the order of concepts. `TODO.md` tracks implementation and
 publication progress. This file defines the standard expected from the book,

@@ -15,8 +15,27 @@ The objective is not to cover database topics encyclopedically.
 Each lesson should exist because the previous implementation exposes a problem worth solving.
 
 Each completed lesson normally produces a reproducible implementation, a book
-chapter, a runnable demo, concept-focused tests, and a generated video episode.
-See `BOOK.md` for the manuscript standard and `TODO.md` for current progress.
+chapter, a runnable demo, and concept-focused tests. Companion videos are
+organized around larger conceptual milestones and may combine several lessons.
+See `BOOK.md` for the manuscript standard, `VIDEO.md` for the companion-video
+strategy, and `TODO.md` for current progress.
+
+# The course in three ideas
+
+At the highest level, a database must:
+
+1. read data
+2. write data correctly
+3. spread data and work across machines when one machine is not enough
+
+Reading grows from SQL and query plans into execution, optimization, indexes,
+parallelism, and distributed query work. Writing grows from pages and mutable
+records into durability, recovery, concurrency, and transactions. Distribution
+eventually applies to both computation and durable state, adding replication,
+sharding, consensus, and cross-shard transactions.
+
+The hard part is not merely performing these actions. It is preserving their
+meaning and correctness while making them fast and resilient to failure.
 
 ---
 
@@ -57,6 +76,13 @@ The goal is simply:
 > Enough Rust to read and modify the database.
 
 ---
+
+# Part I — Read Rows
+
+This part follows a query from text to rows. It first runs on one thread, then
+uses parallel workers and multiple processes. Those early distributed chapters
+spread query computation over teaching data; they do not yet claim that the
+database owns durable distributed storage.
 
 # Season 1 — Build the Smallest Query Engine
 
@@ -453,6 +479,9 @@ Until this point, execution should remain synchronous and largely single-threade
 
 Concurrency is introduced here because the database now has a problem that benefits from it.
 
+This season begins distributing query work within one process. It is still part
+of the read path, not the distributed-storage story.
+
 ---
 
 ## 016 — Split the Table Into Partitions
@@ -523,6 +552,11 @@ Use simple Rust concurrency primitives.
 ---
 
 # Season 5 — Distributed Query Execution
+
+This season moves query work between processes. The workers exchange rows and
+recover lost computation, while the durable data itself remains outside the
+engine. Replication, sharding, and distributed transactions arrive only after
+the local storage and transaction layers exist.
 
 ## 019 — Our First Multi-Node Query
 
@@ -796,6 +830,12 @@ Focus on recognizing ideas, not claiming implementation equivalence.
 
 ---
 
+# Part II — Store and Write Rows Correctly
+
+The query engine has so far consumed rows supplied to it. This part gives those
+rows a durable home, makes mutation visible, and then asks what correctness
+means when writes overlap or the process crashes.
+
 # Season 6 — Build a Storage Engine
 
 ## 034 — A Database Starts With Bytes
@@ -916,6 +956,12 @@ Allow the physical planner to choose between them.
 ---
 
 # Season 7 — Transactions and ACID
+
+This season must make the write path visible rather than introducing
+transactions only as definitions. Add `CREATE TABLE` and `INSERT` once the
+storage engine can own rows. Add `UPDATE` and `DELETE` when the transaction
+machinery can make their effects atomic and recoverable. Assign their exact
+lesson boundaries when this season becomes active.
 
 ## 040 — Break the Database
 
@@ -1048,6 +1094,12 @@ Durability
 Map each guarantee to mechanisms we built.
 
 ---
+
+# Part III — Distribute Data and Correctness
+
+Parallel and distributed query execution spread work. This part spreads the
+durable state itself. Replication, sharding, and distributed transactions must
+preserve the guarantees established on one machine.
 
 # Season 8 — Distributed Storage
 
@@ -1241,6 +1293,8 @@ Explore:
 Keep the treatment implementation-focused.
 
 ---
+
+# Part IV — Bring Everything Together
 
 # Season 11 — Bring Everything Together
 
