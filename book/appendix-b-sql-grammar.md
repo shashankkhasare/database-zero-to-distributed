@@ -6,10 +6,10 @@ This is a readable map of our educational, SQL-89-inspired dialect, not a claim
 of SQL-89 conformance.
 
 A rule appearing here is not automatically implemented. Section B.4 assigns
-every grammar family to a chapter or a mandatory course-completion gate. A
-rule remains planned until that checkpoint implements and tests it; the
-implementation, tests, and latest lesson tag remain the authority for what the
-database accepts today.
+every grammar family to a chapter or subsystem owner. A rule remains planned
+until a tagged checkpoint implements and tests it; the implementation, tests,
+and latest lesson tag remain the authority for what the database accepts
+today.
 
 ## B.1 Notation
 
@@ -238,11 +238,12 @@ integers and fixed-point decimals are not currently planned.
 
 ## B.4 Grammar implemented at each checkpoint
 
-Every family in Sections B.2 and B.3 has an owner below. A completion gate is
-part of the book, even when its final chapter number has not yet been assigned.
-It may expand into several chapters when the roadmap reaches it. A planned
-rule may be removed only by recording why the course no longer intends to
-support it; it must not disappear merely because no early chapter needs it.
+Every family in Sections B.2 and B.3 has an owner below. Advanced query and
+authorization work now has concrete chapters; storage and transaction syntax
+belongs to the named subsystem chapters and receives an exact checkpoint when
+those seasons become active. A planned rule may be removed only by recording
+why the course no longer intends to support it; it must not disappear merely
+because no early chapter needs it.
 
 | Grammar family | Course owner | Delivery condition |
 | --- | --- | --- |

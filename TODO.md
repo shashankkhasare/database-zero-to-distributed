@@ -243,7 +243,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Add the Chapter 3 skeleton and contents entry
 - [x] Continue directly from Chapter 2 before beginning Section 3.1
 - [x] Add Appendix B as the living, implementation-backed SQL grammar reference
-- [x] Audit every Appendix B grammar family and assign it to a chapter or mandatory completion gate
+- [x] Audit every Appendix B grammar family and assign it to a chapter or subsystem owner
 - [x] Select and verify an opening epigraph or replace the provisional line
 - [x] Explain tokenization with the exact employee query
 - [x] Introduce the grammar before its parser implementation
