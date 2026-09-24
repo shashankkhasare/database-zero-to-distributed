@@ -216,7 +216,7 @@ has been removed from the course playlist.
 
 ---
 
-# Current milestone: 003, SQL Is Just a Frontend
+# Completed milestone: 003, SQL Is Just a Frontend
 
 Lesson 003 replaces hand-built plans with the smallest visible SQL frontend.
 It accepts one deliberately narrow query shape, converts it through tokens and
@@ -257,7 +257,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Add a real try-it section with verifiable exercises
 - [x] Collect unsupported syntax and teaching simplifications in one section
 - [x] Update `book/TERMS.md` when lexer, token, parser, grammar, and AST appear
-- [ ] Review the complete chapter for continuity and non-specialist readability
+- [x] Review the complete chapter for continuity and non-specialist readability
 - [x] Build the web book and verify links, code rendering, and responsive layout
 
 ## Implementation and verification
@@ -280,7 +280,21 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Approve the Chapter 3 teaching sequence through a complete reader build-along
 - [x] Decide that Chapter 3 does not require a standalone episode
 - [ ] Cover SQL, tokens, ASTs, binding, and plans in a later milestone video such as “How SQL Becomes Rows”
-- [ ] Record the exact verified source commit and tag the completed state as `lesson-003`
+- [x] Record verified source commit `b57026e01c0a9824a11a523895cbab99deb98133` and tag the completed state as `lesson-003`
+
+Lesson 003 was verified with 16 passing tests, the deterministic Ada-and-Grace
+demo, and all 10 generated book pages. It closes without a standalone video
+under the milestone-based companion-video strategy.
+
+---
+
+# Current milestone: 004, Binding and Expressions
+
+Lesson 004 begins from the unresolved-name behavior made explicit in Chapter
+3. The parser accepts `missing_table`, and plan conversion still executes the
+rows supplied by the caller. The next milestone will connect table and column
+names to a catalog, introduce general expressions and basic type checking, and
+turn those unresolved strings into a bound logical plan.
 
 ---
 
@@ -290,7 +304,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
 - [x] 001 — The Smallest Query Engine
 - [x] 002 — Relational Algebra Without the Math
-- [ ] 003 — SQL Is Just a Frontend
+- [x] 003 — SQL Is Just a Frontend
 - [ ] 004 — Binding and Expressions
 - [ ] 005 — Joins
 - [ ] 006 — GROUP BY and Aggregation
