@@ -126,6 +126,16 @@ blockquote {
   border: 1px solid var(--rule);
 }
 
+.relational-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.2rem;
+  margin: 2rem 0;
+  font-size: 1.8rem;
+}
+
 .sidebar,
 .menu-title,
 .nav-chapters,

@@ -255,7 +255,7 @@ the lexer stopped.
 ### 3.3.2 Walk the input once
 
 The lexer keeps one cursor pointing at the next character to inspect. At each
-position, it performs one of five actions:
+position, it performs one of six actions:
 
 ```text
 whitespace             → skip it
@@ -674,8 +674,8 @@ value stored inside a token while advancing the cursor.
                 Ok(value.clone())
             }
             _ => Err(ParseError(message.to_string())),
+        }
     }
-}
 ```
 
 `clone()` gives the `Query` its own `String`; the parser's token list retains
@@ -766,9 +766,9 @@ instead of learning a special case for every SQL spelling.
 
 The conversion is the meaning of our complete query form, written as one rule:
 
-```text
-SELECT c FROM t WHERE p    →    π_c(σ_p(t))
-```
+<div class="relational-rule">
+  <code>SELECT c FROM t WHERE p  → π<sub>c</sub>(σ<sub>p</sub>(t))</code>
+</div>
 
 Read the relational expression from the inside out. Begin with table `t`, keep
 the rows that satisfy predicate `p`, then retain column `c`. Substituting the
@@ -845,53 +845,25 @@ pretending that parsing has solved name lookup.
 
 ## 3.8 Run SQL repeatedly
 
-The frontend can finally replace its hand-built plan with a query string. We
-put the whole path in `execute_sql()`: parse the text, convert the AST into a
-plan, and execute that plan. Both entry points call this function, so the
-interactive prompt cannot quietly behave differently from the demonstration.
+The frontend can now replace the hand-built plan with a query string. We will
+add an `execute_sql()` function that parses the text, converts the AST into a
+plan, and executes that plan. Then we will restore the fixed demonstration and
+update the interactive prompt so both paths use this function.
 
 ### 3.8.1 Restore the fixed demonstration
 
-We will rebuild the application shell in short steps. The employee rows move
-into their own function so both the fixed demonstration and the interactive
-prompt can begin with the same table.
+We will restore the fixed demonstration first, giving us a runnable checkpoint
+before reconnecting the prompt. Bring back the `plan` and `row` modules from
+the earlier chapters alongside the new `lexer` and `parser` modules.
 
-Begin by restoring the database modules alongside the new frontend modules.
-`main()` creates the employee table explicitly, then chooses the fixed example
-or the prompt.
-
-`src/main.rs`: replace the temporary module declarations, imports, and `main()`
+`src/main.rs`: add alongside the existing module declarations and imports
 
 ```rust
-mod lexer;
-mod parser;
 mod plan;
 mod row;
 
-use std::io::{self, Write};
-
-use parser::parse;
 use row::{Row, Value};
-
-fn main() {
-    let employees = employee_rows();
-    if std::env::args().nth(1).as_deref() == Some("--prompt") {
-        run_prompt(&employees).expect("failed to read SQL from the terminal");
-    } else {
-        run_demo(&employees);
-    }
-}
 ```
-
-`std::env::args().nth(1)` reads the first command-line argument after the
-program name. `as_deref()` lets us compare that optional `String` with the
-string slice `"--prompt"`. With that argument, the program opens the prompt;
-without it, the fixed demonstration runs.
-
-The temporary `inspect_sql()` function from the earlier checkpoints is no
-longer needed.
-
-`src/main.rs`: remove `inspect_sql()`
 
 The program still needs the same employee rows from Chapter 1. Begin with a
 small function that creates one employee row.
@@ -922,7 +894,7 @@ fn employee_rows() -> Vec<Row> {
 }
 ```
 
-One function now owns the complete SQL-to-rows path.
+Add the function that owns the complete SQL-to-rows path.
 
 `src/main.rs`: add after `employee_rows()`
 
@@ -932,6 +904,13 @@ fn execute_sql(sql: &str, rows: &[Row]) -> Result<Vec<Row>, String> {
     Ok(query.into_plan(rows.to_vec()).execute())
 }
 ```
+
+`Plan::Scan` currently owns its rows, so `rows.to_vec()` gives the plan an
+owned copy. This means every query copies the small employee table. We accept
+that ownership simplification for now.
+
+The final line converts the AST into a plan, executes the plan, and wraps the
+resulting rows in `Ok`.
 
 Returning `String` keeps this first shared entry point small, but it also
 erases whether an error came from lexing or parsing. A later error type can
@@ -953,13 +932,76 @@ fn run_demo(employees: &[Row]) {
 }
 ```
 
+The query is fixed by the program, so failure here would indicate a mistake in
+the lesson code. `expect()` returns the rows on success; on failure, it stops
+the program and prints the supplied message with the error.
+
+The temporary prompt from the earlier checkpoints is no longer needed. Remove
+its I/O import and both functions; we will add the final prompt in the next
+subsection.
+
+`src/main.rs`: remove the I/O import, `inspect_sql()`, and `run_prompt()`
+
+Now replace the temporary prompt-only `main()` with a demonstration-only
+entry point.
+
+`src/main.rs`: replace `main()`
+
+```rust
+fn main() {
+    let employees = employee_rows();
+    run_demo(&employees);
+}
+```
+
+#### Run the fixed demonstration
+
+Run this checkpoint:
+
+```bash
+cargo run --quiet
+```
+
+It prints Ada and Grace, now using SQL rather than a plan assembled inside
+`main()`.
+
 ### 3.8.2 Connect the final prompt
 
-The final prompt keeps the familiar input loop and sends each line to a small
-printing function. Replace the earlier no-argument version so only one
-`run_prompt()` remains.
+The fixed demonstration works again. Now let `main()` choose between it and the
+interactive prompt. Begin by restoring the terminal I/O import.
 
-`src/main.rs`: replace `run_prompt()`
+`src/main.rs`: add with the imports
+
+```rust
+use std::io::{self, Write};
+```
+
+`src/main.rs`: replace `main()`
+
+```rust
+fn main() {
+    let employees = employee_rows();
+    if std::env::args().nth(1).as_deref() == Some("--prompt") {
+        run_prompt(&employees).expect("failed to read SQL from the terminal");
+    } else {
+        run_demo(&employees);
+    }
+}
+```
+
+`std::env::args().nth(1)` reads the first command-line argument after the
+program name. `as_deref()` lets us compare that optional `String` with the
+string slice `"--prompt"`. With that argument, the program opens the prompt;
+without it, the fixed demonstration runs.
+
+`run_prompt()` returns an `io::Result`. If terminal input or output fails,
+`expect()` stops the program because the prompt cannot continue using that
+terminal.
+
+The final prompt sends each line to a small printing function. Each line must
+contain one complete query; multi-line queries are outside this lesson.
+
+`src/main.rs`: add after `main()`
 
 ```rust
 fn run_prompt(employees: &[Row]) -> io::Result<()> {
@@ -994,46 +1036,44 @@ fn print_query_result(sql: &str, employees: &[Row]) {
 }
 ```
 
-Read the prompt from the inside out. `read_line()` waits for one query.
+Read `run_prompt()` from the inside out. `read_line()` waits for one query.
 `execute_sql()` evaluates it. The `match` prints either the returned rows or a
 frontend error. The surrounding `loop` then prints `sql>` again. An empty line
 does no work, while end-of-file returns from the prompt.
 
-Run the complete program:
+#### Verify existing behavior
 
-```bash
-cargo run --quiet
-```
-
-It prints:
-
-```text
-Employees earning more than 50,000:
-{name: "Ada"}
-{name: "Grace"}
-```
-
-The executor has not changed. The same scan, filter, and project still produce
-the rows. We added a frontend that turns one human-facing representation into
-the logical representation the engine already knew. SQL is not the execution
-engine; it is one way to describe work to it.
-
-Before moving on, check that the program compiles and that the earlier
-operator behavior still passes its tests:
+Check that adding the prompt did not change the earlier operator behavior:
 
 ```bash
 cargo test
 ```
 
-Now run the interactive path:
+#### Try the interactive prompt
+
+Run the interactive path:
 
 ```bash
 cargo run --quiet -- --prompt
 ```
 
 Enter the original query, then change the boundary to `70000`. The first line
-returns Ada and Grace. The second returns only Grace. A third malformed query
-prints an error and leaves the prompt running, ready for another line.
+returns Ada and Grace. The second returns only Grace. Then enter this malformed
+query:
+
+```sql
+SELECT name FROM employees WHERE salary > @;
+```
+
+The lexer reports the unexpected `@`, and the prompt remains ready for another
+line.
+
+Step back from the prompt for a moment.
+
+The executor has not changed. The same scan, filter, and project still produce
+the rows. We added a frontend that turns one human-facing representation into
+the logical representation the engine already knew. SQL is not the execution
+engine; it is one way to describe work to it.
 
 ## 3.9 What we deliberately did not parse
 
@@ -1090,8 +1130,8 @@ each query at the prompt after predicting which stage will accept or reject it.
 </details>
 
 The fifth result is the important one. Our frontend can recognize valid syntax
-without understanding whether its names make sense. That is not merely another
-missing token. It is a different kind of work.
+without understanding whether its names make sense. This is not a tokenization
+or parsing problem. It requires a different kind of work.
 
 ## 3.11 Parsing is not understanding
 
