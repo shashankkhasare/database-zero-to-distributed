@@ -178,15 +178,21 @@ database behavior behind it.
 - Lesson 003 introduces lexical structure, `SELECT`, `FROM`, and one simple
   `WHERE` comparison.
 - Lesson 004 adds qualified identifiers, aliases, literals, comparison
-  expressions, Boolean expressions, name binding, and basic type checking.
+  expressions, arithmetic, Boolean and `NULL` predicates, name binding, and
+  basic type checking. It establishes the expression hierarchy; later lessons
+  fill in forms that require richer types or execution behavior.
 - Lesson 005 adds SQL-89-style joins expressed with multiple `FROM` inputs and
-  a `WHERE` predicate. Explicit `JOIN ... ON` may be added later as a documented
-  extension after the underlying join is understood.
+  a `WHERE` predicate. After the underlying join is understood, it adds
+  explicit `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` forms and makes
+  their different row-preservation rules visible.
 - Lesson 006 adds aggregate functions, `GROUP BY`, and `HAVING`.
-- Lesson 007 adds `ORDER BY` and `DISTINCT`. It also adds `LIMIT` as an explicit
-  modern extension rather than presenting it as SQL-89 syntax.
+- Lesson 007 adds `ORDER BY`, null ordering, `DISTINCT`, and `ALL`. It also adds
+  `LIMIT` and `OFFSET` as explicit modern extensions rather than presenting
+  them as SQL-89 syntax.
 - Lesson 008 adds nested queries, beginning with uncorrelated scalar, `IN`, and
-  `EXISTS` subqueries, then exposing correlation and its execution cost.
+  `EXISTS` subqueries, then exposing correlation and its execution cost. It
+  also introduces derived tables and non-recursive common table expressions
+  once ordinary subquery scope is understood.
 
 Schema definition, mutation, transaction control, and authorization remain
 part of the long-term language target. Introduce `CREATE TABLE` and `INSERT`
@@ -195,6 +201,16 @@ make their effects meaningful; add `COMMIT` and `ROLLBACK` with transaction
 control; and add `GRANT` and `REVOKE` only when the system has identities and
 an authorization boundary. Assign their exact lesson numbers when those
 milestones become active instead of designing their implementations early.
+
+Season 11 completes the advanced language promised by Appendix B without
+overloading the early frontend chapters. It covers set operations, recursive
+common table expressions, richer scalar and date/time expressions, advanced
+grouping, and window functions before checking compatibility against the
+selected benchmark queries. Its final chapter introduces identities and an
+enforcement boundary before adding `GRANT` and `REVOKE`.
+
+These chapters are book commitments, not optional appendices. Appendix B maps
+every grammar family to its owner and records actual checkpoint coverage.
 
 The final benchmark suite should exercise TPC-style analytical and
 transactional workloads. SQL-89 is not sufficient for that destination:
@@ -243,6 +259,8 @@ Implement:
 - literals
 - comparison expressions
 - boolean expressions
+- arithmetic expressions
+- `NULL` predicates and three-valued logic
 - basic type checking
 
 Explain why parsing alone is not enough.
@@ -1294,11 +1312,82 @@ Keep the treatment implementation-focused.
 
 ---
 
-# Part IV — Bring Everything Together
+# Part IV — Complete the Language and Bring Everything Together
 
-# Season 11 — Bring Everything Together
+# Season 11 — Advanced SQL and Compatibility
 
-## 062 — Distributed SQL Over Distributed Storage
+## 062 — Set Operations
+
+Implement:
+
+- `UNION` and `UNION ALL`
+- `INTERSECT` and `INTERSECT ALL`
+- `EXCEPT` and `EXCEPT ALL`
+
+Make duplicate handling explicit and connect each SQL form to its relational
+operation.
+
+---
+
+## 063 — Common Table Expressions and Recursion
+
+Begin with non-recursive `WITH` as a named query. Then add `WITH RECURSIVE` and
+make iterative evaluation, termination, and duplicate behavior visible.
+
+---
+
+## 064 — Rich Values and Expressions
+
+Complete the scalar expression grammar required by the planned workloads:
+
+- strings and exact decimals
+- dates, timestamps, and intervals
+- `CASE`
+- `CAST`
+- `EXTRACT`
+- `SUBSTRING`
+- concatenation and remaining predicates
+
+Reuse the type and `NULL` semantics introduced earlier instead of creating a
+second expression system.
+
+---
+
+## 065 — Advanced Grouping
+
+Implement `ROLLUP` and `CUBE` as visible expansions of ordinary grouping sets.
+Show how subtotal rows interact with `NULL` and ordering.
+
+---
+
+## 066 — Window Functions and Frames
+
+Add `OVER`, `PARTITION BY`, window ordering, and `ROWS` and `RANGE` frames.
+Contrast a window calculation with aggregation: a window computes across a
+related set of rows without collapsing them into one row per group.
+
+---
+
+## 067 — SQL Compatibility Checkpoint
+
+Audit Appendix B against executable parser and behavior tests. Run the complete
+TPC-H query set and the selected TPC-DS query subset through SQL text rather
+than manually constructed plans. Record unsupported constructs honestly before
+the benchmark chapter measures execution.
+
+---
+
+## 068 — Identities and Authorization
+
+Introduce database identities and an authorization check at a real execution
+boundary. Then implement `GRANT` and `REVOKE` for `SELECT`, `INSERT`, `UPDATE`,
+and `DELETE`. Syntax must not precede enforcement.
+
+---
+
+# Season 12 — Bring Everything Together
+
+## 069 — Distributed SQL Over Distributed Storage
 
 Connect:
 
@@ -1312,7 +1401,7 @@ Build the integrated architecture.
 
 ---
 
-## 063 — One SQL Query, End to End
+## 070 — One SQL Query, End to End
 
 Take a query such as:
 
@@ -1361,7 +1450,7 @@ Result
 
 ---
 
-## 064 — One Transaction, End to End
+## 071 — One Transaction, End to End
 
 Follow a distributed write through:
 
@@ -1385,7 +1474,7 @@ Commit
 
 ---
 
-## 065 — Benchmark It
+## 072 — Benchmark It
 
 Build a small repeatable benchmark suite inspired by analytical and transactional workloads.
 
@@ -1415,7 +1504,7 @@ Measure:
 
 ---
 
-## 066 — Break Everything
+## 073 — Break Everything
 
 Run failure experiments:
 
@@ -1432,7 +1521,7 @@ Observe which guarantees survive.
 
 ---
 
-## 067 — Where Real Databases Go Further
+## 074 — Where Real Databases Go Further
 
 Use our database as a mental model for understanding real systems.
 

@@ -243,6 +243,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Add the Chapter 3 skeleton and contents entry
 - [x] Continue directly from Chapter 2 before beginning Section 3.1
 - [x] Add Appendix B as the living, implementation-backed SQL grammar reference
+- [x] Audit every Appendix B grammar family and assign it to a chapter or mandatory completion gate
 - [x] Select and verify an opening epigraph or replace the provisional line
 - [x] Explain tokenization with the exact employee query
 - [x] Introduce the grammar before its parser implementation
@@ -391,18 +392,32 @@ turn those unresolved strings into a bound logical plan.
 - [ ] 060 — Distributed MVCC
 - [ ] 061 — Serializable Distributed Transactions
 
-## Season 11 — Bring Everything Together
+## Season 11 — Advanced SQL and Compatibility
 
-- [ ] 062 — Distributed SQL Over Distributed Storage
-- [ ] 063 — One SQL Query, End to End
-- [ ] 064 — One Transaction, End to End
-- [ ] 065 — Benchmark It
-- [ ] 066 — Break Everything
-- [ ] 067 — Where Real Databases Go Further
+- [ ] 062 — Set Operations
+- [ ] 063 — Common Table Expressions and Recursion
+- [ ] 064 — Rich Values and Expressions
+- [ ] 065 — Advanced Grouping
+- [ ] 066 — Window Functions and Frames
+- [ ] 067 — SQL Compatibility Checkpoint
+- [ ] 068 — Identities and Authorization
+
+## Season 12 — Bring Everything Together
+
+- [ ] 069 — Distributed SQL Over Distributed Storage
+- [ ] 070 — One SQL Query, End to End
+- [ ] 071 — One Transaction, End to End
+- [ ] 072 — Benchmark It
+- [ ] 073 — Break Everything
+- [ ] 074 — Where Real Databases Go Further
 
 ---
 
 # Book production
+
+- [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
+- [ ] Complete Chapters 62–67 before claiming benchmark SQL coverage
+- [ ] Complete Chapter 68 before claiming authorization support or final integration
 
 - [x] Define cross-chapter continuity rules and maintain an editorial terminology ledger
 - [x] Define and version an original database illustration style

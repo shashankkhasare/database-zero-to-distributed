@@ -236,6 +236,19 @@ standard Rust feature is likely, but their purpose and database behavior matter
 more than their syntax. Keep the appendix practical, incremental, and free of
 advanced Rust that the current implementation does not use.
 
+## Keep the SQL grammar accountable
+
+Appendix B is the contract for the SQL dialect the complete course intends to
+build. Every grammar family must name a chapter or a mandatory completion gate.
+A chapter may repeat only the small production it needs, but its code, tests,
+and tagged checkpoint must agree with the appendix's implemented-coverage
+table.
+
+Do not describe planned syntax as implemented. When a construct is added,
+update its grammar, ownership, and checkpoint together. When the roadmap no
+longer intends to support a planned construct, remove it only with an explicit
+scope decision rather than allowing it to become an unowned promise.
+
 ## Speak collaboratively
 
 Use **we** for the shared investigation and implementation:
