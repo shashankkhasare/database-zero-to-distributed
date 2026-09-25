@@ -1,0 +1,65 @@
+lesson: "004"
+style: book/art/STYLE.md
+
+images:
+  - id: parsing-is-not-binding
+    kind: generated-raster
+    output: book/images/004-parsing-is-not-binding.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: The missing_table query passes a structural parser check, then fails when a binder compares its table name with a catalog containing only employees.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening illustration for a
+      technical database book chapter about binding names after parsing. On
+      the left, show a broad paper query card carrying only the prominent name
+      "missing_table". It passes cleanly through a simple teal frame labeled
+      exactly "PARSER" with a small check mark. On the right, the same card
+      reaches a second frame labeled exactly "BINDER" beside a compact catalog
+      drawer containing one card labeled exactly "employees". The binder
+      cannot match "missing_table" and marks that path with one restrained
+      rust-red cross. Make the difference between valid structure and missing
+      database object immediately readable. Follow book/art/STYLE.md exactly.
+      Wide landscape composition, large sparse labels, generous margins. No
+      other words, SQL prose, people, logos, watermark, photorealism, factory
+      machinery, glossy 3D rendering, or tiny text.
+
+  - id: complete-query-ast
+    kind: generated-raster
+    output: book/images/004-complete-query-ast.png
+    placement: section 4.7 after the AST checkpoint explanation
+    alt: The Chapter 4 query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.
+    prompt: >-
+      Use case: scientific-educational. Asset type: full query AST diagram for
+      a technical database book. Draw one orderly top-down tree on warm paper.
+      The root card is labeled exactly "QUERY". Its three main branches lead
+      to: a left card "PROJECT e.name"; a center card "FROM employees AS e";
+      and a right-lower expression root "AND". The AND branch splits into a
+      comparison "greater than" and a null test "IS NOT NULL". The comparison
+      contains an addition node with leaves "e.salary" and "5000", plus the
+      other comparison leaf "70000". The null test has leaf "e.name". Use
+      simple operator symbols where reliable, otherwise the exact short labels
+      above. Keep connecting lines straight, noncrossing, and outside cards.
+      Make hierarchy and precedence unmistakable at book-column width. Follow
+      book/art/STYLE.md exactly. Wide landscape composition, large legible
+      labels, generous spacing. No extra fields, tokens, punctuation, people,
+      logos, watermark, photorealism, glossy 3D rendering, or decorative
+      machinery.
+
+  - id: column-binding
+    kind: generated-raster
+    output: book/images/004-column-binding.png
+    placement: between sections 4.9 and 4.10 after column and type binding
+    alt: The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.
+    prompt: >-
+      Use case: scientific-educational. Asset type: binding transformation
+      diagram for a technical database book. Arrange three large cards from
+      left to right with clean arrows. The left AST card contains exactly
+      "e.salary" and is headed "AST". The center catalog card is headed
+      "CATALOG" and contains exactly three large lines: "employees", "e",
+      and "salary: INTEGER". Use subtle matching threads to show qualifier e
+      and column salary being checked. The right card is headed exactly
+      "BOUND" and contains exactly "salary" and "INTEGER". Make it obvious
+      that binding removes the qualifier after checking it and carries the
+      column type forward. Follow book/art/STYLE.md exactly. Wide landscape
+      composition, sparse large text, straight noncrossing paths, generous
+      margins. No extra schema fields, code, people, logos, watermark,
+      photorealism, glossy 3D rendering, or tiny labels.

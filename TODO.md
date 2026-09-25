@@ -343,20 +343,24 @@ general optimizer, physical-plan split, or storage catalog.
 
 ## Planned teaching sequence
 
-1. Reproduce the false success for `missing_table` and separate valid syntax
-   from valid meaning.
-2. Represent the available `employees` table with a minimal catalog containing
-   its name, columns, types, and rows.
-3. Parse table aliases and qualified column references without resolving them.
-4. Introduce an expression AST with precedence rather than adding more fields
-   to `Query`.
-5. Bind the table, qualifier, and column names against the catalog.
-6. Infer and check expression types while binding.
-7. Produce a bound logical plan whose scan owns the resolved rows and whose
-   filter and project nodes contain expressions.
-8. Evaluate expressions, including `NULL` and three-valued Boolean logic.
-9. Run valid and invalid queries through the prompt and summarize the remaining
-   language boundary.
+1. Reproduce the false success for `missing_table`.
+2. Introduce the catalog types incrementally.
+3. Extend `Value` with the values required by expressions.
+4. Define expression operators and the unbound AST.
+5. Extend the lexer token set.
+6. Parse columns, literals, and precedence in stages.
+7. Run an AST checkpoint that exposes the complete query shape.
+8. Bind the table name and optional alias.
+9. Bind column references and check expression types.
+10. Introduce `BoundExpr` to record resolved, typed expressions.
+11. Update plan execution to evaluate bound expressions and SQL `NULL`.
+12. Connect the catalog, binder, and executor in the application.
+13. Run the fixed demonstration.
+14. Run valid queries and binding errors through the prompt.
+15. Verify the complete path and existing tests.
+16. State the deliberate language and implementation limitations.
+17. Provide experiments with reasoning answers.
+18. Lead from qualified names into joins.
 
 ## Visible outcome and verification
 
@@ -369,6 +373,9 @@ general optimizer, physical-plan split, or storage catalog.
 - [x] `TRUE`, `FALSE`, and `UNKNOWN` follow SQL three-valued logic
 - [x] The representative query returns Ada and Grace
 - [x] The prompt remains usable after a binding or type error
+- [x] The Chapter 4 grammar is shown beside the parser stages
+- [x] The complete query AST makes expression precedence visible
+- [x] The parsing, AST, and column-binding illustrations are generated, reviewed, and embedded
 - [ ] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
 - [ ] Appendix B's implemented-checkpoint table is updated only after tests pass
 - [x] `cargo fmt --check`, `cargo clippy`, `cargo test`, and the deterministic demo pass
