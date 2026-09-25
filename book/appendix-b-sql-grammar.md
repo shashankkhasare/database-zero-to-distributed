@@ -227,14 +227,20 @@ integer            = digit+ ;
 decimal            = digit+ "." digit+ ;
 string             = "'" string_character* "'" ;
 string_character   = non_quote | "''" ;
-letter             = "A" ... "Z" | "a" ... "z" ;
-digit              = "0" ... "9" ;
-whitespace         = " " | tab | carriage_return | newline ;
+
+letter             = ? ASCII letter A-Z or a-z ? ;
+digit              = ? ASCII digit 0-9 ? ;
+non_quote          = ? any character except "'" ? ;
+whitespace         = ? Unicode whitespace character ? ;
 ```
 
-A doubled quote inside a string represents one quote character. Quoted
-identifiers, comments, Unicode identifier rules, and numeric forms beyond
-integers and fixed-point decimals are not currently planned.
+Text between `?` delimiters describes a character class recognized by the
+lexer rather than a literal sequence. Whitespace is a skipped lexical
+category: it may separate tokens, but the lexer does not emit it, so it does
+not appear in the query productions. A doubled quote inside a string
+represents one quote character. Quoted identifiers, comments, Unicode
+identifier rules, and numeric forms beyond integers and fixed-point decimals
+are not currently planned.
 
 ## B.4 Grammar implemented at each checkpoint
 
