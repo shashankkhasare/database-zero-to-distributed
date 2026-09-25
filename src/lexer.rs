@@ -11,6 +11,8 @@ pub enum Token {
     Not,
     Is,
     Null,
+    True,
+    False,
     Identifier(String),
     Integer(i64),
     String(String),
@@ -143,6 +145,8 @@ fn word_token(word: String) -> Token {
         "NOT" => Token::Not,
         "IS" => Token::Is,
         "NULL" => Token::Null,
+        "TRUE" => Token::True,
+        "FALSE" => Token::False,
         _ => Token::Identifier(word),
     }
 }
@@ -175,6 +179,14 @@ mod tests {
                 Token::String("Ada's".into()),
                 Token::Semicolon
             ]
+        );
+    }
+
+    #[test]
+    fn tokenizes_boolean_literals() {
+        assert_eq!(
+            tokenize("TRUE FALSE").unwrap(),
+            vec![Token::True, Token::False]
         );
     }
 

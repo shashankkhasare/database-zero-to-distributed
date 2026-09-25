@@ -34,7 +34,7 @@ struct Parser {
 impl Parser {
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
-        let projection = self.expression()?;
+        let projection = self.parse_expression()?;
         self.expect(Token::From, "expected FROM after selected expression")?;
         let table = self.identifier("expected a table name after FROM")?;
         let table_alias = if self.consume(&Token::As) {
@@ -45,7 +45,7 @@ impl Parser {
             None
         };
         self.expect(Token::Where, "expected WHERE after table name")?;
-        let filter = self.expression()?;
+        let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
         if self.current != self.tokens.len() {
             return Err(ParseError("unexpected token after ;".into()));
@@ -58,46 +58,38 @@ impl Parser {
         })
     }
 
-    fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.or_expression()
+    fn parse_expression(&mut self) -> Result<Expr, ParseError> {
+        self.parse_or_expression()
     }
 
-    fn or_expression(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.and_expression()?;
+    fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_and_expression()?;
         while self.consume(&Token::Or) {
-            expression = binary(expression, BinaryOp::Or, self.and_expression()?);
+            expression = binary(expression, BinaryOp::Or, self.parse_and_expression()?);
         }
         Ok(expression)
     }
 
-    fn and_expression(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.not_expression()?;
+    fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_not_expression()?;
         while self.consume(&Token::And) {
-            expression = binary(expression, BinaryOp::And, self.not_expression()?);
+            expression = binary(expression, BinaryOp::And, self.parse_not_expression()?);
         }
         Ok(expression)
     }
 
-    fn not_expression(&mut self) -> Result<Expr, ParseError> {
+    fn parse_not_expression(&mut self) -> Result<Expr, ParseError> {
         if self.consume(&Token::Not) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Not,
-                expression: Box::new(self.not_expression()?),
+                expression: Box::new(self.parse_not_expression()?),
             });
         }
-        self.predicate()
+        self.parse_predicate()
     }
 
-    fn predicate(&mut self) -> Result<Expr, ParseError> {
-        let left = self.additive()?;
-        if self.consume(&Token::Is) {
-            let negated = self.consume(&Token::Not);
-            self.expect(Token::Null, "expected NULL after IS")?;
-            return Ok(Expr::IsNull {
-                expression: Box::new(left),
-                negated,
-            });
-        }
+    fn parse_predicate(&mut self) -> Result<Expr, ParseError> {
+        let left = self.parse_additive()?;
         let op = if self.consume(&Token::Equal) {
             Some(BinaryOp::Equal)
         } else if self.consume(&Token::NotEqual) {
@@ -113,14 +105,24 @@ impl Parser {
         } else {
             None
         };
-        match op {
-            Some(op) => Ok(binary(left, op, self.additive()?)),
-            None => Ok(left),
+        if let Some(op) = op {
+            return Ok(binary(left, op, self.parse_additive()?));
         }
+
+        if self.consume(&Token::Is) {
+            let negated = self.consume(&Token::Not);
+            self.expect(Token::Null, "expected NULL after IS")?;
+            return Ok(Expr::IsNull {
+                expression: Box::new(left),
+                negated,
+            });
+        }
+
+        Ok(left)
     }
 
-    fn additive(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.term()?;
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_term()?;
         loop {
             let op = if self.consume(&Token::Plus) {
                 Some(BinaryOp::Add)
@@ -130,15 +132,15 @@ impl Parser {
                 None
             };
             match op {
-                Some(op) => expression = binary(expression, op, self.term()?),
+                Some(op) => expression = binary(expression, op, self.parse_term()?),
                 None => break,
             }
         }
         Ok(expression)
     }
 
-    fn term(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.factor()?;
+    fn parse_term(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_factor()?;
         loop {
             let op = if self.consume(&Token::Star) {
                 Some(BinaryOp::Multiply)
@@ -148,30 +150,30 @@ impl Parser {
                 None
             };
             match op {
-                Some(op) => expression = binary(expression, op, self.factor()?),
+                Some(op) => expression = binary(expression, op, self.parse_factor()?),
                 None => break,
             }
         }
         Ok(expression)
     }
 
-    fn factor(&mut self) -> Result<Expr, ParseError> {
+    fn parse_factor(&mut self) -> Result<Expr, ParseError> {
         if self.consume(&Token::Plus) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Plus,
-                expression: Box::new(self.factor()?),
+                expression: Box::new(self.parse_factor()?),
             });
         }
         if self.consume(&Token::Minus) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Minus,
-                expression: Box::new(self.factor()?),
+                expression: Box::new(self.parse_factor()?),
             });
         }
-        self.primary()
+        self.parse_primary()
     }
 
-    fn primary(&mut self) -> Result<Expr, ParseError> {
+    fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         match self.peek().cloned() {
             Some(Token::Identifier(first)) => {
                 self.current += 1;
@@ -200,9 +202,17 @@ impl Parser {
                 self.current += 1;
                 Ok(Expr::Literal(Value::Null))
             }
+            Some(Token::True) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(true)))
+            }
+            Some(Token::False) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(false)))
+            }
             Some(Token::LeftParen) => {
                 self.current += 1;
-                let expression = self.expression()?;
+                let expression = self.parse_expression()?;
                 self.expect(Token::RightParen, "expected ) after expression")?;
                 Ok(expression)
             }
@@ -278,5 +288,18 @@ mod tests {
         assert_eq!(query.table, "employees");
         assert_eq!(query.table_alias.as_deref(), Some("e"));
         assert!(matches!(query.filter, Expr::IsNull { negated: true, .. }));
+    }
+
+    #[test]
+    fn parses_boolean_literals() {
+        let query = parse("SELECT TRUE FROM employees WHERE FALSE;").unwrap();
+        assert_eq!(
+            query.projection,
+            Expr::Literal(crate::row::Value::Boolean(true))
+        );
+        assert_eq!(
+            query.filter,
+            Expr::Literal(crate::row::Value::Boolean(false))
+        );
     }
 }
