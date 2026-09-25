@@ -20,6 +20,10 @@ organized around larger conceptual milestones and may combine several lessons.
 See `BOOK.md` for the manuscript standard, `VIDEO.md` for the companion-video
 strategy, and `TODO.md` for current progress.
 
+The complete curriculum is published as four volumes backed by one evolving
+repository and one Rust codebase. Volume boundaries are publication milestones,
+not forks: lesson tags continue in one sequence across all four volumes.
+
 # The course in three ideas
 
 At the highest level, a database must:
@@ -77,7 +81,7 @@ The goal is simply:
 
 ---
 
-# Part I — Read Rows
+# Volume I — Read Rows
 
 This part follows a query from text to rows. It first runs on one thread, then
 uses parallel workers and multiple processes. Those early distributed chapters
@@ -848,7 +852,7 @@ Focus on recognizing ideas, not claiming implementation equivalence.
 
 ---
 
-# Part II — Store and Write Rows Correctly
+# Volume II — Store and Write Rows Correctly
 
 The query engine has so far consumed rows supplied to it. This part gives those
 rows a durable home, makes mutation visible, and then asks what correctness
@@ -1113,7 +1117,7 @@ Map each guarantee to mechanisms we built.
 
 ---
 
-# Part III — Distribute Data and Correctness
+# Volume III — Distribute Data and Correctness
 
 Parallel and distributed query execution spread work. This part spreads the
 durable state itself. Replication, sharding, and distributed transactions must
@@ -1312,7 +1316,7 @@ Keep the treatment implementation-focused.
 
 ---
 
-# Part IV — Complete the Language and Bring Everything Together
+# Volume IV — Complete the Language and Bring Everything Together
 
 # Season 11 — Advanced SQL and Compatibility
 

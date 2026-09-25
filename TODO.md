@@ -28,6 +28,7 @@ not design distant lessons prematurely.
 - [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
 - [x] Record staged TPC-H, TPC-DS, and TPC-C coverage as long-term validation targets
 - [x] Make the book the complete curriculum and select videos by conceptual milestone rather than chapter count
+- [x] Divide the complete curriculum into four publishable volumes backed by one codebase
 
 ---
 
@@ -490,6 +491,10 @@ general optimizer, physical-plan split, or storage catalog.
 
 # Book production
 
+- [ ] Add a series landing page and per-volume mdBook builds when Volume II manuscripts begin
+- [ ] Preserve the existing root book URL while Volume I is the only published volume
+- [ ] During the Volume II migration, redirect existing Volume I chapter URLs to `volume-1/`
+- [ ] Share themes and reusable images across volume builds without duplicating the Rust codebase
 - [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
 - [ ] Complete Chapters 62–67 before claiming benchmark SQL coverage
 - [ ] Complete Chapter 68 before claiming authorization support or final integration
