@@ -2,8 +2,8 @@
 
 # Database: Zero to Distributed
 
-This repository will produce a complete, executable book about building a
-distributed SQL database from first principles.
+This repository will produce a complete, executable four-volume book series
+about building a distributed SQL database from first principles.
 
 The reader should learn the system by reading an explanation and then studying,
 running, changing, and breaking the real implementation beside it.
@@ -62,6 +62,71 @@ without the video.
 `Roadmap.md` defines the order of concepts. `TODO.md` tracks implementation and
 publication progress. This file defines the standard expected from the book,
 while `VIDEO.md` defines the shared video-production workflow.
+
+## Four volumes, one codebase
+
+The roadmap's four volumes are publication boundaries around one continuous
+implementation:
+
+1. **Read Rows** (Chapters 1–33) builds the query engine and distributes query
+   work.
+2. **Store and Write Rows Correctly** (Chapters 34–47) builds durable storage
+   and transactions.
+3. **Distribute Data and Correctness** (Chapters 48–61) adds replication,
+   sharding, consensus, and distributed transactions.
+4. **Complete the Language and Bring Everything Together** (Chapters 62–74)
+   completes advanced SQL, integrates the system, benchmarks it, and subjects
+   it to failures.
+
+Do not fork the database implementation for each volume. The repository,
+Cargo project, tests, and `lesson-NNN` tag sequence continue across the full
+series. A reader entering a later volume checks out its starting lesson tag
+and inherits the same code evolved by the earlier volumes.
+
+The published site will use one series landing page with one path per volume:
+
+```text
+/database-zero-to-distributed/
+├── volume-1/
+├── volume-2/
+├── volume-3/
+└── volume-4/
+```
+
+While only Volume I exists, the root path may continue to serve it directly.
+Create the landing page and additional builds when a second volume has real
+manuscripts; do not publish empty placeholder books.
+
+Do not restructure the repository merely to reserve space for future volumes.
+Keep the current `book/` and `book.toml` layout while Volume I is the only
+manuscript. When work on Volume II begins, migrate toward a layout such as:
+
+```text
+book/
+├── landing/
+├── volume-1/
+├── volume-2/
+└── shared/
+    ├── theme/
+    └── images/
+
+book-volume-1.toml
+book-volume-2.toml
+```
+
+At that point the deployment should assemble one site tree:
+
+```text
+build/site/index.html
+build/site/volume-1/
+build/site/volume-2/
+```
+
+Later volume directories and configuration files appear only when their
+manuscripts begin. Moving Volume I beneath `volume-1/` must not break published
+chapter links: preserve the existing root URLs with redirects to their new
+locations. This publishing migration does not move or duplicate the Rust
+source, tests, lesson tags, or Git history.
 
 ---
 

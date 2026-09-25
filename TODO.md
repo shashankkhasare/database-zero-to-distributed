@@ -28,6 +28,7 @@ not design distant lessons prematurely.
 - [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
 - [x] Record staged TPC-H, TPC-DS, and TPC-C coverage as long-term validation targets
 - [x] Make the book the complete curriculum and select videos by conceptual milestone rather than chapter count
+- [x] Divide the complete curriculum into four publishable volumes backed by one codebase
 
 ---
 
@@ -297,6 +298,88 @@ rows supplied by the caller. The next milestone will connect table and column
 names to a catalog, introduce general expressions and basic type checking, and
 turn those unresolved strings into a bound logical plan.
 
+## Chapter contract
+
+Begin with the false success exposed by Chapter 3:
+
+```sql
+SELECT name FROM missing_table WHERE salary > 50000;
+```
+
+Parsing can confirm that this has a valid shape, but it cannot determine
+whether the table and columns exist. Introduce a small catalog and a distinct
+binding step that resolves names before planning. Then replace the filter's
+special-purpose column and integer fields with a small expression tree.
+
+The representative successful query is:
+
+```sql
+SELECT e.name
+FROM employees AS e
+WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+```
+
+It should return Ada and Grace. The same path must reject an unknown table, an
+unknown column, an invalid qualifier, and an expression whose operand types do
+not make sense.
+
+This chapter owns the expression foundation promised by Appendix B:
+
+- qualified and unqualified column references
+- table aliases using optional `AS`
+- integer, text, and `NULL` literals
+- unary `+`, unary `-`, and `NOT`
+- arithmetic `+`, `-`, `*`, and `/`
+- comparisons `=`, `<>`, `<`, `<=`, `>`, and `>=`
+- `AND` and `OR`
+- `IS NULL` and `IS NOT NULL`
+- parentheses and explicit precedence
+- binding-time name and type errors
+- SQL three-valued Boolean evaluation
+
+Defer `BETWEEN`, `LIKE`, `IN`, function calls, `CASE`, `CAST`, dates,
+intervals, and windows to their assigned later chapters. Do not introduce a
+general optimizer, physical-plan split, or storage catalog.
+
+## Planned teaching sequence
+
+1. Reproduce the false success for `missing_table`.
+2. Introduce the catalog types incrementally.
+3. Extend `Value` with the values required by expressions.
+4. Define expression operators and the unbound AST.
+5. Extend the lexer token set.
+6. Parse columns, literals, and precedence in stages.
+7. Run an AST checkpoint that exposes the complete query shape.
+8. Bind the table name and optional alias.
+9. Bind column references and check expression types.
+10. Introduce `BoundExpr` to record resolved, typed expressions.
+11. Update plan execution to evaluate bound expressions and SQL `NULL`.
+12. Connect the catalog, binder, and executor in the application.
+13. Run the fixed demonstration.
+14. Run valid queries and binding errors through the prompt.
+15. Verify the complete path and existing tests.
+16. State the deliberate language and implementation limitations.
+17. Provide experiments with reasoning answers.
+18. Lead from qualified names into joins.
+
+## Visible outcome and verification
+
+- [x] An existing table name resolves to its catalog entry
+- [x] A missing table fails before plan execution
+- [x] Qualified and unqualified columns bind to the intended table
+- [x] Missing columns and invalid qualifiers produce readable errors
+- [x] Operator precedence is visible in the parsed expression tree
+- [x] Invalid operand types fail during binding rather than panicking in execution
+- [x] `TRUE`, `FALSE`, and `UNKNOWN` follow SQL three-valued logic
+- [x] The representative query returns Ada and Grace
+- [x] The prompt remains usable after a binding or type error
+- [x] The Chapter 4 grammar is shown beside the parser stages
+- [x] The complete query AST makes expression precedence visible
+- [x] The parsing, AST, and column-binding illustrations are generated, reviewed, and embedded
+- [ ] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
+- [ ] Appendix B's implemented-checkpoint table is updated only after tests pass
+- [x] `cargo fmt --check`, `cargo clippy`, `cargo test`, and the deterministic demo pass
+
 ---
 
 # Curriculum milestones
@@ -415,6 +498,10 @@ turn those unresolved strings into a bound logical plan.
 
 # Book production
 
+- [ ] Add a series landing page and per-volume mdBook builds when Volume II manuscripts begin
+- [ ] Preserve the existing root book URL while Volume I is the only published volume
+- [ ] During the Volume II migration, redirect existing Volume I chapter URLs to `volume-1/`
+- [ ] Share themes and reusable images across volume builds without duplicating the Rust codebase
 - [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
 - [ ] Complete Chapters 62–67 before claiming benchmark SQL coverage
 - [ ] Complete Chapter 68 before claiming authorization support or final integration

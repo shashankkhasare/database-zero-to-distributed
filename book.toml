@@ -1,7 +1,7 @@
 [book]
-title = "Database: Zero to Distributed"
+title = "Database: Zero to Distributed — Volume I: Read Rows"
 authors = ["Shashank Khasare"]
-description = "Build a distributed SQL database from first principles in Rust."
+description = "Volume I of a four-volume series building a distributed SQL database from first principles in Rust."
 language = "en"
 src = "book"
 
