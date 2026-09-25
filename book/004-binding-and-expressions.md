@@ -26,8 +26,8 @@ SELECT name FROM missing_table WHERE salary > 50000;
 ```
 
 It even ran the employee rows supplied by the caller. The text followed our
-grammar, but `missing_table` did not become real merely because it appeared in
-valid syntax.
+grammar, so parsing succeeded. But Chapter 3 had no binding step to check
+whether `missing_table` referred to a table in the database.
 
 This chapter adds **binding**, the step that connects names in the AST to
 database objects and checks whether their use makes sense:
@@ -38,7 +38,7 @@ SQL → tokens → AST → binding → bound plan → rows
                        catalog
 ```
 
-We will finish with this query:
+We will use this query to exercise the complete path:
 
 ```sql
 SELECT e.name
@@ -47,6 +47,62 @@ WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
 Ada and Grace satisfy the condition. Linus does not.
+
+Compared with Chapter 3, accepting this query requires table aliases,
+qualified columns, arithmetic, Boolean operators, and null tests. The frontend
+must preserve that structure so binding can resolve the names and check their
+types. Here is the expanded grammar:
+
+```text
+query          = "SELECT" expression
+                 "FROM" identifier alias?
+                 "WHERE" expression ";" ;
+alias          = "AS"? identifier ;
+
+expression     = or_expression ;
+or_expression  = and_expression ("OR" and_expression)* ;
+and_expression = not_expression ("AND" not_expression)* ;
+not_expression = "NOT" not_expression | predicate ;
+
+predicate      = additive comparison_operator additive
+               | additive "IS" "NOT"? "NULL"
+               | additive ;
+additive       = term (("+" | "-") term)* ;
+term           = factor (("*" | "/") factor)* ;
+factor         = ("+" | "-") factor | primary ;
+
+primary        = column_reference | integer | string | "NULL"
+               | "(" expression ")" ;
+column_reference = (identifier ".")? identifier ;
+comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
+```
+
+This block describes how tokens form a query. Chapter 3 described character
+recognition directly in prose and lexer code. We can now record those rules
+more compactly as a **lexical grammar**, which describes how characters form
+the identifiers and literals used above:
+
+```text
+identifier       = (letter | "_") (letter | digit | "_")* ;
+integer          = digit+ ;
+string           = "'" string_character* "'" ;
+string_character = non_quote | "''" ;
+
+letter           = ? ASCII letter A-Z or a-z ? ;
+digit            = ? ASCII digit 0-9 ? ;
+non_quote        = ? any character except "'" ? ;
+whitespace       = ? Unicode whitespace character ? ;
+```
+
+Text between `?` delimiters describes a character class recognized by the
+lexer rather than a literal sequence. Whitespace is a skipped lexical
+category: it may separate tokens, but the lexer does not emit it, so it does
+not appear in the query productions. Decimal literals do not appear because
+this chapter's lexer accepts integers only.
+
+The grammar describes valid structure. Binding will provide the missing
+meaning by resolving its table, alias, and column names and checking the types
+used by its operators.
 
 Before changing the program, begin from the completed Chapter 3 checkpoint:
 
@@ -76,7 +132,29 @@ Binding needs a description of the objects it can resolve. A database calls
 that description a **catalog**. Our first catalog is only an in-memory list of
 tables.
 
-Begin with a column name and its type.
+The catalog must record what kind of values each column may contain. Begin
+with those type categories:
+
+`src/expression.rs`: create this file
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DataType {
+    Integer,
+    Text,
+    Boolean,
+    Null,
+}
+```
+
+`DataType` describes a category such as integers or text. This differs from
+the `Value` enum introduced in Chapter 1, which stores one actual piece of row
+data such as `Value::Integer(70000)` or `Value::Text("Ada")`. A column
+describes every value allowed in that position, so using `Value` in the
+catalog would require a meaningless placeholder such as `Value::Integer(0)`
+merely to say that the column contains integers.
+
+Now combine a column name with its type.
 
 `src/catalog.rs`: create this file
 
@@ -114,9 +192,9 @@ impl Catalog {
 }
 ```
 
-This file will not join the crate until binding is ready. For now it states
-what names may refer to without pretending that the catalog is durable
-storage.
+This catalog describes tables, columns, and rows in memory. We will connect
+the module to the program in Section 4.12, after the binder is complete.
+Persisting catalog information to storage comes later.
 
 ## 4.3 Extend `Value`
 
@@ -136,8 +214,13 @@ pub enum Value {
 }
 ```
 
-Projection will soon construct rows from evaluated expressions. Add a
-constructor that accepts names it already owns.
+`Value::Null` represents SQL `NULL` while a query is running. It is a distinct
+value rather than an empty string, zero, or `false`.
+
+`Row::new()` accepts borrowed column names, which is convenient when
+constructing rows from string literals. Projection will produce column names
+as owned `String` values. Add a second constructor that stores those names
+directly.
 
 `src/row.rs`: add to the first `impl Row`
 
@@ -173,22 +256,15 @@ expression representation is still under construction.
 
 ## 4.4 Define expression operators and the AST
 
-Create the complete expression vocabulary together. `DataType` describes the
-kind of value an expression produces, the operator enums name the available
-operations, and `Expr` records their unresolved tree structure.
+Extend `expression.rs` with the rest of the expression vocabulary. The
+operator enums name the available operations, and `Expr` records their
+unresolved tree structure. The `DataType` already in this file will later let
+binding report what each expression produces.
 
-`src/expression.rs`: create this file
+`src/expression.rs`: add after `DataType`
 
 ```rust
 use crate::row::Value;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DataType {
-    Integer,
-    Text,
-    Boolean,
-    Null,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UnaryOp {
@@ -375,38 +451,12 @@ alias or whether `name + 1` is meaningful.
 
 ## 4.6 Parse columns, literals, and precedence
 
-The Chapter 3 grammar described one fixed query shape. Our updated grammar lets
-the selected value and filter become expressions:
-
-```text
-query          = "SELECT" expression
-                 "FROM" identifier alias?
-                 "WHERE" expression ";" ;
-alias          = "AS"? identifier ;
-
-expression     = or_expression ;
-or_expression  = and_expression ("OR" and_expression)* ;
-and_expression = not_expression ("AND" not_expression)* ;
-not_expression = "NOT" not_expression | predicate ;
-
-predicate      = additive comparison_operator additive
-               | additive "IS" "NOT"? "NULL"
-               | additive ;
-additive       = term (("+" | "-") term)* ;
-term           = factor (("*" | "/") factor)* ;
-factor         = ("+" | "-") factor | primary ;
-
-primary        = column_reference | integer | string | "NULL"
-               | "(" expression ")" ;
-column_reference = (identifier ".")? identifier ;
-comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
-```
-
-Read the expression rules from top to bottom as precedence levels. `OR` is the
-weakest, followed by `AND`, `NOT`, predicates, addition and subtraction, and
-then multiplication and division. Primary expressions form the leaves. Each
-parser method calls the next tighter level before looking for its own
-operators, so the tighter operator captures its operands first. That is why
+Now implement the expression rules shown at the beginning of the chapter.
+Read them from top to bottom as precedence levels. `OR` is the weakest,
+followed by `AND`, `NOT`, predicates, addition and subtraction, and then
+multiplication and division. Primary expressions form the leaves. Each parser
+method calls the next tighter level before looking for its own operators, so
+the tighter operator captures its operands first. That is why
 `salary + 2 * 3` becomes `salary + (2 * 3)` without a special case.
 
 Replace the flat query fields with expressions in the places SQL can nest.
@@ -990,9 +1040,11 @@ fn require_type(actual: &DataType, expected: &DataType,
 }
 ```
 
-`Null` is accepted wherever a typed operand is expected because evaluating an
-operation on it normally produces `NULL`. The execution rules below preserve
-that unknown result instead of treating it as a type error.
+A bare `NULL` expression receives the temporary type `DataType::Null`.
+`require_type()` accepts it wherever a typed operand is expected because
+evaluating an operation on it normally produces `Value::Null`. The execution
+rules below preserve that unknown result instead of treating it as a type
+error.
 
 `name + 1` now fails during binding because `name` is text. Execution will not
 discover that mistake halfway through a scan.
