@@ -344,17 +344,17 @@ general optimizer, physical-plan split, or storage catalog.
 ## Planned teaching sequence
 
 1. Reproduce the false success for `missing_table`.
-2. Introduce the catalog types incrementally.
-3. Extend `Value` with the values required by expressions.
+2. Extend `Value` with the values required by expressions.
+3. Extend the lexer token set for the expanded grammar.
 4. Define expression operators and the unbound AST.
-5. Extend the lexer token set.
-6. Parse columns, literals, and precedence in stages.
-7. Run an AST checkpoint that exposes the complete query shape.
-8. Bind the table name and optional alias.
-9. Bind column references and check expression types.
-10. Introduce `BoundExpr` to record resolved, typed expressions.
-11. Update plan execution to evaluate bound expressions and SQL `NULL`.
-12. Connect the catalog, binder, and executor in the application.
+5. Parse columns, literals, and precedence in stages.
+6. Run an AST checkpoint that exposes the complete query shape.
+7. Introduce the catalog types after the unresolved names are visible.
+8. Introduce `BoundExpr` as the checked result that binding will produce.
+9. Bind table qualifiers and columns while checking expression types.
+10. Evaluate bound expressions, including SQL `NULL`.
+11. Update plan execution to store and evaluate bound expressions.
+12. Complete whole-query binding and connect the catalog, plan, and application.
 13. Run the fixed demonstration.
 14. Run valid queries and binding errors through the prompt.
 15. Verify the complete path and existing tests.

@@ -71,38 +71,28 @@ additive       = term (("+" | "-") term)* ;
 term           = factor (("*" | "/") factor)* ;
 factor         = ("+" | "-") factor | primary ;
 
-primary        = column_reference | integer | string | "NULL"
+primary        = column_reference | integer | string
+               | "TRUE" | "FALSE" | "NULL"
                | "(" expression ")" ;
 column_reference = (identifier ".")? identifier ;
 comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
 ```
 
-This block describes how tokens form a query. Chapter 3 described character
-recognition directly in prose and lexer code. We can now record those rules
-more compactly as a **lexical grammar**, which describes how characters form
-the identifiers and literals used above:
-
-```text
-identifier       = (letter | "_") (letter | digit | "_")* ;
-integer          = digit+ ;
-string           = "'" string_character* "'" ;
-string_character = non_quote | "''" ;
-
-letter           = ? ASCII letter A-Z or a-z ? ;
-digit            = ? ASCII digit 0-9 ? ;
-non_quote        = ? any character except "'" ? ;
-whitespace       = ? Unicode whitespace character ? ;
-```
-
-Text between `?` delimiters describes a character class recognized by the
-lexer rather than a literal sequence. Whitespace is a skipped lexical
-category: it may separate tokens, but the lexer does not emit it, so it does
-not appear in the query productions. Decimal literals do not appear because
-this chapter's lexer accepts integers only.
+This block describes how tokens form a query. Identifiers and integers retain
+the lexical rules implemented in Chapter 3. This chapter adds single-quoted
+strings; [Appendix B](appendix-b-sql-grammar.md) records the complete lexical
+grammar.
 
 The grammar describes valid structure. Binding will provide the missing
 meaning by resolving its table, alias, and column names and checking the types
 used by its operators.
+
+We will extend the frontend first. Sections 4.2 through 4.5 add the runtime
+values, tokens, expression AST, and parser needed to support this grammar.
+Section 4.6 then lets us inspect the recovered structure before adding
+binding. The rest of the chapter gives that structure meaning: we introduce
+the catalog, bind and type-check the expressions, evaluate the bound tree,
+update the plan, and reconnect the application.
 
 Before changing the program, begin from the completed Chapter 3 checkpoint:
 
@@ -125,83 +115,23 @@ from its caller.
 The lexer can decide whether characters form tokens. The parser can decide
 whether those tokens have a valid shape. Neither can decide whether a name
 refers to something in this database. We need a new stage for that question.
+Before building it, we will extend the Chapter 3 frontend so it can produce
+the richer AST that binding must inspect.
 
-## 4.2 Introduce the catalog types
+## 4.2 Extend `Value`
 
-Binding needs a description of the objects it can resolve. A database calls
-that description a **catalog**. Our first catalog is only an in-memory list of
-tables.
+This section changes two files for two different reasons. First, `row.rs`
+needs values that expressions can produce. Then `plan.rs` needs a temporary
+compatibility edit because adding variants makes its old value match
+incomplete.
 
-The catalog must record what kind of values each column may contain. Begin
-with those type categories:
+### 4.2.1 Add Boolean and null values
 
-`src/expression.rs`: create this file
-
-```rust
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DataType {
-    Integer,
-    Text,
-    Boolean,
-    Null,
-}
-```
-
-`DataType` describes a category such as integers or text. This differs from
-the `Value` enum introduced in Chapter 1, which stores one actual piece of row
-data such as `Value::Integer(70000)` or `Value::Text("Ada")`. A column
-describes every value allowed in that position, so using `Value` in the
-catalog would require a meaningless placeholder such as `Value::Integer(0)`
-merely to say that the column contains integers.
-
-Now combine a column name with its type.
-
-`src/catalog.rs`: create this file
-
-```rust
-use crate::expression::DataType;
-use crate::row::Row;
-
-#[derive(Clone)]
-pub struct Column {
-    pub name: String,
-    pub data_type: DataType,
-}
-```
-
-A table combines those columns with the rows they describe.
-
-`src/catalog.rs`: add after `Column`
-
-```rust
-#[derive(Clone)]
-pub struct Table {
-    pub name: String,
-    pub columns: Vec<Column>,
-    pub rows: Vec<Row>,
-}
-
-pub struct Catalog {
-    tables: Vec<Table>,
-}
-
-impl Catalog {
-    pub fn new(tables: Vec<Table>) -> Self {
-        Self { tables }
-    }
-}
-```
-
-This catalog describes tables, columns, and rows in memory. We will connect
-the module to the program in Section 4.12, after the binder is complete.
-Persisting catalog information to storage comes later.
-
-## 4.3 Extend `Value`
-
-Expressions can produce truth values, and SQL also needs a value for missing
-or unknown information. `Boolean` lets comparisons and Boolean operators
-return values; `Null` represents SQL's unknown value rather than an empty
-string or zero.
+The expanded grammar adds Boolean expressions, `TRUE`, `FALSE`, and `NULL`.
+Their results must fit into rows and pass between expression operators, so the
+runtime `Value` representation needs two more variants. `Boolean` stores
+`true` or `false`, while `Null` represents SQL's unknown value rather than an
+empty string or zero.
 
 `src/row.rs`: add two variants to `Value`
 
@@ -217,10 +147,11 @@ pub enum Value {
 `Value::Null` represents SQL `NULL` while a query is running. It is a distinct
 value rather than an empty string, zero, or `false`.
 
-`Row::new()` accepts borrowed column names, which is convenient when
-constructing rows from string literals. Projection will produce column names
-as owned `String` values. Add a second constructor that stores those names
-directly.
+`Row::new()` accepts borrowed column names, then builds a new vector and turns
+each name into an owned `String`. Projection already produces a
+`Vec<(String, Value)>`. A second constructor can move that vector directly into
+the row without rebuilding it or converting its names again. The row still
+owns the vector and all its contents; it does not store references to them.
 
 `src/row.rs`: add to the first `impl Row`
 
@@ -230,7 +161,7 @@ pub fn from_owned(values: Vec<(String, Value)>) -> Self {
 }
 ```
 
-Finally, make the two new values printable.
+The two new values also need printable forms.
 
 `src/row.rs`: add arms to `impl fmt::Display for Value`
 
@@ -239,103 +170,76 @@ Value::Boolean(value) => write!(formatter, "{value}"),
 Value::Null => write!(formatter, "NULL"),
 ```
 
-Adding variants makes the old `Plan::Filter` match temporarily
-non-exhaustive. The filter still understands only integers, so change its text
-arm into a catch-all to keep each intermediate checkpoint compiling. Section
-4.11 will replace this temporary compatibility edit with expression-based
-filtering.
+### 4.2.2 Keep the old filter compiling
 
-`src/plan.rs`: replace the non-integer arm in `Plan::Filter`
+The Chapter 3 `Plan::Filter` stores a `column` and a `greater_than` integer, so
+it can evaluate only one fixed predicate: `column > greater_than`. Chapter 4
+needs a general expression predicate that can include arithmetic, comparisons,
+Boolean operators, and null tests. Section 4.11 will make that larger change.
 
-```rust
-Some(_) => panic!("column is not an integer: {column}"),
-```
+Until then, the old filter must continue compiling. It calls
+`row.get(column)`, which returns `Some(value)` when the column exists and
+`None` when it does not. Previously, `Text` was the only non-integer `Value`,
+so the match handled an integer, text, or a missing column.
 
-That temporary edit keeps the Chapter 3 plan compiling while the new
-expression representation is still under construction.
+Adding `Boolean` and `Null` creates two more possible values. Rust now requires
+the match to handle them, even though this temporary filter cannot use them.
+Group every non-integer value under `Some(_)`:
 
-## 4.4 Define expression operators and the AST
-
-Extend `expression.rs` with the rest of the expression vocabulary. The
-operator enums name the available operations, and `Expr` records their
-unresolved tree structure. The `DataType` already in this file will later let
-binding report what each expression produces.
-
-`src/expression.rs`: add after `DataType`
+`src/plan.rs`: replace the value match in `Plan::Filter`
 
 ```rust
-use crate::row::Value;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum UnaryOp {
-    Plus,
-    Minus,
-    Not,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BinaryOp {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Equal,
-    NotEqual,
-    Less,
-    LessOrEqual,
-    Greater,
-    GreaterOrEqual,
-    And,
-    Or,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Expr {
-    Column {
-        qualifier: Option<String>,
-        name: String,
-    },
-    Literal(Value),
-    Unary {
-        op: UnaryOp,
-        expression: Box<Expr>,
-    },
-    Binary {
-        left: Box<Expr>,
-        op: BinaryOp,
-        right: Box<Expr>,
-    },
-    IsNull {
-        expression: Box<Expr>,
-        negated: bool,
-    },
-}
+let value = match row.get(column) {
+    Some(Value::Integer(value)) => value,
+    Some(_) => panic!("column is not an integer: {column}"),
+    None => panic!("unknown column: {column}"),
+};
 ```
 
-The qualifier in `e.name` is stored as text. The parser has not yet proved
-that `e` is a valid alias.
+The first arm extracts an integer. The second reports that an existing column
+contains the wrong kind of value, and the third reports that the column does
+not exist. This temporary edit preserves the old behavior while we build its
+replacement. We now have the value kinds expressions can produce. Next we
+teach the lexer to recognize the expanded grammar.
 
-## 4.5 Extend the lexer
+## 4.3 Extend the lexer
 
-The representative query needs more vocabulary than Chapter 3:
+The lexer changes in three steps. We first extend the token vocabulary, then
+teach the scanner to consume quoted strings, and finally recognize the new
+operators and keywords.
+
+### 4.3.1 Add the new tokens
+
+The expanded expression grammar needs more vocabulary than Chapter 3. The
+representative query uses many of these tokens; the remaining ones make the
+other grammar forms executable, such as `name = 'Ada'` or
+`(salary + 5000) > 70000`.
 
 | Tokens | Purpose |
 | --- | --- |
 | `As` | introduce a table alias |
 | `And`, `Or`, `Not` | combine or negate conditions |
 | `Is`, `Null` | form null tests and null literals |
+| `True`, `False` | represent Boolean literals |
 | `String` | preserve text inside single quotes |
 | `Plus`, `Minus`, `Star`, `Slash` | form arithmetic expressions |
 | comparison variants | compare two expressions |
 | `Dot` | separate a qualifier from a column |
 | parentheses | group an expression explicitly |
 
+Every quoted keyword or symbol in the grammar needs a fixed token variant.
+For example, grammar terminal `"AND"` becomes `Token::And`, `"+"` becomes
+`Token::Plus`, and `"."` becomes `Token::Dot`. Grammar categories that carry
+input data use variants with fields: `identifier` becomes
+`Identifier(String)`, `integer` becomes `Integer(i64)`, and `string` becomes
+`String(String)`.
+
 `src/lexer.rs`: replace `Token`
 
 ```rust
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Token {
-    Select, From, Where, As, And, Or, Not, Is, Null,
+    Select, From, Where, As, And, Or, Not, Is, Null, True, False,
     Identifier(String), Integer(i64), String(String),
     Plus, Minus, Star, Slash, Equal, NotEqual,
     Less, LessOrEqual, Greater, GreaterOrEqual,
@@ -343,8 +247,23 @@ pub enum Token {
 }
 ```
 
-Strings need their own branch before punctuation. A doubled quote represents
-one quote inside the value.
+These variants define how the lexer will represent the expanded vocabulary.
+The scanning rules below still need to recognize the corresponding text.
+
+### 4.3.2 Lex string literals
+
+The lexical rule for `string` begins with a single quote, consumes characters
+until its closing quote, and produces one `Token::String`. For example:
+
+```text
+'Ada'         → String("Ada")
+'O''Reilly'   → String("O'Reilly")
+```
+
+SQL writes two adjacent quotes inside a string to represent one quote in its
+value. The lexer therefore needs a string branch that consumes the entire
+multi-character token. A lone quote must not fall through to the punctuation
+helper and become an unexpected character.
 
 `src/lexer.rs`: add after the integer branch in `tokenize()`
 
@@ -377,7 +296,14 @@ one quote inside the value.
     tokens.push(Token::String(value));
 ```
 
-Replace the old two-character punctuation match with a helper call.
+The complete branch turns both examples into one string token. An unmatched
+opening quote instead returns `unterminated string`.
+
+### 4.3.3 Recognize operators and keywords
+
+The expanded grammar also adds several punctuation tokens, including
+two-character operators such as `<=` and `<>`. Moving punctuation recognition
+into a helper keeps that growing match separate from the main character scan.
 
 `src/lexer.rs`: replace the final `else` branch in `tokenize()`
 
@@ -441,25 +367,115 @@ fn word_token(word: String) -> Token {
         "NOT" => Token::Not,
         "IS" => Token::Is,
         "NULL" => Token::Null,
+        "TRUE" => Token::True,
+        "FALSE" => Token::False,
         _ => Token::Identifier(word),
     }
 }
 ```
 
 The lexer recognizes vocabulary. It still does not know whether `e` is an
-alias or whether `name + 1` is meaningful.
+alias or whether `name + 1` is meaningful. Tokens tell the parser what units
+it received. We now need an AST capable of storing the structure that the
+parser recovers from those tokens.
 
-## 4.6 Parse columns, literals, and precedence
+## 4.4 Define expression operators and the AST
 
-Now implement the expression rules shown at the beginning of the chapter.
-Read them from top to bottom as precedence levels. `OR` is the weakest,
-followed by `AND`, `NOT`, predicates, addition and subtraction, and then
-multiplication and division. Primary expressions form the leaves. Each parser
-method calls the next tighter level before looking for its own operators, so
-the tighter operator captures its operands first. That is why
-`salary + 2 * 3` becomes `salary + (2 * 3)` without a special case.
+Create `expression.rs` with the expression vocabulary. The two operator enums
+first name the unary and binary operations that the grammar accepts.
 
-Replace the flat query fields with expressions in the places SQL can nest.
+`src/expression.rs`: create this file
+
+```rust
+use crate::row::Value;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UnaryOp {
+    Plus,
+    Minus,
+    Not,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BinaryOp {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Equal,
+    NotEqual,
+    Less,
+    LessOrEqual,
+    Greater,
+    GreaterOrEqual,
+    And,
+    Or,
+}
+```
+
+An expression tree then combines those operators with columns and literal
+values. `Column` retains both parts of a possible qualified name. `Literal`
+stores a value written directly in SQL. The recursive variants use `Box` so
+one expression can contain smaller expressions.
+
+`src/expression.rs`: add after `BinaryOp`
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Expr {
+    Column {
+        qualifier: Option<String>,
+        name: String,
+    },
+    Literal(Value),
+    Unary {
+        op: UnaryOp,
+        expression: Box<Expr>,
+    },
+    Binary {
+        left: Box<Expr>,
+        op: BinaryOp,
+        right: Box<Expr>,
+    },
+    IsNull {
+        expression: Box<Expr>,
+        negated: bool,
+    },
+}
+```
+
+The qualifier in `e.name` is stored as text. The parser has not yet proved
+that `e` is a valid alias.
+
+For an unqualified column, the qualifier is absent:
+
+```text
+name    → Column { qualifier: None, name: "name" }
+```
+
+A qualified column preserves both pieces for the binder:
+
+```text
+e.name  → Column { qualifier: Some("e"), name: "name" }
+```
+
+`Literal` can therefore store `5000`, `'Ada'`, `TRUE`, `FALSE`, or `NULL`.
+`Unary` represents one operator and one child, while `Binary` represents an
+operator with left and right children. `IsNull` remains separate because
+`IS NULL` tests for the unknown value instead of comparing two operands. The
+parser can now turn the token sequence into these nested values.
+
+## 4.5 Parse columns, literals, and precedence
+
+The parser methods follow the grammar from the outside inward. Section 4.5.1
+handles the outer query rule. Sections 4.5.2 through 4.5.5 descend through the
+expression precedence levels from weakest to tightest. Section 4.5.6 adds the
+cursor operations shared by all those methods. Following the Chapter 3
+convention, each method that implements a grammar production begins with
+`parse_`; cursor and construction helpers do not.
+
+The flat query fields cannot hold nested operations, so the projection and
+filter fields will become expressions.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -479,8 +495,8 @@ pub struct Query {
 }
 ```
 
-Keep `ParseError`, `parse()`, and `Parser`, but change `parse()` to call the
-new outer method:
+The existing `ParseError`, `parse()`, and `Parser` still fit. Only the body of
+`parse()` must call the new outer method:
 
 `src/parser.rs`: replace the body of `parse()`
 
@@ -489,10 +505,21 @@ let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
 Parser { tokens, current: 0 }.parse_query()
 ```
 
-### 4.6.1 Parse the query and its alias
+### 4.5.1 Parse the query and its alias
 
-Replace the old `impl Parser` in the following steps. Begin with the complete
-query shape and its optional alias.
+The outer query rule divides a shortened version of the query into four
+pieces:
+
+```text
+SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000;
+       └────┘      └───────┘    └┘       └───────────────────────┘
+     projection      table     alias              filter
+```
+
+`parse_query()` follows that order. It delegates both expression-shaped
+pieces to `parse_expression()`, reads the table identifier itself, and accepts an
+alias either with `AS` or directly after the table name. We can replace the
+old `impl Parser`, beginning with that outer structure.
 
 `src/parser.rs`: begin the new `impl Parser`
 
@@ -500,7 +527,7 @@ query shape and its optional alias.
 impl Parser {
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
-        let projection = self.expression()?;
+        let projection = self.parse_expression()?;
         self.expect(Token::From, "expected FROM after selected expression")?;
         let table = self.identifier("expected a table name after FROM")?;
 
@@ -512,7 +539,7 @@ impl Parser {
             None
         };
         self.expect(Token::Where, "expected WHERE after table name")?;
-        let filter = self.expression()?;
+        let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
 
         if self.current != self.tokens.len() {
@@ -528,33 +555,40 @@ Without `AS`, `matches!` checks whether the next token contains an identifier;
 if it does, `identifier()` takes that name as the alias. Otherwise the query
 has no alias.
 
-### 4.6.2 Parse Boolean operators
+### 4.5.2 Parse Boolean operators
 
-Precedence begins with `OR`, the weakest operator, and descends toward tighter
-operators. Because `or_expression()` asks `and_expression()` for each operand,
-an entire `AND` expression is assembled before `OR` can combine it.
+Read the expression rules from top to bottom as precedence levels. `OR` is the
+weakest, followed by `AND`, `NOT`, predicates, addition and subtraction, and
+then multiplication and division. Primary expressions form the leaves. Each
+method asks the next tighter level for an operand before looking for its own
+operator. That is why `salary + 2 * 3` becomes `salary + (2 * 3)` without a
+special case.
+
+Precedence begins with `OR`. Because `parse_or_expression()` asks
+`parse_and_expression()` for each operand, an entire `AND` expression is assembled
+before `OR` can combine it.
 
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
-    fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.or_expression()
+    fn parse_expression(&mut self) -> Result<Expr, ParseError> {
+        self.parse_or_expression()
     }
 
-    fn or_expression(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.and_expression()?;
+    fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_and_expression()?;
         while self.consume(&Token::Or) {
             expression = binary(expression, BinaryOp::Or,
-                self.and_expression()?);
+                self.parse_and_expression()?);
         }
         Ok(expression)
     }
 
-    fn and_expression(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.not_expression()?;
+    fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_not_expression()?;
         while self.consume(&Token::And) {
             expression = binary(expression, BinaryOp::And,
-                self.not_expression()?);
+                self.parse_not_expression()?);
         }
         Ok(expression)
     }
@@ -566,36 +600,29 @@ an entire `AND` expression is assembled before `OR` can combine it.
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
-    fn not_expression(&mut self) -> Result<Expr, ParseError> {
+    fn parse_not_expression(&mut self) -> Result<Expr, ParseError> {
         if self.consume(&Token::Not) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Not,
-                expression: Box::new(self.not_expression()?),
+                expression: Box::new(self.parse_not_expression()?),
             });
         }
-        self.predicate()
+        self.parse_predicate()
     }
 ```
 
-### 4.6.3 Parse comparisons and null tests
+### 4.5.3 Parse comparisons and null tests
 
-Comparisons and null tests bind more tightly than `NOT`. The complete
-predicate method first reads the left arithmetic expression, then decides
-whether a predicate operator follows.
+Comparisons and null tests bind more tightly than `NOT`. The predicate method
+first reads the left arithmetic expression, then checks for a comparison. If
+there is no comparison, it checks for `IS NULL` or `IS NOT NULL` before
+returning the arithmetic expression unchanged.
 
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
-    fn predicate(&mut self) -> Result<Expr, ParseError> {
-        let left = self.additive()?;
-        if self.consume(&Token::Is) {
-            let negated = self.consume(&Token::Not);
-            self.expect(Token::Null, "expected NULL after IS")?;
-            return Ok(Expr::IsNull {
-                expression: Box::new(left),
-                negated,
-            });
-        }
+    fn parse_predicate(&mut self) -> Result<Expr, ParseError> {
+        let left = self.parse_additive()?;
         let op = if self.consume(&Token::Equal) { Some(BinaryOp::Equal) }
         else if self.consume(&Token::NotEqual) { Some(BinaryOp::NotEqual) }
         else if self.consume(&Token::Less) { Some(BinaryOp::Less) }
@@ -604,10 +631,19 @@ whether a predicate operator follows.
         else if self.consume(&Token::GreaterOrEqual) { Some(BinaryOp::GreaterOrEqual) }
         else { None };
 
-        match op {
-            Some(op) => Ok(binary(left, op, self.additive()?)),
-            None => Ok(left),
+        if let Some(op) = op {
+            return Ok(binary(left, op, self.parse_additive()?));
         }
+
+        if self.consume(&Token::Is) {
+            let negated = self.consume(&Token::Not);
+            self.expect(Token::Null, "expected NULL after IS")?;
+            return Ok(Expr::IsNull {
+                expression: Box::new(left), negated,
+            });
+        }
+
+        Ok(left)
     }
 ```
 
@@ -615,7 +651,7 @@ If there is no comparison or null test, the arithmetic expression itself is
 returned. Binding will later reject it in `WHERE` unless it produces a Boolean
 or null result.
 
-### 4.6.4 Parse arithmetic
+### 4.5.4 Parse arithmetic
 
 Addition calls the multiplication level, so multiplication becomes the deeper
 part of the tree.
@@ -623,28 +659,28 @@ part of the tree.
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
-    fn additive(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.term()?;
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_term()?;
         loop {
             let op = if self.consume(&Token::Plus) { Some(BinaryOp::Add) }
             else if self.consume(&Token::Minus) { Some(BinaryOp::Subtract) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.term()?),
+                Some(op) => expression = binary(expression, op, self.parse_term()?),
                 None => break,
             }
         }
         Ok(expression)
     }
 
-    fn term(&mut self) -> Result<Expr, ParseError> {
-        let mut expression = self.factor()?;
+    fn parse_term(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_factor()?;
         loop {
             let op = if self.consume(&Token::Star) { Some(BinaryOp::Multiply) }
             else if self.consume(&Token::Slash) { Some(BinaryOp::Divide) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.factor()?),
+                Some(op) => expression = binary(expression, op, self.parse_factor()?),
                 None => break,
             }
         }
@@ -659,32 +695,35 @@ expression.
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
-    fn factor(&mut self) -> Result<Expr, ParseError> {
+    fn parse_factor(&mut self) -> Result<Expr, ParseError> {
         if self.consume(&Token::Plus) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Plus,
-                expression: Box::new(self.factor()?),
+                expression: Box::new(self.parse_factor()?),
             });
         }
         if self.consume(&Token::Minus) {
             return Ok(Expr::Unary {
                 op: UnaryOp::Minus,
-                expression: Box::new(self.factor()?),
+                expression: Box::new(self.parse_factor()?),
             });
         }
-        self.primary()
+        self.parse_primary()
     }
 ```
 
-### 4.6.5 Parse primary expressions
+### 4.5.5 Parse primary expressions
 
-A primary is a complete leaf or a parenthesized expression. Keep the entire
-match together so every possible leaf is visible in one place.
+A primary is a complete leaf or a parenthesized expression. Showing its entire
+match together keeps every possible leaf visible in one place. An identifier
+becomes a qualified or unqualified column. Integer, string, Boolean, and null
+tokens become literals. A left parenthesis recursively parses another complete
+expression.
 
-`src/parser.rs`: add `primary()`
+`src/parser.rs`: add `parse_primary()`
 
 ```rust
-    fn primary(&mut self) -> Result<Expr, ParseError> {
+    fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         match self.peek().cloned() {
             Some(Token::Identifier(first)) => {
                 self.current += 1;
@@ -710,9 +749,17 @@ match together so every possible leaf is visible in one place.
                 self.current += 1;
                 Ok(Expr::Literal(Value::Null))
             }
+            Some(Token::True) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(true)))
+            }
+            Some(Token::False) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(false)))
+            }
             Some(Token::LeftParen) => {
                 self.current += 1;
-                let expression = self.expression()?;
+                let expression = self.parse_expression()?;
                 self.expect(Token::RightParen,
                     "expected ) after expression")?;
                 Ok(expression)
@@ -726,9 +773,12 @@ match together so every possible leaf is visible in one place.
 cursor. The resulting AST can therefore own identifier and string contents
 instead of borrowing them from the parser's token list.
 
-### 4.6.6 Move through the token list
+### 4.5.6 Move through the token list
 
-Three cursor helpers replace the old fixed-token helpers.
+Four cursor helpers move through the token list. `peek()` borrows the next
+token without advancing. `consume()` advances only when that token matches.
+`expect()` turns a failed match into a parse error, while `identifier()`
+extracts the text stored inside an identifier token.
 
 `src/parser.rs`: finish `impl Parser`
 
@@ -779,7 +829,7 @@ fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
 }
 ```
 
-## 4.7 Run an AST checkpoint
+## 4.6 Run an AST checkpoint
 
 Before binding names, make the recovered expression tree visible. Temporarily
 use the Chapter 3 prompt as an AST inspector.
@@ -832,27 +882,148 @@ Run the prompt and enter the representative query:
 cargo run --quiet
 ```
 
-The printed tree places multiplication beneath addition and retains `e` as the
-qualifier on both column references. This proves that parsing recovered the
-intended structure. It does not prove that `employees`, `e`, or either column
-exists.
-
 <figure class="book-illustration book-diagram">
   <img src="images/004-complete-query-ast.png" alt="The Chapter 4 query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.">
   <figcaption>The complete AST records the query structure, including expression precedence, but its names are still unresolved.</figcaption>
 </figure>
 
-## 4.8 Bind the table and alias
+The printed tree places multiplication beneath addition and retains `e` as the
+qualifier on both column references. This proves that parsing recovered the
+intended structure. It does not prove that `employees`, `e`, or either column
+exists.
 
-Return to `catalog.rs`. Binding begins by finding the named table. If no table
-matches, planning stops before a scan is created.
+## 4.7 Introduce the catalog
+
+The AST checkpoint leaves names such as `employees`, `e`, and `salary`
+unresolved. Binding needs a description of the objects those names may refer
+to. A database calls that description a **catalog**. Our first catalog is only
+an in-memory list of tables.
+
+The catalog structures themselves live in `catalog.rs`. `DataType`, however,
+is also expression vocabulary because the binder uses it to describe the type
+produced by an expression. We therefore add it to `expression.rs` beside the
+operator and expression types.
+
+The catalog must record what kind of values each column may contain. A
+`DataType` describes a category such as integers or text, while `Value`
+stores one actual piece of row data such as `Value::Integer(70000)` or
+`Value::Text("Ada")`.
+
+`src/expression.rs`: add before `UnaryOp`
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DataType {
+    Integer,
+    Text,
+    Boolean,
+    Null,
+}
+```
+
+A column describes every value allowed in that position. Using `Value` in
+the catalog would require a meaningless placeholder such as
+`Value::Integer(0)` merely to say that a column contains integers. We instead
+pair the column name with its `DataType`.
+
+`src/catalog.rs`: create this file
+
+```rust
+use crate::expression::DataType;
+use crate::row::Row;
+
+#[derive(Clone)]
+pub struct Column {
+    pub name: String,
+    pub data_type: DataType,
+}
+```
+
+A table combines those columns with the rows they describe. The catalog then
+holds the tables available to this database.
+
+`src/catalog.rs`: add after `Column`
+
+```rust
+#[derive(Clone)]
+pub struct Table {
+    pub name: String,
+    pub columns: Vec<Column>,
+    pub rows: Vec<Row>,
+}
+
+pub struct Catalog {
+    tables: Vec<Table>,
+}
+
+impl Catalog {
+    pub fn new(tables: Vec<Table>) -> Self {
+        Self { tables }
+    }
+}
+```
+
+This catalog describes tables, columns, and rows in memory. Persisting catalog
+information to storage comes later. We now know where binding can look up a
+name; next we define what it produces after a lookup succeeds.
+
+## 4.8 Define what binding produces
+
+The AST checkpoint showed an unresolved tree: `e.name` still contains two
+strings whose meaning has not been checked. Binding needs to produce a second
+tree that records the result of those checks.
+
+A bound column no longer needs its qualifier because the binder has already
+identified its table and verified the column. Keeping a separate type makes
+that guarantee visible: code that receives `BoundExpr` cannot accidentally
+accept an unresolved SQL name.
+
+`src/expression.rs`: add after `Expr`
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BoundExpr {
+    Column(String),
+    Literal(Value),
+    Unary {
+        op: UnaryOp,
+        expression: Box<BoundExpr>,
+    },
+    Binary {
+        left: Box<BoundExpr>,
+        op: BinaryOp,
+        right: Box<BoundExpr>,
+    },
+    IsNull {
+        expression: Box<BoundExpr>,
+        negated: bool,
+    },
+}
+```
+
+The two trees have similar shapes but different promises:
+
+```text
+Expr::Column { qualifier: Some("e"), name: "salary" }
+                         ↓ binding
+BoundExpr::Column("salary")
+```
+
+The original `Expr` remains an honest record of what the user wrote.
+`BoundExpr` is the simpler form that later planning and execution stages may
+trust. We can now write the binder without referring to a type defined later.
+
+## 4.9 Bind names and check types
+
+### 4.9.1 Establish the scope
+
+Binding belongs in `catalog.rs`, whose imports now need the expression types
+the binder will use:
 
 `src/catalog.rs`: replace the imports
 
 ```rust
 use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
-use crate::parser::Query;
-use crate::plan::{Plan, ProjectExpression};
 use crate::row::Row;
 ```
 
@@ -871,65 +1042,20 @@ struct Scope<'a> {
 }
 ```
 
-Add the outer binding method. The calls to `bind_expression()` will be filled
-in next.
+If an alias exists, it is the qualifier accepted by this scope. Otherwise the
+table name itself may qualify a column.
 
-`src/catalog.rs`: add to `impl Catalog`
-
-```rust
-pub fn bind(&self, query: Query) -> Result<Plan, String> {
-    let table = self.tables.iter()
-        .find(|table| table.name == query.table)
-        .ok_or_else(|| format!("unknown table: {}", query.table))?;
-
-    let scope = Scope {
-        table_name: &table.name,
-        alias: query.table_alias.as_deref(),
-        columns: &table.columns,
-    };
-
-    let (projection, _) = bind_expression(query.projection, &scope)?;
-    let projection_name = match &projection {
-        BoundExpr::Column(name) => name.clone(),
-        _ => "expression".to_string(),
-    };
-    let (predicate, predicate_type) =
-        bind_expression(query.filter, &scope)?;
-    if predicate_type != DataType::Boolean
-        && predicate_type != DataType::Null
-    {
-        return Err("WHERE expression must be Boolean".to_string());
-    }
-
-    Ok(Plan::Project {
-        expressions: vec![ProjectExpression {
-            name: projection_name,
-            expression: projection,
-        }],
-        input: Box::new(Plan::Filter {
-            predicate,
-            input: Box::new(Plan::Scan { rows: table.rows.clone() }),
-        }),
-    })
-}
-```
-
-This function gives the complete query its database meaning. It resolves the
-table, binds both expressions in the same scope, requires a Boolean `WHERE`
-result, and builds the familiar scan-filter-project plan. The executor will
-receive checked expressions and concrete rows rather than unresolved SQL
-names.
-
-If an alias exists, it is the qualifier accepted by this scope. Chapter 5 will
-extend this one-table rule when two inputs can contain the same column name.
-
-## 4.9 Bind columns and check types
+### 4.9.2 Bind and type-check the expression
 
 Binding walks the AST and returns two results: an expression safe for execution
-and the type of its result. The match below handles four questions in one
-recursive walk: whether a column exists in the current scope, what type a
-literal has, which operand types an operator accepts, and what type the
-resulting expression produces.
+and the type of its result. In one recursive walk, it resolves columns against
+the scope, assigns types to literals, checks unary operands, groups binary
+operators by their required types, and accepts null tests for any operand.
+
+A bare `NULL` receives the temporary type `DataType::Null`. The type helper
+accepts it where another operand type is expected because evaluation normally
+propagates the unknown value as `Value::Null` rather than treating it as a type
+error.
 
 `src/catalog.rs`: add after `Scope`
 
@@ -1040,12 +1166,6 @@ fn require_type(actual: &DataType, expected: &DataType,
 }
 ```
 
-A bare `NULL` expression receives the temporary type `DataType::Null`.
-`require_type()` accepts it wherever a typed operand is expected because
-evaluating an operation on it normally produces `Value::Null`. The execution
-rules below preserve that unknown result instead of treating it as a type
-error.
-
 `name + 1` now fails during binding because `name` is text. Execution will not
 discover that mistake halfway through a scan.
 
@@ -1054,40 +1174,12 @@ discover that mistake halfway through a scan.
   <figcaption>Binding checks the qualifier and column, recovers the type, and produces a simpler expression for execution.</figcaption>
 </figure>
 
-## 4.10 Introduce `BoundExpr`
+## 4.10 Evaluate bound expressions
 
-The binder should not return the same unresolved tree it received. A bound
-column no longer needs a qualifier because its table and column have already
-been checked. Keeping a separate type makes that guarantee visible: code that
-receives `BoundExpr` knows name and type checks have already succeeded, while
-the original `Expr` remains an honest record of what the user wrote. Later
-optimizer and execution stages therefore cannot accidentally accept an
-unresolved expression.
-
-`src/expression.rs`: add after `Expr`
-
-```rust
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BoundExpr {
-    Column(String),
-    Literal(Value),
-    Unary {
-        op: UnaryOp,
-        expression: Box<BoundExpr>,
-    },
-    Binary {
-        left: Box<BoundExpr>,
-        op: BinaryOp,
-        right: Box<BoundExpr>,
-    },
-    IsNull {
-        expression: Box<BoundExpr>,
-        negated: bool,
-    },
-}
-```
-
-Import `Row` alongside `Value`, then let a bound tree evaluate one row.
+Binding has removed unresolved names and rejected invalid operand types. That
+lets evaluation focus on one question: what value does this checked expression
+produce for the current row? We will import `Row` alongside `Value` and give
+the bound tree an evaluation method.
 
 `src/expression.rs`: replace the first import
 
@@ -1145,8 +1237,27 @@ fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
 }
 ```
 
-Arithmetic handles division by zero as an execution error. Comparisons and
-Boolean operations continue below it.
+Binary evaluation must account for SQL's unknown value. `NULL` propagates
+through arithmetic and comparisons: for example, both `1 + NULL` and
+`1 = NULL` produce `NULL`. `AND` and `OR` are different because one known
+operand can sometimes decide the result. They follow these truth tables:
+
+| `AND` | `TRUE` | `FALSE` | `NULL` |
+| --- | --- | --- | --- |
+| `TRUE` | `TRUE` | `FALSE` | `NULL` |
+| `FALSE` | `FALSE` | `FALSE` | `FALSE` |
+| `NULL` | `NULL` | `FALSE` | `NULL` |
+
+| `OR` | `TRUE` | `FALSE` | `NULL` |
+| --- | --- | --- | --- |
+| `TRUE` | `TRUE` | `TRUE` | `TRUE` |
+| `FALSE` | `TRUE` | `FALSE` | `NULL` |
+| `NULL` | `TRUE` | `NULL` | `NULL` |
+
+A false value decides `AND` even when the other side is unknown. A true value
+similarly decides `OR`. With those rules established, binary evaluation can
+handle nulls before dispatching ordinary arithmetic, comparison, and Boolean
+operations. Division by zero remains an execution error.
 
 `src/expression.rs`: add after `evaluate_unary()`
 
@@ -1206,22 +1317,11 @@ fn compare<T: PartialEq + PartialOrd>(left: T,
 }
 ```
 
-SQL Boolean logic has three possible results:
+Binding guarantees that `compare()` receives a comparison operator. Its error
+arm remains because the Rust type `BinaryOp` also contains non-comparison
+variants and cannot express that narrower guarantee by itself.
 
-| `AND` | `TRUE` | `FALSE` | `NULL` |
-| --- | --- | --- | --- |
-| `TRUE` | `TRUE` | `FALSE` | `NULL` |
-| `FALSE` | `FALSE` | `FALSE` | `FALSE` |
-| `NULL` | `NULL` | `FALSE` | `NULL` |
-
-| `OR` | `TRUE` | `FALSE` | `NULL` |
-| --- | --- | --- | --- |
-| `TRUE` | `TRUE` | `TRUE` | `TRUE` |
-| `FALSE` | `TRUE` | `FALSE` | `NULL` |
-| `NULL` | `TRUE` | `NULL` | `NULL` |
-
-A false value decides `AND` even when the other side is unknown. A true value
-similarly decides `OR`. The helpers encode those tables directly.
+The Boolean helpers encode the truth tables directly.
 
 `src/expression.rs`: add the three-valued Boolean helpers
 
@@ -1253,11 +1353,14 @@ fn or(left: Value, right: Value) -> Result<Value, String> {
 }
 ```
 
+A bound expression can now evaluate one row. The plan must next store these
+expressions instead of the fixed column and integer fields from Chapter 3.
+
 ## 4.11 Update plan execution
 
 The Chapter 3 plan stored one filter column, one integer boundary, and a list
 of projected column names. That representation could execute only the query
-shape it described. Replace those fixed fields with bound expression trees so
+shape it described. Bound expression trees can replace those fixed fields, so
 the same filter and project nodes can execute every expression this chapter
 accepts.
 
@@ -1325,11 +1428,72 @@ impl Plan {
 }
 ```
 
+The executor now understands bound expressions, but no code yet assembles the
+new plan. The catalog can finally do that without referring to future types.
+
 ## 4.12 Connect the application
+
+The pieces can now meet without forward references: `Expr` represents parsed
+SQL, `BoundExpr` represents checked expressions, and `Plan` can execute those
+expressions. This section completes `Catalog::bind()`, restores the application
+modules and fixed demonstration, and then reconnects the prompt.
+
+`src/catalog.rs`: add with the imports
+
+```rust
+use crate::parser::Query;
+use crate::plan::{Plan, ProjectExpression};
+```
+
+`src/catalog.rs`: add to `impl Catalog`
+
+```rust
+pub fn bind(&self, query: Query) -> Result<Plan, String> {
+    let table = self.tables.iter()
+        .find(|table| table.name == query.table)
+        .ok_or_else(|| format!("unknown table: {}", query.table))?;
+
+    let scope = Scope {
+        table_name: &table.name,
+        alias: query.table_alias.as_deref(),
+        columns: &table.columns,
+    };
+
+    let (projection, _) = bind_expression(query.projection, &scope)?;
+    let projection_name = match &projection {
+        BoundExpr::Column(name) => name.clone(),
+        _ => "expression".to_string(),
+    };
+    let (predicate, predicate_type) =
+        bind_expression(query.filter, &scope)?;
+    if predicate_type != DataType::Boolean
+        && predicate_type != DataType::Null
+    {
+        return Err("WHERE expression must be Boolean".to_string());
+    }
+
+    Ok(Plan::Project {
+        expressions: vec![ProjectExpression {
+            name: projection_name,
+            expression: projection,
+        }],
+        input: Box::new(Plan::Filter {
+            predicate,
+            input: Box::new(Plan::Scan { rows: table.rows.clone() }),
+        }),
+    })
+}
+```
+
+This method gives the complete query its database meaning. It resolves the
+table, binds the projection and filter in the same scope, requires a Boolean
+`WHERE` result, and builds the familiar scan-filter-project plan. Only now do
+we connect that complete path to the application.
 
 ### 4.12.1 Restore the fixed demonstration
 
-Replace the AST-only shell with the complete database modules and catalog.
+The AST-only shell has served its checkpoint. We can now restore the complete
+set of database modules and import the catalog.
 
 `src/main.rs`: replace the module declarations and imports
 
@@ -1348,7 +1512,8 @@ use parser::parse;
 use row::{Row, Value};
 ```
 
-Restore the employee helper and register a typed table.
+The application also needs its employee rows again, now registered as a typed
+table in the catalog.
 
 `src/main.rs`: add after the imports
 
@@ -1399,7 +1564,7 @@ fn execute_sql(sql: &str, catalog: &Catalog)
 }
 ```
 
-Restore the fixed demonstration first.
+We will reconnect the fixed demonstration before bringing back the prompt.
 
 `src/main.rs`: replace the temporary `main()` and remove `inspect_sql()`
 
@@ -1424,7 +1589,8 @@ fn run_demo(catalog: &Catalog) {
 
 ### 4.12.2 Connect the prompt
 
-Now let `main()` choose between the fixed demonstration and the prompt.
+With the fixed demonstration working, `main()` can choose between it and the
+prompt.
 
 `src/main.rs`: replace `main()`
 
@@ -1469,12 +1635,14 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 }
 ```
 
-Remove the now-unused `Row::project()` method from `row.rs`. Projection lives
-in the plan and evaluates expressions instead of copying a fixed list of
-columns.
+`Row::project()` is now unused because projection lives in the plan and
+evaluates expressions instead of copying a fixed list of columns. Remove the
+old method from `row.rs`.
 
 This second phase changes expressions, binding, plans, and the application as
 one connected representation. Compile after all four pieces are present.
+
+### 4.12.3 Verify that the code compiles
 
 ```bash
 cargo fmt
@@ -1570,9 +1738,9 @@ then test it.
 2. Replace `e.name` with `x.name`.
 3. Replace `e.salary` with `e.missing`.
 4. Try `name + 1 > 0`.
-5. Try `NULL = NULL`, then `NULL IS NULL` in the filter.
-6. Remove the alias and use unqualified column names.
-7. Compare `salary + 2 * 3` with `(salary + 2) * 3`.
+5. Compare `salary + 2 * 3` with `(salary + 2) * 3`.
+6. Try `NULL = NULL`, then `NULL IS NULL` in the filter.
+7. Remove the alias and use unqualified column names.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -1581,20 +1749,43 @@ then test it.
 2. Binding reports `unknown table or alias: x`.
 3. Binding reports `unknown column: missing`.
 4. Binding rejects arithmetic on the text column `name`.
-5. `NULL = NULL` is unknown, so the filter removes every row. `NULL IS NULL`
-   is true, so it retains every row.
-6. Unqualified names bind because there is only one input table.
-7. Multiplication happens first in the first expression. Parentheses make
+5. Multiplication happens first in the first expression. Parentheses make
    addition happen first in the second.
+6. `NULL = NULL` is unknown, so the filter removes every row. `NULL IS NULL`
+   is true, so it retains every row.
+7. Unqualified names bind because there is only one input table.
 
 </details>
 
-## 4.18 A second table changes the question
+## 4.18 One scope is no longer enough
 
-The parser can now describe expressions, and the binder can prove that their
-names and types make sense for one table. A single-table scope makes an
-unqualified column easy to resolve because only one input could own it.
+The frontend can now preserve expression structure, and the binder can reject
+unknown names and incompatible types before execution. One simplifying fact
+made that possible: every query had exactly one input table. An unqualified
+column such as `name` could belong to only that table, and a bound column could
+be stored by name alone.
 
-Chapter 5 introduces a second table. That gives us joins, but it also creates
-a new problem: when both inputs contain a column named `id`, which one did the
-query mean?
+Consider what changes when the database has two tables:
+
+```text
+employees(id, name, department_id)
+departments(id, name)
+```
+
+A useful query needs values from both:
+
+```sql
+SELECT name
+FROM employees AS e, departments AS d
+WHERE e.department_id = d.id;
+```
+
+This query creates two related problems. The binder must track both table
+aliases and decide which input owns each column. The selected `name` is
+ambiguous because both tables contain one. After binding resolves qualified
+references, the executor must also combine an employee row with the matching
+department row.
+
+That row-combining operation is a **join**. In the next chapter we will first
+make the simplest join work, then ask what its straightforward execution
+strategy costs.

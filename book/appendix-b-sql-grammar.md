@@ -118,7 +118,8 @@ primary             = column_reference | literal | function_call
                     | "(" query ")" | "(" value_expression ")" ;
 column_reference    = (identifier ".")? identifier ;
 literal             = integer | decimal | string | date_literal
-                    | timestamp_literal | interval_literal | "NULL" ;
+                    | timestamp_literal | interval_literal
+                    | "TRUE" | "FALSE" | "NULL" ;
 date_literal        = "DATE" string ;
 timestamp_literal   = "TIMESTAMP" string ;
 interval_literal    = "INTERVAL" string interval_unit ;
