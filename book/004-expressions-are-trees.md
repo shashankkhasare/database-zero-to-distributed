@@ -239,6 +239,19 @@ pub enum Token {
 These variants define how the lexer will represent the expanded vocabulary.
 The scanning rules below still need to recognize the corresponding text.
 
+The single `>` token is now named `Greater` alongside `Less`,
+`GreaterOrEqual`, and the other comparison variants. The Chapter 3 parser and
+two lexer tests still use its old name, `GreaterThan`. Rename those remaining
+references so the existing query continues to compile while we extend the
+parser.
+
+`src/lexer.rs` and `src/parser.rs`: replace every remaining
+`Token::GreaterThan`
+
+```rust
+Token::Greater
+```
+
 ### 4.3.2 Lex string literals
 
 The lexical rule for `string` begins with a single quote, consumes characters
@@ -488,10 +501,53 @@ As in Chapter 3, methods that implement grammar productions begin with
 inspect or move through the token list, so they do not use that prefix. We
 will define those helpers before the production methods that call them.
 
+Before we begin, replace `src/main.rs` with this temporary AST inspector:
+
+```rust
+mod expression;
+mod lexer;
+mod parser;
+#[allow(dead_code)] // Row execution reconnects in Chapter 5.
+mod row;
+
+use std::io::{self, Write};
+use parser::parse;
+
+fn main() -> io::Result<()> {
+    run_prompt()
+}
+
+fn inspect_sql(sql: &str) {
+    match parse(sql) {
+        Ok(query) => println!("{query:#?}"),
+        Err(error) => eprintln!("error: {error}"),
+    }
+}
+
+fn run_prompt() -> io::Result<()> {
+    loop {
+        print!("sql> ");
+        io::stdout().flush()?;
+        let mut sql = String::new();
+        if io::stdin().read_line(&mut sql)? == 0 {
+            println!();
+            return Ok(());
+        }
+        if !sql.trim().is_empty() {
+            inspect_sql(&sql);
+        }
+    }
+}
+```
+
 Chapter 3's `Query` stored a selected-column name, a filter-column name, and
 an integer boundary. In the expanded `query` production, both the `SELECT`
 position and the `WHERE` position now contain an `expression`, so the new
 `Query` stores an `Expr` for its projection and filter.
+
+Before rebuilding `parser.rs`, delete the complete old `impl Query` and
+`impl Parser` blocks. Keep `ParseError`, `parse()`, and the `Parser` struct;
+the following subsections will build a new `impl Parser` around them.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -520,6 +576,10 @@ The existing `ParseError`, `parse()`, and `Parser` still fit. Only the body of
 let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
 Parser { tokens, current: 0 }.parse_query()
 ```
+
+The first six subsections form one connected parser change. The program will
+compile again after `parse_primary()` closes the new `impl Parser` in Section
+4.5.6. Section 4.5.7 then removes tests tied to the old representation.
 
 ### 4.5.1 Move through the token list
 
@@ -919,6 +979,23 @@ place.
 cursor. The resulting AST can therefore own identifier and string contents
 instead of borrowing them from the parser's token list.
 
+### 4.5.7 Remove obsolete parser tests
+
+The Chapter 3 parser tests still include two checks tied to the old `Query`.
+Remove `parses_the_supported_query_shape()`, which constructs the removed flat
+fields, and `parsed_sql_executes_the_employee_query()`, which calls the removed
+`into_plan()` method. Keep the tests for a required semicolon and trailing
+tokens. Those checks still describe valid parser behavior.
+
+The remaining tests use only `parse()`, so remove their obsolete `Query`,
+`Row`, and `Value` imports.
+
+`src/parser.rs`: replace the imports in `mod tests`
+
+```rust
+use super::parse;
+```
+
 > **Further reading**
 >
 > In Robert Nystrom's *Crafting Interpreters*, Chapter 5,
@@ -930,53 +1007,9 @@ instead of borrowing them from the parser's token list.
 
 ## 4.6 Run an AST checkpoint
 
-Before binding names, make the recovered expression tree visible. Temporarily
-use the Chapter 3 prompt as an AST inspector.
-
-`src/main.rs`: temporarily replace the file
-
-```rust
-mod expression;
-mod lexer;
-mod parser;
-#[allow(dead_code)] // Row execution reconnects in Chapter 5.
-mod row;
-
-use std::io::{self, Write};
-use parser::parse;
-
-fn main() -> io::Result<()> {
-    run_prompt()
-}
-
-fn inspect_sql(sql: &str) {
-    match parse(sql) {
-        Ok(query) => println!("{query:#?}"),
-        Err(error) => eprintln!("error: {error}"),
-    }
-}
-```
-
-`src/main.rs`: add the prompt after `inspect_sql()`
-
-```rust
-fn run_prompt() -> io::Result<()> {
-    loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-        let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
-        }
-        if !sql.trim().is_empty() {
-            inspect_sql(&sql);
-        }
-    }
-}
-```
-
-Run the prompt and enter the representative query:
+The temporary shell installed before the parser replacement can now display
+the recovered expression tree. Run the prompt and enter the representative
+query:
 
 ```bash
 cargo run --quiet
@@ -987,9 +1020,10 @@ cargo run --quiet
   <figcaption>The complete AST records the query structure, including expression precedence, but its names are still unresolved.</figcaption>
 </figure>
 
-The printed tree places multiplication beneath addition and retains `e` as the
-qualifier on both column references. This proves that parsing recovered the
-intended structure. It does not prove that `employees`, `e`, or either column
+The printed tree places the addition inside the comparison, then joins that
+comparison and the null test beneath `AND`. It also retains `e` on each
+qualified column reference. This proves that parsing recovered the intended
+structure. It does not prove that `employees`, `e`, or any referenced column
 exists.
 
 ## 4.7 What we deliberately did not build
