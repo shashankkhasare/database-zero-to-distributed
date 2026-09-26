@@ -114,12 +114,12 @@ There is nowhere to store the addition inside `e.salary + 5000`, the two
 conditions joined by `AND`, or the `IS NOT NULL` test. Adding one field for
 each operation would fail as soon as expressions nest in a different way. An
 expression tree can represent those combinations without adding a field for
-every possible shape. We will begin by extending the values its nodes may
-produce.
+every possible shape. We will start by adding the value kinds those
+expressions can produce.
 
 ## 4.2 Extend `Value`
 
-The expanded grammar requires rows to carry Boolean and null results, so
+This chapter's grammar requires rows to carry Boolean and null results, so
 `Value` needs two new variants. Adding those variants also makes every existing
 match on `Value` incomplete until it handles them. We will update `row.rs`
 first, then make a temporary compatibility change to Chapter 3's integer-only
@@ -127,7 +127,7 @@ filter.
 
 ### 4.2.1 Add Boolean and null values
 
-The expanded grammar adds Boolean expressions, `TRUE`, `FALSE`, and `NULL`.
+The new grammar adds Boolean expressions, `TRUE`, `FALSE`, and `NULL`.
 Their results must fit into rows and pass between expression operators, so the
 runtime `Value` representation needs two more variants. `Boolean` stores
 `true` or `false`, while `Null` represents SQL's unknown value rather than an
@@ -493,14 +493,6 @@ from the outer query through each precedence level and build the corresponding
 
 ## 4.5 Parse columns, literals, and precedence
 
-The parser mirrors the grammar, beginning with `parse_query()` and descending
-through expression methods from the weakest precedence level to the tightest.
-
-As in Chapter 3, methods that implement grammar productions begin with
-`parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
-inspect or move through the token list, so they do not use that prefix. We
-will define those helpers before the production methods that call them.
-
 Before we begin, replace `src/main.rs` with this temporary AST inspector:
 
 ```rust
@@ -540,6 +532,19 @@ fn run_prompt() -> io::Result<()> {
 }
 ```
 
+The parser mirrors the grammar, beginning with `parse_query()` and descending
+through expression methods from the weakest precedence level to the tightest.
+
+As in Chapter 3, methods that implement grammar productions begin with
+`parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
+inspect or move through the token list, so they do not use that prefix. We
+will define those helpers before the production methods that call them.
+
+The next six subsections rebuild the parser as one connected change. The
+program will not compile until `parse_primary()` closes the new `impl Parser`
+in Section 4.5.6. Section 4.5.7 then removes tests tied to the old
+representation.
+
 Chapter 3's `Query` stored a selected-column name, a filter-column name, and
 an integer boundary. In the expanded `query` production, both the `SELECT`
 position and the `WHERE` position now contain an `expression`, so the new
@@ -576,10 +581,6 @@ The existing `ParseError`, `parse()`, and `Parser` still fit. Only the body of
 let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
 Parser { tokens, current: 0 }.parse_query()
 ```
-
-The first six subsections form one connected parser change. The program will
-compile again after `parse_primary()` closes the new `impl Parser` in Section
-4.5.6. Section 4.5.7 then removes tests tied to the old representation.
 
 ### 4.5.1 Move through the token list
 
@@ -625,6 +626,10 @@ impl Parser {
         }
     }
 ```
+
+`identifier()` calls `peek().cloned()` to copy the next token before advancing
+the cursor. It can then return the identifier's owned `String` without keeping
+a borrow of the token list.
 
 ### 4.5.2 Parse the query and its alias
 
@@ -682,9 +687,9 @@ an alias either with `AS` or directly after the table name.
 ```
 
 `consume()` will return `true` and advance when the next token is `AS`.
-Without `AS`, `matches!` checks whether the next token contains an identifier;
-if it does, `identifier()` takes that name as the alias. Otherwise the query
-has no alias.
+Without `AS`, `matches!` returns `true` when the next token fits the
+`Identifier` pattern without extracting its text. If it matches,
+`identifier()` takes that name as the alias. Otherwise the query has no alias.
 
 ### 4.5.3 Parse Boolean operators
 
@@ -755,8 +760,9 @@ operand and combines it with the expression accumulated on the left. The
 The vertical bar in the `not_expression` production separates two
 alternatives. If the next token is `NOT`, the method consumes it and calls
 itself, allowing chains such as `NOT NOT condition`. Otherwise it chooses the
-`predicate` alternative, which ends the recursion. That call also hands the
-work to the next precedence level, introduced in the following subsection.
+`predicate` alternative, which ends the recursion. The `parse_predicate()`
+call also hands the work to the next precedence level, introduced in the
+following subsection.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -883,7 +889,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
 The `factor` production uses alternatives rather than repetition. A leading
 sign is followed by another complete factor, so unary signs call themselves
 and `--salary` nests correctly. The recursion ends when the parser chooses the
-`primary` alternative.
+`primary` alternative. Any token other than `+` or `-` falls through to
+`parse_primary()` immediately.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -1016,7 +1023,7 @@ cargo run --quiet
 ```
 
 <figure class="book-illustration book-diagram">
-  <img src="images/004-complete-query-ast.png" alt="The complete query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.">
+  <img src="images/004-complete-query-ast.png" alt="The query AST projects e.name and has an AND filter whose left child compares e.salary plus 5000 with 70000 and whose right child tests e.name for not null.">
   <figcaption>The complete AST records the query structure, including expression precedence, but its names are still unresolved.</figcaption>
 </figure>
 
@@ -1059,7 +1066,8 @@ the result.
    make addition the deeper operation in the second.
 2. The `NOT` node contains the comparison because predicates bind more tightly
    than Boolean negation.
-3. The doubled quote becomes one quote inside a text literal.
+3. The AST contains `Literal(Text("It's ready"))`. The lexer consumes the
+   doubled quote and stores one quote in the text value before parsing begins.
 4. Parsing succeeds and preserves `x` as the qualifier; it cannot know whether
    that alias exists.
 5. Parsing succeeds because the tokens have a valid shape; it cannot know that
