@@ -1,4 +1,4 @@
-# Appendix B: The SQL Grammar We Support
+﻿# Appendix B: The SQL Grammar We Support
 
 This appendix collects the complete planned grammar for the SQL language built
 throughout the course. Individual chapters repeat only the rules they add.
@@ -256,24 +256,25 @@ because no early chapter needs it.
 | --- | --- | --- |
 | No SQL text | `lesson-001` and `lesson-002` | Plans are constructed directly in Rust. |
 | One-column `SELECT`/`FROM`/`WHERE`, `>`, integer, semicolon, basic identifiers | `lesson-003` | Implemented and tested. |
-| Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | Chapter 4 foundation and Chapter 64 completion | Binding, precedence, types, and three-valued logic are executable and tested. |
-| Multiple table references and `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 5 | Each join form has defined logical and execution semantics. |
-| Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 6 | Aggregate and grouping behavior is executable and tested. |
-| `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 7 | Ordering and duplicate behavior is explicit. |
-| Scalar, `IN`, and `EXISTS` subqueries, derived tables, and non-recursive common table expressions | Chapter 8 | Name scope and subquery execution are visible. |
-| Recursive common table expressions | Chapter 63 | Recursive evaluation and termination behavior are taught before support is claimed. |
-| `UNION`, `INTERSECT`, and `EXCEPT` | Chapter 62 | Duplicate semantics for default and `ALL` forms are tested. |
-| Advanced scalar functions, `CASE`, `CAST`, `EXTRACT`, `SUBSTRING`, and date/time/interval expressions | Chapter 64 | Added with the execution and type semantics required by the analytical workload. |
-| `ROLLUP` and `CUBE` | Chapter 65 | Subtotal rows and their `NULL` behavior are explicit. |
-| Window functions and frames | Chapter 66 | Partitioning, ordering, and frame boundaries are executable and tested. |
+| Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | Chapter 4 foundation and Chapter 65 completion | Parsing and precedence are executable and tested; later expression forms complete the planned hierarchy. |
+| Catalog binding, basic expression types, and three-valued evaluation | Chapter 5 | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
+| Multiple table references and `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 6 | Each join form has defined logical and execution semantics. |
+| Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 7 | Aggregate and grouping behavior is executable and tested. |
+| `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 8 | Ordering and duplicate behavior is explicit. |
+| Scalar, `IN`, and `EXISTS` subqueries, derived tables, and non-recursive common table expressions | Chapter 9 | Name scope and subquery execution are visible. |
+| Recursive common table expressions | Chapter 64 | Recursive evaluation and termination behavior are taught before support is claimed. |
+| `UNION`, `INTERSECT`, and `EXCEPT` | Chapter 63 | Duplicate semantics for default and `ALL` forms are tested. |
+| Advanced scalar functions, `CASE`, `CAST`, `EXTRACT`, `SUBSTRING`, and date/time/interval expressions | Chapter 65 | Added with the execution and type semantics required by the analytical workload. |
+| `ROLLUP` and `CUBE` | Chapter 66 | Subtotal rows and their `NULL` behavior are explicit. |
+| Window functions and frames | Chapter 67 | Partitioning, ordering, and frame boundaries are executable and tested. |
 | `CREATE TABLE`, data types, defaults, and column/table constraints | Writable-storage chapters | Definitions affect real stored tables and validated writes. |
 | `INSERT`, `UPDATE`, and `DELETE` | Writable-storage and transaction chapters | Mutation, failure, and rollback behavior is observable. |
 | `BEGIN`, `START TRANSACTION`, `COMMIT`, and `ROLLBACK` | Transaction chapters | Statements control the transaction implementation built there. |
-| `GRANT` and `REVOKE` | Chapter 68 | The database has identities and an enforceable authorization boundary. |
+| `GRANT` and `REVOKE` | Chapter 69 | The database has identities and an enforceable authorization boundary. |
 | Strings, decimals, and later punctuation and keywords | The chapter owning the associated syntax | The lexical grammar and lexer tests grow together. |
 
 Update this table only after parser and behavior tests establish a checkpoint's
-actual coverage. Chapter 67 audits the complete table before the final
+actual coverage. Chapter 68 audits the complete table before the final
 benchmark and integration chapters can claim SQL compatibility.
 
 ## B.5 Benchmark coverage target

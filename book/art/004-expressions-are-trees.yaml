@@ -1,0 +1,48 @@
+lesson: "004"
+style: book/art/STYLE.md
+
+images:
+  - id: flat-fields-become-expression-tree
+    kind: generated-raster
+    output: book/images/004-flat-fields-become-expression-tree.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: Expression pieces overflow a rigid four-compartment record, then fit naturally into a branching expression tree.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening editorial
+      illustration for Chapter 4 of a technical database book about expression
+      trees. On the left, show a shallow teal filing tray with four rigid
+      rectangular compartments. Several simple expression pieces, including
+      an addition symbol, a greater-than symbol, and connected condition
+      pieces, cannot fit and visibly spill beyond the compartments. A clear
+      visual transition leads to the right, where those pieces fit naturally
+      into a balanced branching tree made of connected cards. Use simple
+      symbols only and no written labels. Follow book/art/STYLE.md exactly:
+      hand-drawn ink contours, restrained gouache and watercolor fills on
+      lightly textured warm ivory paper, charcoal, deep database teal, muted
+      turquoise, ochre gold, and very small rust-red accents. Wide landscape
+      composition, generous margins, and one immediately readable metaphor at
+      book-column width. No people, SQL text, code, prose, tiny typography,
+      logos, watermark, photorealism, glossy 3D rendering, digital gradients,
+      interface chrome, or imitation of a named artist or publication.
+
+  - id: complete-query-ast
+    kind: generated-raster
+    output: book/images/004-complete-query-ast.png
+    placement: section 4.6 after the AST checkpoint explanation
+    alt: The Chapter 4 query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.
+    prompt: >-
+      Use case: scientific-educational. Asset type: full query AST diagram for
+      a technical database book. Draw one orderly top-down tree on warm paper.
+      The root card is labeled exactly "QUERY". Its three main branches lead
+      to: a left card "PROJECT e.name"; a center card "FROM employees AS e";
+      and a right-lower expression root "AND". The AND branch splits into a
+      comparison "greater than" and a null test "IS NOT NULL". The comparison
+      contains an addition node with leaves "e.salary" and "5000", plus the
+      other comparison leaf "70000". The null test has leaf "e.name". Use
+      simple operator symbols where reliable, otherwise the exact short labels
+      above. Keep connecting lines straight, noncrossing, and outside cards.
+      Make hierarchy and precedence unmistakable at book-column width. Follow
+      book/art/STYLE.md exactly. Wide landscape composition, large legible
+      labels, generous spacing. No extra fields, tokens, punctuation, people,
+      logos, watermark, photorealism, glossy 3D rendering, or decorative
+      machinery.

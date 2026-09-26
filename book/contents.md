@@ -12,7 +12,8 @@ their manuscripts exist.
 1. [The Smallest Query Engine](001-smallest-query-engine.md)
 2. [Relational Algebra Without the Math](002-relational-algebra-without-the-math.md)
 3. [SQL Is Just a Frontend](003-sql-is-just-a-frontend.md)
-4. [Binding Gives Names Meaning](004-binding-and-expressions.md)
+4. [Expressions Are Trees](004-expressions-are-trees.md)
+5. [Binding Gives Names Meaning](005-binding-gives-names-meaning.md)
 
 Later chapters will be added when their implementation begins. The full
 curriculum is maintained in

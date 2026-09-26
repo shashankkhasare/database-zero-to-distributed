@@ -7,7 +7,8 @@
 - [The Smallest Query Engine](001-smallest-query-engine.md)
 - [Relational Algebra Without the Math](002-relational-algebra-without-the-math.md)
 - [SQL Is Just a Frontend](003-sql-is-just-a-frontend.md)
-- [Binding Gives Names Meaning](004-binding-and-expressions.md)
+- [Expressions Are Trees](004-expressions-are-trees.md)
+- [Binding Gives Names Meaning](005-binding-gives-names-meaning.md)
 
 # Appendices
 

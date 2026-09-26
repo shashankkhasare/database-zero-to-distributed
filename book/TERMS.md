@@ -1,4 +1,4 @@
-# Editorial Terminology Ledger
+﻿# Editorial Terminology Ledger
 
 This file records when the book first gives a technical term a real definition.
 It is an editorial aid for writers and agents, not a replacement for explaining
@@ -38,13 +38,15 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | recursive-descent parser | Chapter 3, §3.4 | A parser organized as methods that follow grammar productions and call one another |
 | abstract syntax tree (AST) | Chapter 3, §3.5 | Data that preserves the meaningful structure parsed from source text |
 | binding | Chapter 3, §3.11 | Connecting names in an AST to actual database objects and checking their use |
-| catalog | Chapter 4, §4.7 | A description of database objects available for name resolution; initially an in-memory list of tables |
-| data type | Chapter 4, §4.7 | A category of values allowed in a column or produced by an expression |
-| scope | Chapter 4, §4.9 | The table name, alias, and columns visible while binding one query |
-| type checking | Chapter 4, §4.9 | Verifying that expression operators receive compatible operand types before execution |
-| bound expression | Chapter 4, §4.8 | An expression whose names and operand types have already been checked |
-| three-valued logic | Chapter 4, §4.10 | SQL Boolean logic whose possible results are true, false, and unknown (`NULL`) |
-| join | Chapter 4, §4.18 | An operation that combines related rows from two input relations |
+| expression tree | Chapter 4, §4.1 | A nested representation whose leaves are values or columns and whose parent nodes are operations |
+| operator precedence | Chapter 4, §4.5 | Rules that determine which operators capture their operands first when parentheses do not say otherwise |
+| catalog | Chapter 5, §5.2 | A description of database objects available for name resolution; initially an in-memory list of tables |
+| data type | Chapter 5, §5.2 | A category of values allowed in a column or produced by an expression |
+| bound expression | Chapter 5, §5.3 | An expression whose names and operand types have already been checked |
+| scope | Chapter 5, §5.4 | The table name, alias, and columns visible while binding one query |
+| type checking | Chapter 5, §5.4 | Verifying that expression operators receive compatible operand types before execution |
+| three-valued logic | Chapter 5, §5.5 | SQL Boolean logic whose possible results are true, false, and unknown (`NULL`) |
+| join | Chapter 5, §5.13 | An operation that combines related rows from two input relations |
 
 ## Maintenance rule
 
