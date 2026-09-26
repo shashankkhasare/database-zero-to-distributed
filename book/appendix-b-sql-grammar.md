@@ -256,8 +256,8 @@ because no early chapter needs it.
 | --- | --- | --- |
 | No SQL text | `lesson-001` and `lesson-002` | Plans are constructed directly in Rust. |
 | One-column `SELECT`/`FROM`/`WHERE`, `>`, integer, semicolon, basic identifiers | `lesson-003` | Implemented and tested. |
-| Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | Chapter 4 foundation and Chapter 65 completion | Parsing and precedence are executable and tested; later expression forms complete the planned hierarchy. |
-| Catalog binding, basic expression types, and three-valued evaluation | Chapter 5 | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
+| Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | `lesson-004` foundation and Chapter 65 completion | Core parsing and precedence are executable and tested; later expression forms complete the planned hierarchy. |
+| Catalog binding, basic expression types, and three-valued evaluation | `lesson-005` | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
 | Multiple table references and `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 6 | Each join form has defined logical and execution semantics. |
 | Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 7 | Aggregate and grouping behavior is executable and tested. |
 | `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 8 | Ordering and duplicate behavior is explicit. |

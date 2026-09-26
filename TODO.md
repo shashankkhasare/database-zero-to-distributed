@@ -291,7 +291,7 @@ under the milestone-based companion-video strategy.
 
 ---
 
-# Current milestone: 004, Expressions Are Trees
+# Completed milestone: 004, Expressions Are Trees
 
 Lesson 004 begins from Chapter 3's fixed four-field `Query`. It expands the
 frontend so nested arithmetic, comparisons, Boolean logic, null tests,
@@ -347,12 +347,15 @@ general optimizer, physical-plan split, or storage catalog.
 - [x] The complete query AST makes expression precedence visible
 - [x] Boolean, null, string, arithmetic, comparison, and qualified-column forms are represented
 - [x] The Chapter 4 AST illustration is generated, reviewed, and embedded
-- [ ] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
-- [ ] Create and verify the standalone `lesson-004` AST checkpoint
+- [x] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
+- [x] Create and verify the standalone `lesson-004` AST checkpoint
+
+Lesson 004 was verified with 8 passing tests, a deterministic AST prompt,
+Clippy with warnings denied, the mdBook build, and the book-link verifier.
 
 ---
 
-# Next milestone: 005, Binding Gives Names Meaning
+# Completed milestone: 005, Binding Gives Names Meaning
 
 Lesson 005 begins from the unresolved expression AST. It introduces the
 in-memory catalog, `BoundExpr`, name resolution, type checking, SQL
@@ -360,9 +363,17 @@ three-valued evaluation, expression-based plans, and the complete
 parse-bind-execute application path.
 
 Its representative query returns Ada and Grace. Missing tables, columns,
-qualifiers, and incompatible operand types must fail before execution. The
-existing implementation and tests cover this behavior, but the new Chapter 5
-build-along and `lesson-005` checkpoint still require end-to-end verification.
+qualifiers, and incompatible operand types fail before execution. Lesson 005
+was verified with 15 passing tests, Clippy with warnings denied, the fixed
+demo, prompt error recovery, the mdBook build, and the book-link verifier.
+
+---
+
+# Current milestone: 006, Joins
+
+Lesson 006 begins from Chapter 5's one-table binding scope. It will introduce a
+second input table, make ambiguous columns visible, implement the simplest
+nested-loop join, and then expose why a different physical algorithm is useful.
 
 ---
 
@@ -373,8 +384,8 @@ build-along and `lesson-005` checkpoint still require end-to-end verification.
 - [x] 001 — The Smallest Query Engine
 - [x] 002 — Relational Algebra Without the Math
 - [x] 003 — SQL Is Just a Frontend
-- [ ] 004 — Expressions Are Trees
-- [ ] 005 — Binding Gives Names Meaning
+- [x] 004 — Expressions Are Trees
+- [x] 005 — Binding Gives Names Meaning
 - [ ] 006 — Joins
 - [ ] 007 — GROUP BY and Aggregation
 - [ ] 008 — Sort, DISTINCT and LIMIT
