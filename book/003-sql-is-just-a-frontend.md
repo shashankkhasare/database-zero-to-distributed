@@ -824,7 +824,7 @@ use crate::row::Row;
 impl Query {
     pub fn into_plan(self, rows: Vec<Row>) -> Plan {
         // The parser records the table name, but cannot resolve it yet.
-        // Chapter 4 introduces binding. For now the caller supplies the rows.
+        // Chapter 5 introduces binding. For now the caller supplies the rows.
 
         Plan::Project {
             columns: vec![self.selected_column],
