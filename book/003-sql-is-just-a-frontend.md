@@ -1159,7 +1159,9 @@ table name should lead to our employee rows. The same problem appears with an
 unknown column, and a subtler version appears when a query compares text with
 an integer. Grammar alone cannot answer any of those questions.
 
-The database needs a step that connects names in the AST to actual tables and
-columns, then checks whether operations make sense for their types. That step
-is called binding. The next chapter gives the unresolved names in our AST
-something real to refer to.
+The database eventually needs a step that connects names in the AST to actual
+tables and columns, then checks whether operations make sense for their types.
+That step is called binding. Before a binder can check richer requests, however,
+the frontend must represent more than one column and one fixed comparison.
+The next chapter turns arithmetic, comparisons, Boolean operators, and null
+tests into expression trees that a binder can later inspect.
