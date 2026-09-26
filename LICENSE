@@ -1,3 +1,16 @@
+Database: Zero to Distributed uses two licenses:
+
+- Source code, scripts, configuration, tests, and code snippets are licensed
+  under the MIT License stated below.
+- Book prose and original illustrations are licensed under the Creative
+  Commons Attribution 4.0 International License (CC BY 4.0), as described in
+  BOOK-LICENSE.md.
+
+Third-party material remains subject to its original license and is not
+relicensed by this notice.
+
+-------------------------------------------------------------------------------
+
 MIT License
 
 Copyright (c) 2026 Shashank Khasare

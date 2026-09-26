@@ -11,6 +11,16 @@ running, changing, and breaking the real implementation beside it.
 The book is not a transcript of the videos. It is a durable technical narrative
 that should remain useful without video, narration, or external context.
 
+## Licensing
+
+The repository uses two licenses. Source code, tests, scripts, configuration,
+and code snippets—including snippets embedded in chapters—use the MIT License
+in `LICENSE`. Book prose and original illustrations use the Creative Commons
+Attribution 4.0 International License in `BOOK-LICENSE.md`.
+
+Do not assume that third-party material inherits either license. Record and
+preserve its original attribution and license wherever it is introduced.
+
 ---
 
 # What the reader should experience

@@ -717,4 +717,12 @@ That evolution is intentional.
 
 # License
 
-This project is licensed under the MIT License.
+This project uses two licenses:
+
+- Source code, scripts, configuration, tests, and code snippets are licensed
+  under the [MIT License](LICENSE).
+- Book prose and original illustrations are licensed under the
+  [Creative Commons Attribution 4.0 International License](BOOK-LICENSE.md)
+  (CC BY 4.0).
+
+Third-party material remains subject to its original license.

@@ -136,13 +136,17 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
                     )?;
                     DataType::Boolean
                 }
-                _ => {
-                    if left_type != DataType::Null
-                        && right_type != DataType::Null
-                        && left_type != right_type
-                    {
-                        return Err(format!("cannot compare {left_type:?} with {right_type:?}"));
-                    }
+                BinaryOp::Equal | BinaryOp::NotEqual => {
+                    require_matching_types(&left_type, &right_type)?;
+                    DataType::Boolean
+                }
+                BinaryOp::Less
+                | BinaryOp::LessOrEqual
+                | BinaryOp::Greater
+                | BinaryOp::GreaterOrEqual => {
+                    require_matching_types(&left_type, &right_type)?;
+                    require_ordered_type(&left_type)?;
+                    require_ordered_type(&right_type)?;
                     DataType::Boolean
                 }
             };
@@ -176,6 +180,23 @@ fn require_type(actual: &DataType, expected: &DataType, message: &str) -> Result
         Ok(())
     } else {
         Err(format!("{message}: found {actual:?}"))
+    }
+}
+
+fn require_matching_types(left: &DataType, right: &DataType) -> Result<(), String> {
+    if left == &DataType::Null || right == &DataType::Null || left == right {
+        Ok(())
+    } else {
+        Err(format!("cannot compare {left:?} with {right:?}"))
+    }
+}
+
+fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
+    match data_type {
+        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
+        _ => Err(format!(
+            "ordered comparison requires integers or text: found {data_type:?}"
+        )),
     }
 }
 
@@ -231,6 +252,12 @@ mod tests {
                 .bind(parse("SELECT name FROM employees WHERE name + 1 > 0;").unwrap())
                 .unwrap_err(),
             "arithmetic requires integers: found Text"
+        );
+        assert_eq!(
+            catalog()
+                .bind(parse("SELECT name FROM employees WHERE TRUE < FALSE;").unwrap())
+                .unwrap_err(),
+            "ordered comparison requires integers or text: found Boolean"
         );
     }
 }
