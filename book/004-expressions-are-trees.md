@@ -18,8 +18,8 @@ names and types can be checked.
 > Expressions turn a flat token sequence into a tree of operations.
 
 <figure class="book-illustration">
-  <img src="images/004-flat-fields-become-expression-tree.png" alt="Expression pieces overflow a rigid four-compartment record, then fit naturally into a branching expression tree.">
-  <figcaption>A fixed set of fields cannot represent every way expressions can nest.</figcaption>
+  <img src="images/004-precedence-becomes-a-tree.png" alt="A flat salary-plus-two-times-three expression becomes a tree whose multiplication branch is nested beneath addition.">
+  <figcaption>The tree makes precedence structural: multiplication becomes a child of addition.</figcaption>
 </figure>
 
 Chapter 3 could parse only one deliberately fixed query shape:
@@ -115,6 +115,17 @@ conditions joined by `AND`, or the `IS NOT NULL` test. Adding one field for
 each new spelling would only work until the expressions were nested in a new
 way.
 
+Tree shape also records meaning. Consider this expression:
+
+```text
+salary + 2 * 3
+```
+
+The usual precedence rules interpret it as `salary + (2 * 3)`, not
+`(salary + 2) * 3`. Both interpretations contain the same tokens, but their
+trees differ and may produce different answers. The parser must build the tree
+required by the grammar.
+
 An expression tree solves that representation problem. Leaves store columns
 and literal values. Parent nodes store operations whose children are other
 expressions. The parser can build the same small set of node kinds into many
@@ -163,7 +174,7 @@ Value::Null => write!(formatter, "NULL"),
 ### 4.2.2 Keep the old filter compiling
 
 The Chapter 3 `Plan::Filter` stores a `column` and a `greater_than` integer, so
-it can evaluate only one fixed predicate: `column > greater_than`. Chapter 4
+it can evaluate only one fixed predicate: `column > greater_than`. This chapter
 needs a general expression predicate that can include arithmetic, comparisons,
 Boolean operators, and null tests. The next chapter will make that larger
 change after it has checked the expressions.
@@ -490,9 +501,9 @@ such as `salary + 5000 > 70000`. The new `Query` will therefore store an
 `Expr` for both its projection and filter.
 
 Parsing begins with the outer `query` production. When `parse_query()` reaches
-a projection or filter expression, it calls `parse_expression()`. That method
-descends through the precedence rules from `OR`, the weakest operator, to a
-primary expression, the tightest:
+a projection or filter expression, it calls `parse_expression()`. Each named
+expression production represents one precedence level. The methods descend
+from `OR`, the weakest operator, to a primary expression, the tightest:
 
 ```text
 parse_query()
@@ -504,7 +515,8 @@ OR → AND → NOT → predicate → additive → term → factor → primary
 
 As in Chapter 3, methods that implement grammar productions begin with
 `parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
-inspect or move through the token list, so they do not use that prefix.
+inspect or move through the token list, so they do not use that prefix. We
+will define those helpers before the production methods that call them.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -534,9 +546,79 @@ let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
 Parser { tokens, current: 0 }.parse_query()
 ```
 
-### 4.5.1 Parse the query and its alias
+### 4.5.1 Move through the token list
 
-The outer query rule divides a shortened version of the query into four
+These helpers do not implement grammar productions. They provide the cursor
+operations that all production methods need. `peek()` borrows the next token
+without advancing. `consume()` advances only when that token matches.
+`expect()` turns a failed match into a parse error, while `identifier()`
+extracts the text stored inside an identifier token. The `binary()` helper
+constructs the node shared by every binary-operator level.
+
+`src/parser.rs`: add after `Parser`
+
+```rust
+fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+    Expr::Binary {
+        left: Box::new(left),
+        op,
+        right: Box::new(right),
+    }
+}
+```
+
+Now begin the parser implementation with the cursor helpers.
+
+`src/parser.rs`: begin the new `impl Parser`
+
+```rust
+impl Parser {
+    fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
+
+    fn consume(&mut self, token: &Token) -> bool {
+        if self.peek() == Some(token) {
+            self.current += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn expect(&mut self, token: Token,
+        message: &str) -> Result<(), ParseError> {
+        if self.consume(&token) { Ok(()) }
+        else { Err(ParseError(message.to_string())) }
+    }
+
+    fn identifier(&mut self, message: &str)
+        -> Result<String, ParseError> {
+        match self.peek().cloned() {
+            Some(Token::Identifier(value)) => {
+                self.current += 1;
+                Ok(value)
+            }
+            _ => Err(ParseError(message.to_string())),
+        }
+    }
+```
+
+### 4.5.2 Parse the query and its alias
+
+The outer method implements these two productions:
+
+```text
+query = "SELECT" expression "FROM" identifier alias?
+        "WHERE" expression ";" ;
+alias = "AS"? identifier ;
+```
+
+The `?` after `alias` makes the whole alias optional. Inside the `alias`
+production, the second `?` makes only `AS` optional. The parser therefore
+accepts `employees`, `employees AS e`, or `employees e`.
+
+The `query` production divides a shortened version of the query into four
 pieces:
 
 ```text
@@ -546,14 +628,12 @@ SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000;
 ```
 
 `parse_query()` follows that order. It delegates both expression-shaped
-pieces to `parse_expression()`, reads the table identifier itself, and accepts an
-alias either with `AS` or directly after the table name. We can replace the
-old `impl Parser`, beginning with that outer structure.
+pieces to `parse_expression()`, reads the table identifier itself, and accepts
+an alias either with `AS` or directly after the table name.
 
-`src/parser.rs`: begin the new `impl Parser`
+`src/parser.rs`: continue `impl Parser`
 
 ```rust
-impl Parser {
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
         let projection = self.parse_expression()?;
@@ -584,18 +664,27 @@ Without `AS`, `matches!` checks whether the next token contains an identifier;
 if it does, `identifier()` takes that name as the alias. Otherwise the query
 has no alias.
 
-### 4.5.2 Parse Boolean operators
+### 4.5.3 Parse Boolean operators
 
-Read the expression rules from top to bottom as precedence levels. `OR` is the
-weakest, followed by `AND`, `NOT`, predicates, addition and subtraction, and
-then multiplication and division. Primary expressions form the leaves. Each
-method asks the next tighter level for an operand before looking for its own
-operator. That is why `salary + 2 * 3` becomes `salary + (2 * 3)` without a
-special case.
+Boolean precedence is described by four productions:
+
+```text
+expression     = or_expression ;
+or_expression  = and_expression ("OR" and_expression)* ;
+and_expression = not_expression ("AND" not_expression)* ;
+not_expression = "NOT" not_expression | predicate ;
+```
+
+These named layers are new compared with Chapter 3's fixed clause grammar.
+Each layer asks the next tighter layer to produce its operands. The
+`or_expression` rule requires one `and_expression`, followed by zero or more
+groups containing `OR` and another `and_expression`. The `*` applies to that
+whole parenthesized group. The `and_expression` rule has the same shape one
+level lower.
 
 Precedence begins with `OR`. Because `parse_or_expression()` asks
-`parse_and_expression()` for each operand, an entire `AND` expression is assembled
-before `OR` can combine it.
+`parse_and_expression()` for each operand, an entire `AND` expression is
+assembled before `OR` can combine it.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -623,8 +712,19 @@ before `OR` can combine it.
     }
 ```
 
-`NOT` binds more tightly than `AND`. It calls itself, allowing chains such as
-`NOT NOT condition`, and stops recursing when the next token is not `NOT`.
+The first call to `parse_and_expression()` implements the required first
+operand in the `or_expression` production. Then
+`while self.consume(&Token::Or)` implements
+`("OR" and_expression)*`: while the next token is `OR`, `consume()` both
+recognizes it and advances past it. The loop parses the required right operand
+and combines it with the expression accumulated on the left. The `AND` loop
+maps to its production in exactly the same way.
+
+The vertical bar in the `not_expression` production separates two
+alternatives. If the next token is `NOT`, the method consumes it and calls
+itself, allowing chains such as `NOT NOT condition`. Otherwise it chooses the
+`predicate` alternative, which ends the recursion. Because this production is
+below `AND`, `NOT` binds more tightly.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -640,12 +740,25 @@ before `OR` can combine it.
     }
 ```
 
-### 4.5.3 Parse comparisons and null tests
+### 4.5.4 Parse comparisons and null tests
 
-Comparisons and null tests bind more tightly than `NOT`. The predicate method
-first reads the left arithmetic expression, then checks for a comparison. If
-there is no comparison, it checks for `IS NULL` or `IS NOT NULL` before
-returning the arithmetic expression unchanged.
+The predicate level has three alternatives:
+
+```text
+predicate = additive comparison_operator additive
+          | additive "IS" "NOT"? "NULL"
+          | additive ;
+
+comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
+```
+
+Every alternative begins with an `additive` expression. After parsing that
+left expression once, the method inspects the next token to decide which
+alternative applies. A comparison operator requires a second additive
+expression. `IS` requires `NULL`, with an optional `NOT`; otherwise the first
+additive expression is already the complete predicate. Because this method
+calls the tighter arithmetic level for its operands, comparisons and null
+tests bind more tightly than `NOT`.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -680,12 +793,26 @@ If there is no comparison or null test, the arithmetic expression itself is
 returned. Binding will later reject it in `WHERE` unless it produces a Boolean
 or null result.
 
-### 4.5.4 Parse arithmetic
+### 4.5.5 Parse arithmetic
 
-`parse_additive()` asks `parse_term()` for each operand, which places
-multiplication deeper in the tree. Both methods loop because their grammar
-rules allow repeated operators. Updating the accumulated left expression on
-each pass makes `a - b - c` associate as `(a - b) - c`.
+Three productions create the arithmetic precedence levels:
+
+```text
+additive = term (("+" | "-") term)* ;
+term     = factor (("*" | "/") factor)* ;
+factor   = ("+" | "-") factor | primary ;
+```
+
+The parentheses group alternatives, while the following `*` permits the
+entire operator-and-operand group to repeat. `parse_additive()` therefore asks
+`parse_term()` for its first operand and for every operand after `+` or `-`.
+Because `parse_term()` finishes multiplication or division before returning,
+those operations become deeper nodes in the tree and bind more tightly.
+
+Precedence decides how different operators group. **Associativity** decides
+how repeated operators at the same precedence level group. Each loop replaces
+the accumulated left expression with a new binary node, so `a - b - c`
+becomes `(a - b) - c`. Subtraction is therefore left-associative.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -719,9 +846,10 @@ each pass makes `a - b - c` associate as `(a - b) - c`.
     }
 ```
 
-Unary signs call themselves so `--salary` nests correctly. The recursion
-accepts any chain of leading signs and ends when the parser reaches a primary
-expression.
+The `factor` production uses alternatives rather than repetition. A leading
+sign is followed by another complete factor, so unary signs call themselves
+and `--salary` nests correctly. The recursion ends when the parser chooses the
+`primary` alternative.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -743,15 +871,27 @@ expression.
     }
 ```
 
-### 4.5.5 Parse primary expressions
+### 4.5.6 Parse primary expressions
 
-A primary is a complete leaf or a parenthesized expression. Showing its entire
-match together keeps every possible leaf visible in one place. An identifier
-becomes a qualified or unqualified column. Integer, string, Boolean, and null
-tokens become literals. A left parenthesis recursively parses another complete
-expression.
+The tightest level supplies the leaves of the expression tree:
 
-`src/parser.rs`: add `parse_primary()`
+```text
+primary = column_reference | integer | string
+        | "TRUE" | "FALSE" | "NULL"
+        | "(" expression ")" ;
+
+column_reference = (identifier ".")? identifier ;
+```
+
+The vertical bars list the possible primary forms. A column reference begins
+with an optional qualifier-and-dot group followed by the required column name.
+Integer, string, Boolean, and null tokens become literals. Parentheses contain
+a complete `expression`, so they deliberately restart parsing at the weakest
+precedence level while making the enclosed tree act as one primary outside.
+Showing the entire match together keeps every possible leaf visible in one
+place.
+
+`src/parser.rs`: finish `impl Parser` with `parse_primary()`
 
 ```rust
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
@@ -798,67 +938,20 @@ expression.
             _ => Err(ParseError("expected an expression".to_string())),
         }
     }
+}
 ```
 
 `peek().cloned()` gives this method an owned token before it advances the
 cursor. The resulting AST can therefore own identifier and string contents
 instead of borrowing them from the parser's token list.
 
-### 4.5.6 Move through the token list
-
-Four cursor helpers move through the token list. `peek()` borrows the next
-token without advancing. `consume()` advances only when that token matches.
-`expect()` turns a failed match into a parse error, while `identifier()`
-extracts the text stored inside an identifier token.
-
-`src/parser.rs`: finish `impl Parser`
-
-```rust
-    fn peek(&self) -> Option<&Token> {
-        self.tokens.get(self.current)
-    }
-
-    fn consume(&mut self, token: &Token) -> bool {
-        if self.peek() == Some(token) {
-            self.current += 1;
-            true
-        } else {
-            false
-        }
-    }
-
-    fn expect(&mut self, token: Token,
-        message: &str) -> Result<(), ParseError> {
-        if self.consume(&token) { Ok(()) }
-        else { Err(ParseError(message.to_string())) }
-    }
-
-    fn identifier(&mut self, message: &str)
-        -> Result<String, ParseError> {
-        match self.peek().cloned() {
-            Some(Token::Identifier(value)) => {
-                self.current += 1;
-                Ok(value)
-            }
-            _ => Err(ParseError(message.to_string())),
-        }
-    }
-}
-```
-
-One constructor keeps binary-node creation out of every precedence method.
-
-`src/parser.rs`: add after `impl Parser`
-
-```rust
-fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
-    Expr::Binary {
-        left: Box::new(left),
-        op,
-        right: Box::new(right),
-    }
-}
-```
+> **Further reading**
+>
+> Robert Nystrom's [“Representing Code”](https://craftinginterpreters.com/representing-code.html)
+> motivates recursive syntax trees, while
+> [“Parsing Expressions”](https://craftinginterpreters.com/parsing-expressions.html)
+> shows how layered grammar productions encode precedence and associativity.
+> The language differs from SQL, but the tree and parser ideas are the same.
 
 ## 4.6 Run an AST checkpoint
 
@@ -915,7 +1008,7 @@ cargo run --quiet
 ```
 
 <figure class="book-illustration book-diagram">
-  <img src="images/004-complete-query-ast.png" alt="The Chapter 4 query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.">
+  <img src="images/004-complete-query-ast.png" alt="The complete query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.">
   <figcaption>The complete AST records the query structure, including expression precedence, but its names are still unresolved.</figcaption>
 </figure>
 
