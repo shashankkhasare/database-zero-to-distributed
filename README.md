@@ -4,7 +4,7 @@ Build a distributed SQL database from first principles.
 
 This project is a tutorial series and working codebase that starts with the smallest possible query engine and gradually evolves into a distributed SQL database with its own storage engine, transactions, replication, consensus, and ACID guarantees.
 
-[Read the complete free web book](https://shashankkhasare.github.io/database-zero-to-distributed/)
+[Read the free web book series](https://shashankkhasare.github.io/database-zero-to-distributed/)
 or [watch the companion concept videos on YouTube](https://www.youtube.com/playlist?list=PLSyokgEjsYrc).
 
 The goal is not to build a production database.
@@ -377,7 +377,11 @@ database-zero-to-distributed/
 ├── src/
 │   ├── main.rs
 │   ├── row.rs
-│   └── operator.rs
+│   ├── plan.rs
+│   ├── lexer.rs
+│   ├── parser.rs
+│   ├── expression.rs
+│   └── catalog.rs
 │
 ├── tests/
 ├── examples/
@@ -465,9 +469,10 @@ The evolution of the codebase is part of the curriculum.
 
 # The book
 
-This project will also produce a complete executable book that teaches a
-complex system by building, running, testing, and breaking the real
-implementation beside the text.
+This project will also produce a complete four-volume executable book series
+that teaches a complex system by building, running, testing, and breaking the
+real implementation beside the text. Every volume uses this repository's one
+evolving Rust codebase and continuous lesson-tag history.
 
 The book is not a transcript of the videos. It is a standalone technical
 narrative in which each chapter explains a problem, derives one database
@@ -476,6 +481,17 @@ next limitation.
 
 Read the published web book at
 [shashankkhasare.github.io/database-zero-to-distributed](https://shashankkhasare.github.io/database-zero-to-distributed/).
+
+As later volumes are written, that address becomes the series landing page and
+each volume is published beneath it at `volume-1/` through `volume-4/`. The
+current root continues to serve Volume I while it is the only published volume.
+
+| Volume | Chapters | Focus |
+| --- | ---: | --- |
+| I — Read Rows | 1–34 | Query frontend, execution, optimization, parallelism, and distributed query work |
+| II — Store and Write Rows Correctly | 35–48 | Storage, indexes, recovery, concurrency, and transactions |
+| III — Distribute Data and Correctness | 49–62 | Replication, consensus, sharding, and distributed transactions |
+| IV — Complete the Language and Bring Everything Together | 63–75 | Advanced SQL, integration, benchmarks, and failure experiments |
 
 See [`BOOK.md`](BOOK.md) for the writing and chapter contract. See
 [`TODO.md`](TODO.md) for current implementation, book, and video progress.
@@ -664,7 +680,8 @@ Season 7 — Transactions and ACID
 Season 8 — Distributed Storage
 Season 9 — Sharding
 Season 10 — Distributed Transactions
-Season 11 — Bring Everything Together
+Season 11 — Advanced SQL and Compatibility
+Season 12 — Bring Everything Together
 ```
 
 See [`Roadmap.md`](Roadmap.md) for the full lesson plan and
@@ -700,4 +717,12 @@ That evolution is intentional.
 
 # License
 
-This project is licensed under the MIT License.
+This project uses two licenses:
+
+- Source code, scripts, configuration, tests, and code snippets are licensed
+  under the [MIT License](LICENSE).
+- Book prose and original illustrations are licensed under the
+  [Creative Commons Attribution 4.0 International License](BOOK-LICENSE.md)
+  (CC BY 4.0).
+
+Third-party material remains subject to its original license.

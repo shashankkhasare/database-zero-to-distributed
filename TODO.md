@@ -21,13 +21,15 @@ not design distant lessons prematurely.
 - [x] Install and verify the Rust development toolchain
 - [x] Install and verify Node.js, FFmpeg, and FFprobe
 - [x] Add `kokoro-js` as the initial local narration engine
-- [x] Add a full `LICENSE` file
+- [x] License code and code snippets under MIT, and book prose and original
+  illustrations under CC BY 4.0
 - [x] Publish Rust orientation as optional Appendix A instead of lesson 000
 - [x] Use one movable `lesson-NNN` tag per verified lesson while the series is in active development
 - [x] Define the smallest lesson directory only when lesson 001 needs it
 - [x] Define the SQL-89-inspired language boundary and map frontend constructs to lessons
 - [x] Record staged TPC-H, TPC-DS, and TPC-C coverage as long-term validation targets
 - [x] Make the book the complete curriculum and select videos by conceptual milestone rather than chapter count
+- [x] Divide the complete curriculum into four publishable volumes backed by one codebase
 
 ---
 
@@ -243,6 +245,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Add the Chapter 3 skeleton and contents entry
 - [x] Continue directly from Chapter 2 before beginning Section 3.1
 - [x] Add Appendix B as the living, implementation-backed SQL grammar reference
+- [x] Audit every Appendix B grammar family and assign it to a chapter or subsystem owner
 - [x] Select and verify an opening epigraph or replace the provisional line
 - [x] Explain tokenization with the exact employee query
 - [x] Introduce the grammar before its parser implementation
@@ -288,13 +291,81 @@ under the milestone-based companion-video strategy.
 
 ---
 
-# Current milestone: 004, Binding and Expressions
+# Completed milestone: 004, Expressions Are Trees
 
-Lesson 004 begins from the unresolved-name behavior made explicit in Chapter
-3. The parser accepts `missing_table`, and plan conversion still executes the
-rows supplied by the caller. The next milestone will connect table and column
-names to a catalog, introduce general expressions and basic type checking, and
-turn those unresolved strings into a bound logical plan.
+Lesson 004 begins from Chapter 3's fixed four-field `Query`. It expands the
+frontend so nested arithmetic, comparisons, Boolean logic, null tests,
+qualified columns, and precedence survive in an expression AST. It deliberately
+stops before resolving names or checking types.
+
+## Chapter contract
+
+Begin with the richer request that Chapter 3's flat fields cannot represent:
+
+```sql
+SELECT e.name
+FROM employees AS e
+WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+```
+
+Replace the filter's special-purpose column and integer fields with a small
+expression tree. Preserve the richer structure without claiming that parsed
+names or operand types are valid.
+
+This chapter owns the syntax and AST foundation promised by Appendix B:
+
+- qualified and unqualified column references
+- table aliases using optional `AS`
+- integer, text, and `NULL` literals
+- unary `+`, unary `-`, and `NOT`
+- arithmetic `+`, `-`, `*`, and `/`
+- comparisons `=`, `<>`, `<`, `<=`, `>`, and `>=`
+- `AND` and `OR`
+- `IS NULL` and `IS NOT NULL`
+- parentheses and explicit precedence
+
+Defer `BETWEEN`, `LIKE`, `IN`, function calls, `CASE`, `CAST`, dates,
+intervals, and windows to their assigned later chapters. Do not introduce a
+general optimizer, physical-plan split, or storage catalog.
+
+## Planned teaching sequence
+
+1. Show why Chapter 3's flat query fields stop working.
+2. Extend `Value` with the values required by expressions.
+3. Extend the lexer token set for the expanded grammar.
+4. Define expression operators and the unresolved AST.
+5. Parse columns, literals, and precedence in stages.
+6. Run an AST checkpoint that exposes the complete query shape.
+7. State the deliberate syntax and representation limitations.
+8. Provide precedence and unresolved-name experiments with answers.
+9. Lead from preserved structure into binding.
+
+## Visible outcome and verification
+
+- [x] Operator precedence is visible in the parsed expression tree
+- [x] The Chapter 4 grammar is shown beside the parser stages
+- [x] The complete query AST makes expression precedence visible
+- [x] Boolean, null, string, arithmetic, comparison, and qualified-column forms are represented
+- [x] The Chapter 4 AST illustration is generated, reviewed, and embedded
+- [x] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
+- [x] Create and verify the standalone `lesson-004` AST checkpoint
+
+Lesson 004 was verified with 8 passing tests, a deterministic AST prompt,
+Clippy with warnings denied, the mdBook build, and the book-link verifier.
+
+---
+
+# Next milestone: 005, Binding Gives Names Meaning
+
+Lesson 005 begins from the unresolved expression AST. It introduces the
+in-memory catalog, `BoundExpr`, name resolution, type checking, SQL
+three-valued evaluation, expression-based plans, and the complete
+parse-bind-execute application path.
+
+Its representative query will return Ada and Grace. Missing tables, columns,
+qualifiers, and incompatible operand types must fail before execution. The
+Chapter 5 build-along, implementation, tests, and `lesson-005` checkpoint
+remain to be completed.
 
 ---
 
@@ -305,104 +376,123 @@ turn those unresolved strings into a bound logical plan.
 - [x] 001 — The Smallest Query Engine
 - [x] 002 — Relational Algebra Without the Math
 - [x] 003 — SQL Is Just a Frontend
-- [ ] 004 — Binding and Expressions
-- [ ] 005 — Joins
-- [ ] 006 — GROUP BY and Aggregation
-- [ ] 007 — Sort, DISTINCT and LIMIT
-- [ ] 008 — Subqueries Are Plans Inside Plans
+- [x] 004 — Expressions Are Trees
+- [ ] 005 — Binding Gives Names Meaning
+- [ ] 006 — Joins
+- [ ] 007 — GROUP BY and Aggregation
+- [ ] 008 — Sort, DISTINCT and LIMIT
+- [ ] 009 — Subqueries Are Plans Inside Plans
 
 ## Season 2 — How Query Engines Execute
 
-- [ ] 009 — Materialize Everything
-- [ ] 010 — Stop Materializing Everything
-- [ ] 011 — Logical Plan vs Physical Plan
+- [ ] 010 — Materialize Everything
+- [ ] 011 — Stop Materializing Everything
+- [ ] 012 — Logical Plan vs Physical Plan
 
 ## Season 3 — Query Optimization
 
-- [ ] 012 — The First Query Optimizer
-- [ ] 013 — Statistics
-- [ ] 014 — Cost
-- [ ] 015 — Join Ordering
+- [ ] 013 — The First Query Optimizer
+- [ ] 014 — Statistics
+- [ ] 015 — Cost
+- [ ] 016 — Join Ordering
 
 ## Season 4 — Parallel Execution
 
-- [ ] 016 — Split the Table Into Partitions
-- [ ] 017 — The Plan Becomes a DAG
-- [ ] 018 — Build a Scheduler
+- [ ] 017 — Split the Table Into Partitions
+- [ ] 018 — The Plan Becomes a DAG
+- [ ] 019 — Build a Scheduler
 
 ## Season 5 — Distributed Query Execution
 
-- [ ] 019 — Our First Multi-Node Query
-- [ ] 020 — Why Distributed Joins Break
-- [ ] 021 — Invent Exchange
-- [ ] 022 — Build a Shuffle
-- [ ] 023 — Distributed Aggregation
-- [ ] 024 — Distributed Hash Join
-- [ ] 025 — Broadcast Join
-- [ ] 026 — Distributed Physical Planning
-- [ ] 027 — When Synchronous Networking Stops Scaling
-- [ ] 028 — Failures Are Normal
-- [ ] 029 — Lost Shuffle Data
-- [ ] 030 — Data Skew
-- [ ] 031 — Memory Is Finite
-- [ ] 032 — Spill to Disk
-- [ ] 033 — What Did We Build?
+- [ ] 020 — Our First Multi-Node Query
+- [ ] 021 — Why Distributed Joins Break
+- [ ] 022 — Invent Exchange
+- [ ] 023 — Build a Shuffle
+- [ ] 024 — Distributed Aggregation
+- [ ] 025 — Distributed Hash Join
+- [ ] 026 — Broadcast Join
+- [ ] 027 — Distributed Physical Planning
+- [ ] 028 — When Synchronous Networking Stops Scaling
+- [ ] 029 — Failures Are Normal
+- [ ] 030 — Lost Shuffle Data
+- [ ] 031 — Data Skew
+- [ ] 032 — Memory Is Finite
+- [ ] 033 — Spill to Disk
+- [ ] 034 — What Did We Build?
 
 ## Season 6 — Build a Storage Engine
 
-- [ ] 034 — A Database Starts With Bytes
-- [ ] 035 — Slotted Pages
-- [ ] 036 — Heap Files
-- [ ] 037 — The Buffer Pool
-- [ ] 038 — Build a B+ Tree
-- [ ] 039 — Connect Query Execution to Storage
+- [ ] 035 — A Database Starts With Bytes
+- [ ] 036 — Slotted Pages
+- [ ] 037 — Heap Files
+- [ ] 038 — The Buffer Pool
+- [ ] 039 — Build a B+ Tree
+- [ ] 040 — Connect Query Execution to Storage
 
 ## Season 7 — Transactions and ACID
 
-- [ ] 040 — Break the Database
-- [ ] 041 — Write-Ahead Logging
-- [ ] 042 — Crash Recovery
-- [ ] 043 — Concurrency Control With Locks
-- [ ] 044 — Deadlocks
-- [ ] 045 — MVCC
-- [ ] 046 — Isolation Levels
-- [ ] 047 — ACID, Finally
+- [ ] 041 — Break the Database
+- [ ] 042 — Write-Ahead Logging
+- [ ] 043 — Crash Recovery
+- [ ] 044 — Concurrency Control With Locks
+- [ ] 045 — Deadlocks
+- [ ] 046 — MVCC
+- [ ] 047 — Isolation Levels
+- [ ] 048 — ACID, Finally
 
 ## Season 8 — Distributed Storage
 
-- [ ] 048 — Replication
-- [ ] 049 — Replication Lag
-- [ ] 050 — The Primary Dies
-- [ ] 051 — Build Raft
-- [ ] 052 — Strongly Consistent Replicated Storage
+- [ ] 049 — Replication
+- [ ] 050 — Replication Lag
+- [ ] 051 — The Primary Dies
+- [ ] 052 — Build Raft
+- [ ] 053 — Strongly Consistent Replicated Storage
 
 ## Season 9 — Sharding
 
-- [ ] 053 — One Node Cannot Hold Everything
-- [ ] 054 — Range Sharding
-- [ ] 055 — Routing
-- [ ] 056 — Rebalancing
+- [ ] 054 — One Node Cannot Hold Everything
+- [ ] 055 — Range Sharding
+- [ ] 056 — Routing
+- [ ] 057 — Rebalancing
 
 ## Season 10 — Distributed Transactions
 
-- [ ] 057 — One Transaction, Two Shards
-- [ ] 058 — Two-Phase Commit
-- [ ] 059 — Coordinator Failure
-- [ ] 060 — Distributed MVCC
-- [ ] 061 — Serializable Distributed Transactions
+- [ ] 058 — One Transaction, Two Shards
+- [ ] 059 — Two-Phase Commit
+- [ ] 060 — Coordinator Failure
+- [ ] 061 — Distributed MVCC
+- [ ] 062 — Serializable Distributed Transactions
 
-## Season 11 — Bring Everything Together
+## Season 11 — Advanced SQL and Compatibility
 
-- [ ] 062 — Distributed SQL Over Distributed Storage
-- [ ] 063 — One SQL Query, End to End
-- [ ] 064 — One Transaction, End to End
-- [ ] 065 — Benchmark It
-- [ ] 066 — Break Everything
-- [ ] 067 — Where Real Databases Go Further
+- [ ] 063 — Set Operations
+- [ ] 064 — Common Table Expressions and Recursion
+- [ ] 065 — Rich Values and Expressions
+- [ ] 066 — Advanced Grouping
+- [ ] 067 — Window Functions and Frames
+- [ ] 068 — SQL Compatibility Checkpoint
+- [ ] 069 — Identities and Authorization
+
+## Season 12 — Bring Everything Together
+
+- [ ] 070 — Distributed SQL Over Distributed Storage
+- [ ] 071 — One SQL Query, End to End
+- [ ] 072 — One Transaction, End to End
+- [ ] 073 — Benchmark It
+- [ ] 074 — Break Everything
+- [ ] 075 — Where Real Databases Go Further
 
 ---
 
 # Book production
+
+- [ ] Add a series landing page and per-volume mdBook builds when Volume II manuscripts begin
+- [ ] Preserve the existing root book URL while Volume I is the only published volume
+- [ ] During the Volume II migration, redirect existing Volume I chapter URLs to `volume-1/`
+- [ ] Share themes and reusable images across volume builds without duplicating the Rust codebase
+- [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
+- [ ] Complete Chapters 62–67 before claiming benchmark SQL coverage
+- [ ] Complete Chapter 69 before claiming authorization support or final integration
 
 - [x] Define cross-chapter continuity rules and maintain an editorial terminology ledger
 - [x] Define and version an original database illustration style

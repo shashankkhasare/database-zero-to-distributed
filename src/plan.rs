@@ -30,7 +30,7 @@ impl Plan {
                 for row in input_rows {
                     let value = match row.get(column) {
                         Some(Value::Integer(value)) => value,
-                        Some(Value::Text(_)) => panic!("column is not an integer: {column}"),
+                        Some(_) => panic!("column is not an integer: {column}"),
                         None => panic!("unknown column: {column}"),
                     };
 

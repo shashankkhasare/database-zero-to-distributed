@@ -1,30 +1,15 @@
 use std::fmt;
 
+use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::lexer::{Token, tokenize};
-use crate::plan::Plan;
-use crate::row::Row;
+use crate::row::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
-    pub selected_column: String,
+    pub projection: Expr,
     pub table: String,
-    pub filter_column: String,
-    pub greater_than: i64,
-}
-
-impl Query {
-    pub fn into_plan(self, rows: Vec<Row>) -> Plan {
-        // The parser records the table name, but cannot resolve it yet.
-        // Chapter 4 introduces binding. For now the caller supplies the rows.
-        Plan::Project {
-            columns: vec![self.selected_column],
-            input: Box::new(Plan::Filter {
-                column: self.filter_column,
-                greater_than: self.greater_than,
-                input: Box::new(Plan::Scan { rows }),
-            }),
-        }
-    }
+    pub table_alias: Option<String>,
+    pub filter: Expr,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -38,8 +23,7 @@ impl fmt::Display for ParseError {
 
 pub fn parse(sql: &str) -> Result<Query, ParseError> {
     let tokens = tokenize(sql).map_err(|error| ParseError(error.to_string()))?;
-    let mut parser = Parser { tokens, current: 0 };
-    parser.parse_query()
+    Parser { tokens, current: 0 }.parse_query()
 }
 
 struct Parser {
@@ -48,138 +32,274 @@ struct Parser {
 }
 
 impl Parser {
-    fn parse_select_clause(&mut self) -> Result<String, ParseError> {
-        self.expect(Token::Select, "expected SELECT at start of query")?;
-        self.identifier("expected a column name after SELECT")
-    }
-
-    fn parse_from_clause(&mut self) -> Result<String, ParseError> {
-        self.expect(Token::From, "expected FROM after selected column")?;
-        self.identifier("expected a table name after FROM")
-    }
-
-    fn parse_where_clause(&mut self) -> Result<(String, i64), ParseError> {
-        self.expect(Token::Where, "expected WHERE after table name")?;
-        let column = self.identifier("expected a column name after WHERE")?;
-        self.expect(Token::GreaterThan, "expected > after filter column")?;
-        let value = self.integer("expected an integer after >")?;
-        Ok((column, value))
-    }
-
     fn parse_query(&mut self) -> Result<Query, ParseError> {
-        let selected_column = self.parse_select_clause()?;
-        let table = self.parse_from_clause()?;
-        let (filter_column, greater_than) = self.parse_where_clause()?;
+        self.expect(Token::Select, "expected SELECT at start of query")?;
+        let projection = self.parse_expression()?;
+        self.expect(Token::From, "expected FROM after selected expression")?;
+        let table = self.identifier("expected a table name after FROM")?;
+        let table_alias = if self.consume(&Token::As) {
+            Some(self.identifier("expected an alias after AS")?)
+        } else if matches!(self.peek(), Some(Token::Identifier(_))) {
+            Some(self.identifier("expected a table alias")?)
+        } else {
+            None
+        };
+        self.expect(Token::Where, "expected WHERE after table name")?;
+        let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
-
         if self.current != self.tokens.len() {
-            return Err(ParseError("unexpected token after ;".to_string()));
+            return Err(ParseError("unexpected token after ;".into()));
         }
-
         Ok(Query {
-            selected_column,
+            projection,
             table,
-            filter_column,
-            greater_than,
+            table_alias,
+            filter,
         })
     }
 
-    fn expect(&mut self, expected: Token, message: &str) -> Result<(), ParseError> {
-        if self.tokens.get(self.current) == Some(&expected) {
-            self.current += 1;
-            Ok(())
+    fn parse_expression(&mut self) -> Result<Expr, ParseError> {
+        self.parse_or_expression()
+    }
+
+    fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_and_expression()?;
+        while self.consume(&Token::Or) {
+            expression = binary(expression, BinaryOp::Or, self.parse_and_expression()?);
+        }
+        Ok(expression)
+    }
+
+    fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_not_expression()?;
+        while self.consume(&Token::And) {
+            expression = binary(expression, BinaryOp::And, self.parse_not_expression()?);
+        }
+        Ok(expression)
+    }
+
+    fn parse_not_expression(&mut self) -> Result<Expr, ParseError> {
+        if self.consume(&Token::Not) {
+            return Ok(Expr::Unary {
+                op: UnaryOp::Not,
+                expression: Box::new(self.parse_not_expression()?),
+            });
+        }
+        self.parse_predicate()
+    }
+
+    fn parse_predicate(&mut self) -> Result<Expr, ParseError> {
+        let left = self.parse_additive()?;
+        let op = if self.consume(&Token::Equal) {
+            Some(BinaryOp::Equal)
+        } else if self.consume(&Token::NotEqual) {
+            Some(BinaryOp::NotEqual)
+        } else if self.consume(&Token::Less) {
+            Some(BinaryOp::Less)
+        } else if self.consume(&Token::LessOrEqual) {
+            Some(BinaryOp::LessOrEqual)
+        } else if self.consume(&Token::Greater) {
+            Some(BinaryOp::Greater)
+        } else if self.consume(&Token::GreaterOrEqual) {
+            Some(BinaryOp::GreaterOrEqual)
         } else {
-            Err(ParseError(message.to_string()))
+            None
+        };
+        if let Some(op) = op {
+            return Ok(binary(left, op, self.parse_additive()?));
         }
+
+        if self.consume(&Token::Is) {
+            let negated = self.consume(&Token::Not);
+            self.expect(Token::Null, "expected NULL after IS")?;
+            return Ok(Expr::IsNull {
+                expression: Box::new(left),
+                negated,
+            });
+        }
+
+        Ok(left)
     }
 
-    fn identifier(&mut self, message: &str) -> Result<String, ParseError> {
-        match self.tokens.get(self.current) {
-            Some(Token::Identifier(value)) => {
-                self.current += 1;
-                Ok(value.clone())
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_term()?;
+        loop {
+            let op = if self.consume(&Token::Plus) {
+                Some(BinaryOp::Add)
+            } else if self.consume(&Token::Minus) {
+                Some(BinaryOp::Subtract)
+            } else {
+                None
+            };
+            match op {
+                Some(op) => expression = binary(expression, op, self.parse_term()?),
+                None => break,
             }
-            _ => Err(ParseError(message.to_string())),
         }
+        Ok(expression)
     }
 
-    fn integer(&mut self, message: &str) -> Result<i64, ParseError> {
-        match self.tokens.get(self.current) {
+    fn parse_term(&mut self) -> Result<Expr, ParseError> {
+        let mut expression = self.parse_factor()?;
+        loop {
+            let op = if self.consume(&Token::Star) {
+                Some(BinaryOp::Multiply)
+            } else if self.consume(&Token::Slash) {
+                Some(BinaryOp::Divide)
+            } else {
+                None
+            };
+            match op {
+                Some(op) => expression = binary(expression, op, self.parse_factor()?),
+                None => break,
+            }
+        }
+        Ok(expression)
+    }
+
+    fn parse_factor(&mut self) -> Result<Expr, ParseError> {
+        if self.consume(&Token::Plus) {
+            return Ok(Expr::Unary {
+                op: UnaryOp::Plus,
+                expression: Box::new(self.parse_factor()?),
+            });
+        }
+        if self.consume(&Token::Minus) {
+            return Ok(Expr::Unary {
+                op: UnaryOp::Minus,
+                expression: Box::new(self.parse_factor()?),
+            });
+        }
+        self.parse_primary()
+    }
+
+    fn parse_primary(&mut self) -> Result<Expr, ParseError> {
+        match self.peek().cloned() {
+            Some(Token::Identifier(first)) => {
+                self.current += 1;
+                if self.consume(&Token::Dot) {
+                    let name = self.identifier("expected a column name after .")?;
+                    Ok(Expr::Column {
+                        qualifier: Some(first),
+                        name,
+                    })
+                } else {
+                    Ok(Expr::Column {
+                        qualifier: None,
+                        name: first,
+                    })
+                }
+            }
             Some(Token::Integer(value)) => {
                 self.current += 1;
-                Ok(*value)
+                Ok(Expr::Literal(Value::Integer(value)))
             }
-            _ => Err(ParseError(message.to_string())),
+            Some(Token::String(value)) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Text(value)))
+            }
+            Some(Token::Null) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Null))
+            }
+            Some(Token::True) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(true)))
+            }
+            Some(Token::False) => {
+                self.current += 1;
+                Ok(Expr::Literal(Value::Boolean(false)))
+            }
+            Some(Token::LeftParen) => {
+                self.current += 1;
+                let expression = self.parse_expression()?;
+                self.expect(Token::RightParen, "expected ) after expression")?;
+                Ok(expression)
+            }
+            _ => Err(ParseError("expected an expression".into())),
         }
+    }
+
+    fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
+    fn consume(&mut self, token: &Token) -> bool {
+        if self.peek() == Some(token) {
+            self.current += 1;
+            true
+        } else {
+            false
+        }
+    }
+    fn expect(&mut self, token: Token, message: &str) -> Result<(), ParseError> {
+        if self.consume(&token) {
+            Ok(())
+        } else {
+            Err(ParseError(message.into()))
+        }
+    }
+    fn identifier(&mut self, message: &str) -> Result<String, ParseError> {
+        match self.peek().cloned() {
+            Some(Token::Identifier(value)) => {
+                self.current += 1;
+                Ok(value)
+            }
+            _ => Err(ParseError(message.into())),
+        }
+    }
+}
+
+fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+    Expr::Binary {
+        left: Box::new(left),
+        op,
+        right: Box::new(right),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Query, parse};
-    use crate::row::{Row, Value};
+    use super::parse;
+    use crate::expression::{BinaryOp, Expr};
 
     #[test]
-    fn parses_the_supported_query_shape() {
-        assert_eq!(
-            parse("SELECT name FROM employees WHERE salary > 50000;").unwrap(),
-            Query {
-                selected_column: "name".to_string(),
-                table: "employees".to_string(),
-                filter_column: "salary".to_string(),
-                greater_than: 50_000,
+    fn multiplication_binds_more_tightly_than_addition() {
+        let query = parse("SELECT salary + 2 * 3 FROM employees WHERE salary > 0;").unwrap();
+        let Expr::Binary {
+            op: BinaryOp::Add,
+            right,
+            ..
+        } = query.projection
+        else {
+            panic!("expected addition")
+        };
+        assert!(matches!(
+            *right,
+            Expr::Binary {
+                op: BinaryOp::Multiply,
+                ..
             }
-        );
+        ));
     }
 
     #[test]
-    fn requires_the_semicolon() {
-        assert_eq!(
-            parse("SELECT name FROM employees WHERE salary > 50000")
-                .unwrap_err()
-                .to_string(),
-            "expected ; after query"
-        );
+    fn parses_aliases_qualified_columns_and_null_predicates() {
+        let query = parse("SELECT e.name FROM employees AS e WHERE e.name IS NOT NULL;").unwrap();
+        assert_eq!(query.table, "employees");
+        assert_eq!(query.table_alias.as_deref(), Some("e"));
+        assert!(matches!(query.filter, Expr::IsNull { negated: true, .. }));
     }
 
     #[test]
-    fn rejects_tokens_after_the_query() {
+    fn parses_boolean_literals() {
+        let query = parse("SELECT TRUE FROM employees WHERE FALSE;").unwrap();
         assert_eq!(
-            parse("SELECT name FROM employees WHERE salary > 50000; extra")
-                .unwrap_err()
-                .to_string(),
-            "unexpected token after ;"
+            query.projection,
+            Expr::Literal(crate::row::Value::Boolean(true))
         );
-    }
-
-    #[test]
-    fn parsed_sql_executes_the_employee_query() {
-        let employees = vec![
-            Row::new(vec![
-                ("name", Value::Text("Ada".to_string())),
-                ("salary", Value::Integer(70_000)),
-            ]),
-            Row::new(vec![
-                ("name", Value::Text("Linus".to_string())),
-                ("salary", Value::Integer(50_000)),
-            ]),
-            Row::new(vec![
-                ("name", Value::Text("Grace".to_string())),
-                ("salary", Value::Integer(72_000)),
-            ]),
-        ];
-
-        let result = parse("SELECT name FROM employees WHERE salary > 50000;")
-            .unwrap()
-            .into_plan(employees)
-            .execute();
-
         assert_eq!(
-            result,
-            vec![
-                Row::new(vec![("name", Value::Text("Ada".to_string()))]),
-                Row::new(vec![("name", Value::Text("Grace".to_string()))]),
-            ]
+            query.filter,
+            Expr::Literal(crate::row::Value::Boolean(false))
         );
     }
 }

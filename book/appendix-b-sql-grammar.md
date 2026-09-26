@@ -1,13 +1,15 @@
-# Appendix B: The SQL Grammar We Support
+﻿# Appendix B: The SQL Grammar We Support
 
 This appendix collects the complete planned grammar for the SQL language built
 throughout the course. Individual chapters repeat only the rules they add.
 This is a readable map of our educational, SQL-89-inspired dialect, not a claim
 of SQL-89 conformance.
 
-A rule appearing here is not automatically implemented. Each group names the
-lesson or subsystem that owns it. The implementation, tests, and latest lesson
-tag remain the authority for what the database accepts today.
+A rule appearing here is not automatically implemented. Section B.4 assigns
+every grammar family to a chapter or subsystem owner. A rule remains planned
+until a tagged checkpoint implements and tests it; the implementation, tests,
+and latest lesson tag remain the authority for what the database accepts
+today.
 
 ## B.1 Notation
 
@@ -44,7 +46,9 @@ query_statement    = query ";" ;
 
 ### Queries
 
-Lessons 003 through 008 introduce these rules incrementally:
+Chapters 3 through 8 establish the query-language foundation. Later
+query-completion checkpoints add the advanced forms needed by the benchmark
+chapters:
 
 ```text
 query              = with_clause? query_expression order_by_clause?
@@ -85,7 +89,8 @@ limit_clause       = "LIMIT" integer ("OFFSET" integer)? ;
 
 ### Expressions and predicates
 
-Lessons 004 through 008 build these precedence levels from lowest to highest:
+Chapter 4 begins this expression hierarchy. Later chapters extend it as joins,
+aggregation, subqueries, data types, and benchmark queries require more forms:
 
 ```text
 expression          = or_expression ;
@@ -113,7 +118,8 @@ primary             = column_reference | literal | function_call
                     | "(" query ")" | "(" value_expression ")" ;
 column_reference    = (identifier ".")? identifier ;
 literal             = integer | decimal | string | date_literal
-                    | timestamp_literal | interval_literal | "NULL" ;
+                    | timestamp_literal | interval_literal
+                    | "TRUE" | "FALSE" | "NULL" ;
 date_literal        = "DATE" string ;
 timestamp_literal   = "TIMESTAMP" string ;
 interval_literal    = "INTERVAL" string interval_unit ;
@@ -217,25 +223,59 @@ privilege          = "SELECT" | "INSERT" | "UPDATE" | "DELETE" ;
 ## B.3 Lexical grammar
 
 ```text
-identifier         = letter (letter | digit | "_")* ;
+identifier         = (letter | "_") (letter | digit | "_")* ;
 integer            = digit+ ;
 decimal            = digit+ "." digit+ ;
 string             = "'" string_character* "'" ;
 string_character   = non_quote | "''" ;
-letter             = "A" ... "Z" | "a" ... "z" ;
-digit              = "0" ... "9" ;
-whitespace         = " " | tab | carriage_return | newline ;
+
+letter             = ? ASCII letter A-Z or a-z ? ;
+digit              = ? ASCII digit 0-9 ? ;
+non_quote          = ? any character except "'" ? ;
+whitespace         = ? Unicode whitespace character ? ;
 ```
 
-A doubled quote inside a string represents one quote character. Quoted
-identifiers, comments, Unicode identifier rules, and numeric forms beyond
-integers and fixed-point decimals are not currently planned.
+Text between `?` delimiters describes a character class recognized by the
+lexer rather than a literal sequence. Whitespace is a skipped lexical
+category: it may separate tokens, but the lexer does not emit it, so it does
+not appear in the query productions. A doubled quote inside a string
+represents one quote character. Quoted identifiers, comments, Unicode
+identifier rules, and numeric forms beyond integers and fixed-point decimals
+are not currently planned.
 
 ## B.4 Grammar implemented at each checkpoint
 
-- `lesson-001` and `lesson-002`: no SQL text; plans are constructed in Rust.
-- `lesson-003`: the single query production repeated in Chapter 3.
-- Later tags: update this list only after their parser behavior is tested.
+Every family in Sections B.2 and B.3 has an owner below. Advanced query and
+authorization work now has concrete chapters; storage and transaction syntax
+belongs to the named subsystem chapters and receives an exact checkpoint when
+those seasons become active. A planned rule may be removed only by recording
+why the course no longer intends to support it; it must not disappear merely
+because no early chapter needs it.
+
+| Grammar family | Course owner | Delivery condition |
+| --- | --- | --- |
+| No SQL text | `lesson-001` and `lesson-002` | Plans are constructed directly in Rust. |
+| One-column `SELECT`/`FROM`/`WHERE`, `>`, integer, semicolon, basic identifiers | `lesson-003` | Implemented and tested. |
+| Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | `lesson-004` foundation and Chapter 65 completion | Core parsing and precedence are executable and tested; later expression forms complete the planned hierarchy. |
+| Catalog binding, basic expression types, and three-valued evaluation | Chapter 5 | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
+| Multiple table references and `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 6 | Each join form has defined logical and execution semantics. |
+| Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 7 | Aggregate and grouping behavior is executable and tested. |
+| `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 8 | Ordering and duplicate behavior is explicit. |
+| Scalar, `IN`, and `EXISTS` subqueries, derived tables, and non-recursive common table expressions | Chapter 9 | Name scope and subquery execution are visible. |
+| Recursive common table expressions | Chapter 64 | Recursive evaluation and termination behavior are taught before support is claimed. |
+| `UNION`, `INTERSECT`, and `EXCEPT` | Chapter 63 | Duplicate semantics for default and `ALL` forms are tested. |
+| Advanced scalar functions, `CASE`, `CAST`, `EXTRACT`, `SUBSTRING`, and date/time/interval expressions | Chapter 65 | Added with the execution and type semantics required by the analytical workload. |
+| `ROLLUP` and `CUBE` | Chapter 66 | Subtotal rows and their `NULL` behavior are explicit. |
+| Window functions and frames | Chapter 67 | Partitioning, ordering, and frame boundaries are executable and tested. |
+| `CREATE TABLE`, data types, defaults, and column/table constraints | Writable-storage chapters | Definitions affect real stored tables and validated writes. |
+| `INSERT`, `UPDATE`, and `DELETE` | Writable-storage and transaction chapters | Mutation, failure, and rollback behavior is observable. |
+| `BEGIN`, `START TRANSACTION`, `COMMIT`, and `ROLLBACK` | Transaction chapters | Statements control the transaction implementation built there. |
+| `GRANT` and `REVOKE` | Chapter 69 | The database has identities and an enforceable authorization boundary. |
+| Strings, decimals, and later punctuation and keywords | The chapter owning the associated syntax | The lexical grammar and lexer tests grow together. |
+
+Update this table only after parser and behavior tests establish a checkpoint's
+actual coverage. Chapter 68 audits the complete table before the final
+benchmark and integration chapters can claim SQL compatibility.
 
 ## B.5 Benchmark coverage target
 

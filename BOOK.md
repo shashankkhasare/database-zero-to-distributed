@@ -2,14 +2,24 @@
 
 # Database: Zero to Distributed
 
-This repository will produce a complete, executable book about building a
-distributed SQL database from first principles.
+This repository will produce a complete, executable four-volume book series
+about building a distributed SQL database from first principles.
 
 The reader should learn the system by reading an explanation and then studying,
 running, changing, and breaking the real implementation beside it.
 
 The book is not a transcript of the videos. It is a durable technical narrative
 that should remain useful without video, narration, or external context.
+
+## Licensing
+
+The repository uses two licenses. Source code, tests, scripts, configuration,
+and code snippets—including snippets embedded in chapters—use the MIT License
+in `LICENSE`. Book prose and original illustrations use the Creative Commons
+Attribution 4.0 International License in `BOOK-LICENSE.md`.
+
+Do not assume that third-party material inherits either license. Record and
+preserve its original attribution and license wherever it is introduced.
 
 ---
 
@@ -62,6 +72,71 @@ without the video.
 `Roadmap.md` defines the order of concepts. `TODO.md` tracks implementation and
 publication progress. This file defines the standard expected from the book,
 while `VIDEO.md` defines the shared video-production workflow.
+
+## Four volumes, one codebase
+
+The roadmap's four volumes are publication boundaries around one continuous
+implementation:
+
+1. **Read Rows** (Chapters 1–34) builds the query engine and distributes query
+   work.
+2. **Store and Write Rows Correctly** (Chapters 35–48) builds durable storage
+   and transactions.
+3. **Distribute Data and Correctness** (Chapters 49–62) adds replication,
+   sharding, consensus, and distributed transactions.
+4. **Complete the Language and Bring Everything Together** (Chapters 63–75)
+   completes advanced SQL, integrates the system, benchmarks it, and subjects
+   it to failures.
+
+Do not fork the database implementation for each volume. The repository,
+Cargo project, tests, and `lesson-NNN` tag sequence continue across the full
+series. A reader entering a later volume checks out its starting lesson tag
+and inherits the same code evolved by the earlier volumes.
+
+The published site will use one series landing page with one path per volume:
+
+```text
+/database-zero-to-distributed/
+├── volume-1/
+├── volume-2/
+├── volume-3/
+└── volume-4/
+```
+
+While only Volume I exists, the root path may continue to serve it directly.
+Create the landing page and additional builds when a second volume has real
+manuscripts; do not publish empty placeholder books.
+
+Do not restructure the repository merely to reserve space for future volumes.
+Keep the current `book/` and `book.toml` layout while Volume I is the only
+manuscript. When work on Volume II begins, migrate toward a layout such as:
+
+```text
+book/
+├── landing/
+├── volume-1/
+├── volume-2/
+└── shared/
+    ├── theme/
+    └── images/
+
+book-volume-1.toml
+book-volume-2.toml
+```
+
+At that point the deployment should assemble one site tree:
+
+```text
+build/site/index.html
+build/site/volume-1/
+build/site/volume-2/
+```
+
+Later volume directories and configuration files appear only when their
+manuscripts begin. Moving Volume I beneath `volume-1/` must not break published
+chapter links: preserve the existing root URLs with redirects to their new
+locations. This publishing migration does not move or duplicate the Rust
+source, tests, lesson tags, or Git history.
 
 ---
 
@@ -235,6 +310,19 @@ Main chapters should identify project-specific operations when confusion with a
 standard Rust feature is likely, but their purpose and database behavior matter
 more than their syntax. Keep the appendix practical, incremental, and free of
 advanced Rust that the current implementation does not use.
+
+## Keep the SQL grammar accountable
+
+Appendix B is the contract for the SQL dialect the complete course intends to
+build. Every grammar family must name a chapter or a clearly identified
+subsystem owner. A chapter may repeat only the small production it needs, but
+its code, tests, and tagged checkpoint must agree with the appendix's
+implemented-coverage table.
+
+Do not describe planned syntax as implemented. When a construct is added,
+update its grammar, ownership, and checkpoint together. When the roadmap no
+longer intends to support a planned construct, remove it only with an explicit
+scope decision rather than allowing it to become an unowned promise.
 
 ## Speak collaboratively
 

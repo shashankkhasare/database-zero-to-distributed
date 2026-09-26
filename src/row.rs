@@ -4,6 +4,8 @@ use std::fmt;
 pub enum Value {
     Integer(i64),
     Text(String),
+    Boolean(bool),
+    Null,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -75,6 +77,8 @@ impl fmt::Display for Value {
         match self {
             Value::Integer(value) => write!(formatter, "{value}"),
             Value::Text(value) => write!(formatter, "\"{value}\""),
+            Value::Boolean(value) => write!(formatter, "{value}"),
+            Value::Null => write!(formatter, "NULL"),
         }
     }
 }
