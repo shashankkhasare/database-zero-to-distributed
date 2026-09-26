@@ -54,27 +54,30 @@ must preserve that structure so binding can resolve the names and check their
 types. Here is the expanded grammar:
 
 ```text
-query          = "SELECT" expression
-                 "FROM" identifier alias?
-                 "WHERE" expression ";" ;
-alias          = "AS"? identifier ;
+query               = "SELECT" expression
+                      "FROM" identifier alias?
+                      "WHERE" expression ";" ;
 
-expression     = or_expression ;
-or_expression  = and_expression ("OR" and_expression)* ;
-and_expression = not_expression ("AND" not_expression)* ;
-not_expression = "NOT" not_expression | predicate ;
+alias               = "AS"? identifier ;
 
-predicate      = additive comparison_operator additive
-               | additive "IS" "NOT"? "NULL"
-               | additive ;
-additive       = term (("+" | "-") term)* ;
-term           = factor (("*" | "/") factor)* ;
-factor         = ("+" | "-") factor | primary ;
+expression          = or_expression ;
+or_expression       = and_expression ("OR" and_expression)* ;
+and_expression      = not_expression ("AND" not_expression)* ;
+not_expression      = "NOT" not_expression | predicate ;
 
-primary        = column_reference | integer | string
-               | "TRUE" | "FALSE" | "NULL"
-               | "(" expression ")" ;
-column_reference = (identifier ".")? identifier ;
+predicate           = additive comparison_operator additive
+                    | additive "IS" "NOT"? "NULL"
+                    | additive ;
+
+additive            = term (("+" | "-") term)* ;
+term                = factor (("*" | "/") factor)* ;
+factor              = ("+" | "-") factor | primary ;
+
+primary             = column_reference | integer | string
+                    | "TRUE" | "FALSE" | "NULL"
+                    | "(" expression ")" ;
+
+column_reference    = (identifier ".")? identifier ;
 comparison_operator = "=" | "<>" | "<" | "<=" | ">" | ">=" ;
 ```
 
