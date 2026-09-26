@@ -302,4 +302,24 @@ mod tests {
             Expr::Literal(crate::row::Value::Boolean(false))
         );
     }
+
+    #[test]
+    fn requires_the_semicolon() {
+        assert_eq!(
+            parse("SELECT name FROM employees WHERE salary > 50000")
+                .unwrap_err()
+                .to_string(),
+            "expected ; after query"
+        );
+    }
+
+    #[test]
+    fn rejects_tokens_after_the_query() {
+        assert_eq!(
+            parse("SELECT name FROM employees WHERE salary > 50000; extra")
+                .unwrap_err()
+                .to_string(),
+            "unexpected token after ;"
+        );
+    }
 }
