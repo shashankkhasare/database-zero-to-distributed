@@ -34,8 +34,8 @@ database objects and checks whether their use makes sense:
 
 ```text
 SQL → tokens → AST → binding → bound plan → rows
-                         ↑
-                       catalog
+                       ↑
+                     catalog
 ```
 
 We will use this query to exercise the complete path:
@@ -120,10 +120,11 @@ the richer AST that binding must inspect.
 
 ## 4.2 Extend `Value`
 
-This section changes two files for two different reasons. First, `row.rs`
-needs values that expressions can produce. Then `plan.rs` needs a temporary
-compatibility edit because adding variants makes its old value match
-incomplete.
+The expanded grammar requires rows to carry Boolean and null results, so
+`Value` needs two new variants. Adding those variants also makes every existing
+match on `Value` incomplete until it handles them. We will update `row.rs`
+first, then make a temporary compatibility change to Chapter 3's integer-only
+filter.
 
 ### 4.2.1 Add Boolean and null values
 
@@ -204,9 +205,11 @@ teach the lexer to recognize the expanded grammar.
 
 ## 4.3 Extend the lexer
 
-The lexer changes in three steps. We first extend the token vocabulary, then
-teach the scanner to consume quoted strings, and finally recognize the new
-operators and keywords.
+The expanded grammar introduces three kinds of input that Chapter 3's lexer
+cannot yet recognize: new fixed words such as `AND` and `TRUE`, quoted string
+literals, and additional punctuation operators such as `<=` and `<>`. We
+will add a token representation for each kind, then teach the scanner how to
+recognize it.
 
 ### 4.3.1 Add the new tokens
 
@@ -257,7 +260,7 @@ until its closing quote, and produces one `Token::String`. For example:
 
 ```text
 'Ada'         → String("Ada")
-'O''Reilly'   → String("O'Reilly")
+'It''s ready' → String("It's ready")
 ```
 
 SQL writes two adjacent quotes inside a string to represent one quote in its
@@ -381,8 +384,27 @@ parser recovers from those tokens.
 
 ## 4.4 Define expression operators and the AST
 
-Create `expression.rs` with the expression vocabulary. The two operator enums
-first name the unary and binary operations that the grammar accepts.
+The expanded grammar introduced several ways to build an expression. The
+`factor` rule added unary `+` and `-`, while `not_expression` added `NOT`.
+The `term` and `additive` rules added arithmetic operators, `predicate` added
+comparisons and null tests, and the two outer expression levels added `AND`
+and `OR`. The AST needs a value for each operator and a tree shape that
+preserves how those operations are nested.
+
+Create `expression.rs` with two operator enums and one expression tree. The
+operator enums represent the vocabulary added by those grammar rules; the tree
+records how a particular query composes the operators.
+
+`UnaryOp` contains the three operators that take one operand. `Plus` and
+`Minus` represent leading signs such as `-salary`. `Not` represents Boolean
+negation such as `NOT active`.
+
+`BinaryOp` contains operators that take a left and a right operand. They fall
+into three groups: arithmetic, comparison, and Boolean. The binder will use
+the same groups when it checks operand types in Section 4.9. Arithmetic works
+on integers. Comparison operators compare compatible operands and produce a
+Boolean; Section 4.9 defines the accepted types. `And` and `Or` combine
+Boolean operands.
 
 `src/expression.rs`: create this file
 
@@ -413,10 +435,9 @@ pub enum BinaryOp {
 }
 ```
 
-An expression tree then combines those operators with columns and literal
-values. `Column` retains both parts of a possible qualified name. `Literal`
-stores a value written directly in SQL. The recursive variants use `Box` so
-one expression can contain smaller expressions.
+`Expr` is the unresolved expression tree recovered by the parser. The tree is
+recursive: `Unary` contains one child expression and `Binary` contains two.
+Those children use `Box` so the recursive enum has a finite, known size.
 
 `src/expression.rs`: add after `BinaryOp`
 
@@ -444,38 +465,56 @@ pub enum Expr {
 }
 ```
 
-The qualifier in `e.name` is stored as text. The parser has not yet proved
-that `e` is a valid alias.
-
-For an unqualified column, the qualifier is absent:
+`Column` preserves both parts of a possibly qualified name. An unqualified
+column has no qualifier; a qualified one retains both pieces for the binder:
 
 ```text
 name    → Column { qualifier: None, name: "name" }
-```
-
-A qualified column preserves both pieces for the binder:
-
-```text
 e.name  → Column { qualifier: Some("e"), name: "name" }
 ```
 
-`Literal` can therefore store `5000`, `'Ada'`, `TRUE`, `FALSE`, or `NULL`.
-`Unary` represents one operator and one child, while `Binary` represents an
-operator with left and right children. `IsNull` remains separate because
-`IS NULL` tests for the unknown value instead of comparing two operands. The
-parser can now turn the token sequence into these nested values.
+The qualifier is still only text. The parser has not proved that `e` is a
+valid alias.
+
+`Literal` stores a value written directly in SQL: `5000`, `'Ada'`, `TRUE`,
+`FALSE`, or `NULL`. The parser converts each corresponding token into a
+`Value` variant.
+
+`Unary` and `Binary` carry an operator and their child expressions. For
+example, a unary-minus node with the `salary` column as its child will produce
+the negated salary when evaluated.
+
+`IsNull` remains separate because `IS NULL` and `IS NOT NULL` test for the
+unknown value rather than comparing two operands. Its `negated` flag
+distinguishes the two forms.
+
+We now have the values the parser must produce. Next we will follow the grammar
+from the outer query through each precedence level and build the corresponding
+`Expr` nodes.
 
 ## 4.5 Parse columns, literals, and precedence
 
-The parser methods follow the grammar from the outside inward. Section 4.5.1
-handles the outer query rule. Sections 4.5.2 through 4.5.5 descend through the
-expression precedence levels from weakest to tightest. Section 4.5.6 adds the
-cursor operations shared by all those methods. Following the Chapter 3
-convention, each method that implements a grammar production begins with
-`parse_`; cursor and construction helpers do not.
+Chapter 3's `Query` stored a selected-column name, a filter-column name, and
+an integer boundary. Those flat fields cannot represent a nested expression
+such as `salary + 5000 > 70000`. The new `Query` will therefore store an
+`Expr` for both its projection and filter.
 
-The flat query fields cannot hold nested operations, so the projection and
-filter fields will become expressions.
+Parsing begins with the outer `query` production. When `parse_query()` reaches
+a projection or filter expression, it calls `parse_expression()`. That method
+descends through the precedence rules from `OR`, the weakest operator, to a
+primary expression, the tightest:
+
+```text
+parse_query()
+    ↓
+parse_expression()
+    ↓
+OR → AND → NOT → predicate → additive → term → factor → primary
+```
+
+As in Chapter 3, methods that implement grammar productions begin with
+`parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
+inspect or move through the token list, so they do not use that prefix.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -512,7 +551,7 @@ pieces:
 
 ```text
 SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000;
-       └────┘      └───────┘    └┘       └───────────────────────┘
+       └────┘      └───────┘    └┘      └──────────────────────┘
      projection      table     alias              filter
 ```
 
@@ -653,8 +692,10 @@ or null result.
 
 ### 4.5.4 Parse arithmetic
 
-Addition calls the multiplication level, so multiplication becomes the deeper
-part of the tree.
+`parse_additive()` asks `parse_term()` for each operand, which places
+multiplication deeper in the tree. Both methods loop because their grammar
+rules allow repeated operators. Updating the accumulated left expression on
+each pass makes `a - b - c` associate as `(a - b) - c`.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -1017,8 +1058,13 @@ trust. We can now write the binder without referring to a type defined later.
 
 ### 4.9.1 Establish the scope
 
-Binding belongs in `catalog.rs`, whose imports now need the expression types
-the binder will use:
+A column name can be resolved only among the names visible to its query. For
+our one-table query, those names are the table name, its optional alias, and
+its columns. We will keep that information together in a `Scope` and pass it
+through every recursive binding call.
+
+Binding belongs in `catalog.rs`, whose imports need the expression types the
+binder will use:
 
 `src/catalog.rs`: replace the imports
 
@@ -1120,14 +1166,15 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
                         "AND and OR require Boolean expressions")?;
                     DataType::Boolean
                 }
-                _ => {
-                    if left_type != DataType::Null
-                        && right_type != DataType::Null
-                        && left_type != right_type
-                    {
-                        return Err(format!(
-                            "cannot compare {left_type:?} with {right_type:?}"));
-                    }
+                BinaryOp::Equal | BinaryOp::NotEqual => {
+                    require_matching_types(&left_type, &right_type)?;
+                    DataType::Boolean
+                }
+                BinaryOp::Less | BinaryOp::LessOrEqual
+                | BinaryOp::Greater | BinaryOp::GreaterOrEqual => {
+                    require_matching_types(&left_type, &right_type)?;
+                    require_ordered_type(&left_type)?;
+                    require_ordered_type(&right_type)?;
                     DataType::Boolean
                 }
             };
@@ -1148,9 +1195,11 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
 }
 ```
 
-Unary arithmetic requires an integer, `NOT` requires a Boolean, and binary
-operators fall into arithmetic, Boolean, and comparison groups. A null test
-accepts any operand and always produces a Boolean result.
+Unary arithmetic requires an integer, while `NOT` requires a Boolean.
+Arithmetic operators require integers, and `AND` and `OR` require Booleans.
+Equality accepts matching integer, text, or Boolean operands. Ordered
+comparisons accept matching integers or text. A null test accepts any operand
+and always produces a Boolean result.
 
 `src/catalog.rs`: add the type helper after `bind_expression()`
 
@@ -1162,6 +1211,35 @@ fn require_type(actual: &DataType, expected: &DataType,
         Ok(())
     } else {
         Err(format!("{message}: found {actual:?}"))
+    }
+}
+```
+
+Comparisons share two more checks. Their operand types must match unless one
+side is the temporarily untyped `NULL`. Ordered comparisons then reject types,
+such as Boolean, that have no ordering in this chapter's SQL dialect.
+
+`src/catalog.rs`: add after `require_type()`
+
+```rust
+fn require_matching_types(left: &DataType, right: &DataType)
+    -> Result<(), String>
+{
+    if left == &DataType::Null || right == &DataType::Null
+        || left == right
+    {
+        Ok(())
+    } else {
+        Err(format!("cannot compare {left:?} with {right:?}"))
+    }
+}
+
+fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
+    match data_type {
+        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
+        _ => Err(format!(
+            "ordered comparison requires integers or text: found {data_type:?}"
+        )),
     }
 }
 ```
@@ -1288,6 +1366,10 @@ fn evaluate_binary(left: Value, op: &BinaryOp, right: Value)
             compare(left, op, right),
         (Value::Text(left), op, Value::Text(right)) =>
             compare(left, op, right),
+        (Value::Boolean(left), BinaryOp::Equal,
+            Value::Boolean(right)) => Ok(Value::Boolean(left == right)),
+        (Value::Boolean(left), BinaryOp::NotEqual,
+            Value::Boolean(right)) => Ok(Value::Boolean(left != right)),
         (Value::Boolean(left), BinaryOp::And,
             Value::Boolean(right)) => Ok(Value::Boolean(left && right)),
         (Value::Boolean(left), BinaryOp::Or,
@@ -1433,10 +1515,12 @@ new plan. The catalog can finally do that without referring to future types.
 
 ## 4.12 Connect the application
 
-The pieces can now meet without forward references: `Expr` represents parsed
-SQL, `BoundExpr` represents checked expressions, and `Plan` can execute those
-expressions. This section completes `Catalog::bind()`, restores the application
-modules and fixed demonstration, and then reconnects the prompt.
+We can bind an individual expression and execute a plan that contains one, but
+no function yet turns an entire parsed `Query` into that plan.
+`Catalog::bind()` will resolve the input table, bind the projection and filter
+in the same scope, require a valid `WHERE` type, and assemble the familiar
+`Scan → Filter → Project` tree. Once that path exists, both the fixed
+demonstration and the prompt can use it.
 
 `src/catalog.rs`: add with the imports
 
@@ -1643,6 +1727,10 @@ This second phase changes expressions, binding, plans, and the application as
 one connected representation. Compile after all four pieces are present.
 
 ### 4.12.3 Verify that the code compiles
+
+The application now connects the parser, catalog and binder, plan, and
+executor. Compile it before running queries so missing modules, stale imports,
+or mismatched plan fields fail at this checkpoint.
 
 ```bash
 cargo fmt

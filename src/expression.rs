@@ -137,6 +137,12 @@ fn evaluate_binary(left: Value, op: &BinaryOp, right: Value) -> Result<Value, St
         }
         (Value::Integer(left), op, Value::Integer(right)) => compare(left, op, right),
         (Value::Text(left), op, Value::Text(right)) => compare(left, op, right),
+        (Value::Boolean(left), BinaryOp::Equal, Value::Boolean(right)) => {
+            Ok(Value::Boolean(left == right))
+        }
+        (Value::Boolean(left), BinaryOp::NotEqual, Value::Boolean(right)) => {
+            Ok(Value::Boolean(left != right))
+        }
         (Value::Boolean(left), BinaryOp::And, Value::Boolean(right)) => {
             Ok(Value::Boolean(left && right))
         }
@@ -222,6 +228,14 @@ mod tests {
         assert_eq!(
             evaluate(Value::Integer(1), BinaryOp::Equal, Value::Null),
             Value::Null
+        );
+    }
+
+    #[test]
+    fn boolean_equality_produces_a_boolean() {
+        assert_eq!(
+            evaluate(Value::Boolean(true), BinaryOp::Equal, Value::Boolean(false)),
+            Value::Boolean(false)
         );
     }
 }
