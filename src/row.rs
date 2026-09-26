@@ -25,6 +25,10 @@ impl Row {
             values: owned_values,
         }
     }
+
+    pub fn from_owned(values: Vec<(String, Value)>) -> Self {
+        Self { values }
+    }
 }
 
 impl Row {
@@ -36,23 +40,6 @@ impl Row {
         }
 
         None
-    }
-}
-
-impl Row {
-    pub fn project(&self, columns: &[String]) -> Self {
-        let mut values = Vec::new();
-
-        for column in columns {
-            let value = match self.get(column) {
-                Some(value) => value,
-                None => panic!("unknown column: {column}"),
-            };
-
-            values.push((column.clone(), value.clone()));
-        }
-
-        Self { values }
     }
 }
 
@@ -80,26 +67,5 @@ impl fmt::Display for Value {
             Value::Boolean(value) => write!(formatter, "{value}"),
             Value::Null => write!(formatter, "NULL"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{Row, Value};
-
-    #[test]
-    fn project_keeps_only_requested_columns() {
-        let row = Row::new(vec![
-            ("id", Value::Integer(1)),
-            ("name", Value::Text("Ada".to_string())),
-            ("salary", Value::Integer(70_000)),
-        ]);
-
-        let projected = row.project(&["name".to_string()]);
-
-        assert_eq!(
-            projected,
-            Row::new(vec![("name", Value::Text("Ada".to_string()))])
-        );
     }
 }

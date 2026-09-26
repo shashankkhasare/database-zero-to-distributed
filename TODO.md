@@ -355,17 +355,25 @@ Clippy with warnings denied, the mdBook build, and the book-link verifier.
 
 ---
 
-# Next milestone: 005, Binding Gives Names Meaning
+# Completed milestone: 005, Binding Gives Names Meaning
 
 Lesson 005 begins from the unresolved expression AST. It introduces the
 in-memory catalog, `BoundExpr`, name resolution, type checking, SQL
 three-valued evaluation, expression-based plans, and the complete
 parse-bind-execute application path.
 
-Its representative query will return Ada and Grace. Missing tables, columns,
-qualifiers, and incompatible operand types must fail before execution. The
-Chapter 5 build-along, implementation, tests, and `lesson-005` checkpoint
-remain to be completed.
+Its representative query returns Ada and Grace. Missing tables, columns,
+qualifiers, and incompatible operand types fail before execution. Lesson 005
+was verified with 15 passing tests, Clippy with warnings denied, the fixed
+demo, prompt error recovery, the mdBook build, and the book-link verifier.
+
+---
+
+# Current milestone: 006, Joins
+
+Lesson 006 begins from Chapter 5's one-table binding scope. It will introduce a
+second input table, make ambiguous columns visible, implement the simplest
+nested-loop join, and then expose why a different physical algorithm is useful.
 
 ---
 
@@ -377,7 +385,7 @@ remain to be completed.
 - [x] 002 — Relational Algebra Without the Math
 - [x] 003 — SQL Is Just a Frontend
 - [x] 004 — Expressions Are Trees
-- [ ] 005 — Binding Gives Names Meaning
+- [x] 005 — Binding Gives Names Meaning
 - [ ] 006 — Joins
 - [ ] 007 — GROUP BY and Aggregation
 - [ ] 008 — Sort, DISTINCT and LIMIT
