@@ -40,6 +40,7 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | binding | Chapter 3, §3.11 | Connecting names in an AST to actual database objects and checking their use |
 | expression tree | Chapter 4, §4.1 | A nested representation whose leaves are values or columns and whose parent nodes are operations |
 | operator precedence | Chapter 4, §4.5 | Rules that determine which operators capture their operands first when parentheses do not say otherwise |
+| associativity | Chapter 4, §4.5.5 | Rules that determine how repeated operators at the same precedence level group |
 | catalog | Chapter 5, §5.2 | A description of database objects available for name resolution; initially an in-memory list of tables |
 | data type | Chapter 5, §5.2 | A category of values allowed in a column or produced by an expression |
 | bound expression | Chapter 5, §5.3 | An expression whose names and operand types have already been checked |
