@@ -2,34 +2,57 @@ lesson: "004"
 style: book/art/STYLE.md
 
 images:
-  - id: flat-fields-become-expression-tree
+  - id: precedence-becomes-a-tree
     kind: generated-raster
-    output: book/images/004-flat-fields-become-expression-tree.png
+    output: book/images/004-precedence-becomes-a-tree.png
     placement: after the chapter epigraph and before the opening prose
-    alt: Expression pieces overflow a rigid four-compartment record, then fit naturally into a branching expression tree.
+    alt: A flat salary-plus-two-times-three expression becomes a tree whose multiplication branch is nested beneath addition.
     prompt: >-
       Use case: scientific-educational. Asset type: opening editorial
-      illustration for Chapter 4 of a technical database book about expression
-      trees. On the left, show a shallow teal filing tray with four rigid
-      rectangular compartments. Several simple expression pieces, including
-      an addition symbol, a greater-than symbol, and connected condition
-      pieces, cannot fit and visibly spill beyond the compartments. A clear
-      visual transition leads to the right, where those pieces fit naturally
-      into a balanced branching tree made of connected cards. Use simple
-      symbols only and no written labels. Follow book/art/STYLE.md exactly:
-      hand-drawn ink contours, restrained gouache and watercolor fills on
-      lightly textured warm ivory paper, charcoal, deep database teal, muted
-      turquoise, ochre gold, and very small rust-red accents. Wide landscape
-      composition, generous margins, and one immediately readable metaphor at
-      book-column width. No people, SQL text, code, prose, tiny typography,
-      logos, watermark, photorealism, glossy 3D rendering, digital gradients,
-      interface chrome, or imitation of a named artist or publication.
+      illustration for a technical database book chapter titled in surrounding
+      HTML "Expressions Are Trees". Primary request: show how operator
+      precedence turns a flat expression into a meaningful tree. On the left,
+      arrange five large separate cards in one horizontal sequence containing
+      exactly these marks, one per card: a simple salary/coins icon, "+", "2",
+      "×", "3". On the right, arrange the same elements as a clean branching
+      tree: the "+" card at the root, the salary/coins icon as its left leaf,
+      and the "×" card as its right child; the "×" card has "2" and "3" as
+      its two leaves. Connect the right-side cards with straight, noncrossing
+      ochre lines. A broad hand-painted teal arrow moves from the flat sequence
+      to the tree. The visual must immediately communicate that multiplication
+      nests inside addition. Style/medium: original editorial illustration;
+      hand-drawn charcoal ink contours with restrained gouache and watercolor
+      fills on lightly textured warm ivory paper; friendly and intelligent,
+      not childish; subtle print texture and confident imperfect lines.
+      Composition: wide landscape, generous negative space, balanced at
+      book-column width. Color palette: deep database teal, muted turquoise,
+      ochre gold, charcoal, and tiny rust-red accents. Text (verbatim): "+",
+      "2", "×", "3"; render these four marks accurately and prominently,
+      with no other written text. Constraints: exactly five cards on each
+      side; preserve the stated tree topology; the salary leaf uses only a
+      coins icon, not a word. Avoid: SQL prose, code blocks, labels, extra
+      numbers or symbols, people, logos, watermark, photorealism, glossy 3D
+      rendering, interface chrome, digital gradients, or imitation of any
+      named artist or publication.
+    revision_prompt: >-
+      Edit this existing educational illustration without changing its
+      diagram, symbols, card count, tree topology, or overall composition.
+      Fill every transparent or black-looking gap across the entire canvas
+      with a continuous lightly textured warm ivory paper background and
+      restrained pale teal watercolor washes. The finished image must be fully
+      opaque from edge to edge, with no transparent pixels, no black voids, no
+      cutout regions, and no dark empty blobs. Preserve exactly the left
+      sequence of coin icon, plus, 2, multiplication, 3 and the right tree with
+      plus at the root, coins at left, multiplication at right, and 2 and 3
+      beneath multiplication. Preserve the hand-drawn charcoal, gouache,
+      watercolor style and all existing legible symbols. Add no text, cards,
+      numbers, symbols, people, logos, or watermark.
 
   - id: complete-query-ast
     kind: generated-raster
     output: book/images/004-complete-query-ast.png
     placement: section 4.6 after the AST checkpoint explanation
-    alt: The Chapter 4 query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.
+    alt: The complete query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.
     prompt: >-
       Use case: scientific-educational. Asset type: full query AST diagram for
       a technical database book. Draw one orderly top-down tree on warm paper.
