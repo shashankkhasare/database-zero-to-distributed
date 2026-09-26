@@ -112,29 +112,14 @@ pub struct Query {
 
 There is nowhere to store the addition inside `e.salary + 5000`, the two
 conditions joined by `AND`, or the `IS NOT NULL` test. Adding one field for
-each new spelling would only work until the expressions were nested in a new
-way.
-
-Tree shape also records meaning. Consider this expression:
-
-```text
-salary + 2 * 3
-```
-
-The usual precedence rules interpret it as `salary + (2 * 3)`, not
-`(salary + 2) * 3`. Both interpretations contain the same tokens, but their
-trees differ and may produce different answers. The parser must build the tree
-required by the grammar.
-
-An expression tree solves that representation problem. Leaves store columns
-and literal values. Parent nodes store operations whose children are other
-expressions. The parser can build the same small set of node kinds into many
-different shapes. We will begin by extending the values those nodes may
-produce.
+each operation would fail as soon as expressions nest in a different way. An
+expression tree can represent those combinations without adding a field for
+every possible shape. We will start by adding the value kinds those
+expressions can produce.
 
 ## 4.2 Extend `Value`
 
-The expanded grammar requires rows to carry Boolean and null results, so
+This chapter's grammar requires rows to carry Boolean and null results, so
 `Value` needs two new variants. Adding those variants also makes every existing
 match on `Value` incomplete until it handles them. We will update `row.rs`
 first, then make a temporary compatibility change to Chapter 3's integer-only
@@ -142,7 +127,7 @@ filter.
 
 ### 4.2.1 Add Boolean and null values
 
-The expanded grammar adds Boolean expressions, `TRUE`, `FALSE`, and `NULL`.
+The new grammar adds Boolean expressions, `TRUE`, `FALSE`, and `NULL`.
 Their results must fit into rows and pass between expression operators, so the
 runtime `Value` representation needs two more variants. `Boolean` stores
 `true` or `false`, while `Null` represents SQL's unknown value rather than an
@@ -214,10 +199,10 @@ recognize it.
 
 ### 4.3.1 Add the new tokens
 
-The expanded expression grammar needs more vocabulary than Chapter 3. The
-representative query uses many of these tokens; the remaining ones make the
-other grammar forms executable, such as `name = 'Ada'` or
-`(salary + 5000) > 70000`.
+The representative query uses many of the new tokens. Others support
+additional forms in the grammar, such as `name = 'Ada'` or
+`(salary + 5000) > 70000`. The table groups the new token variants by the
+role they play.
 
 | Tokens | Purpose |
 | --- | --- |
@@ -253,6 +238,19 @@ pub enum Token {
 
 These variants define how the lexer will represent the expanded vocabulary.
 The scanning rules below still need to recognize the corresponding text.
+
+The single `>` token is now named `Greater` alongside `Less`,
+`GreaterOrEqual`, and the other comparison variants. The Chapter 3 parser and
+two lexer tests still use its old name, `GreaterThan`. Rename those remaining
+references so the existing query continues to compile while we extend the
+parser.
+
+`src/lexer.rs` and `src/parser.rs`: replace every remaining
+`Token::GreaterThan`
+
+```rust
+Token::Greater
+```
 
 ### 4.3.2 Lex string literals
 
@@ -495,28 +493,66 @@ from the outer query through each precedence level and build the corresponding
 
 ## 4.5 Parse columns, literals, and precedence
 
-Chapter 3's `Query` stored a selected-column name, a filter-column name, and
-an integer boundary. Those flat fields cannot represent a nested expression
-such as `salary + 5000 > 70000`. The new `Query` will therefore store an
-`Expr` for both its projection and filter.
+Before we begin, replace `src/main.rs` with this temporary AST inspector:
 
-Parsing begins with the outer `query` production. When `parse_query()` reaches
-a projection or filter expression, it calls `parse_expression()`. Each named
-expression production represents one precedence level. The methods descend
-from `OR`, the weakest operator, to a primary expression, the tightest:
+```rust
+mod expression;
+mod lexer;
+mod parser;
+#[allow(dead_code)] // Row execution reconnects in Chapter 5.
+mod row;
 
-```text
-parse_query()
-    ↓
-parse_expression()
-    ↓
-OR → AND → NOT → predicate → additive → term → factor → primary
+use std::io::{self, Write};
+use parser::parse;
+
+fn main() -> io::Result<()> {
+    run_prompt()
+}
+
+fn inspect_sql(sql: &str) {
+    match parse(sql) {
+        Ok(query) => println!("{query:#?}"),
+        Err(error) => eprintln!("error: {error}"),
+    }
+}
+
+fn run_prompt() -> io::Result<()> {
+    loop {
+        print!("sql> ");
+        io::stdout().flush()?;
+        let mut sql = String::new();
+        if io::stdin().read_line(&mut sql)? == 0 {
+            println!();
+            return Ok(());
+        }
+        if !sql.trim().is_empty() {
+            inspect_sql(&sql);
+        }
+    }
+}
 ```
+
+The parser mirrors the grammar, beginning with `parse_query()` and descending
+through expression methods from the weakest precedence level to the tightest.
 
 As in Chapter 3, methods that implement grammar productions begin with
 `parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
 inspect or move through the token list, so they do not use that prefix. We
 will define those helpers before the production methods that call them.
+
+The next six subsections rebuild the parser as one connected change. The
+program will not compile until `parse_primary()` closes the new `impl Parser`
+in Section 4.5.6. Section 4.5.7 then removes tests tied to the old
+representation.
+
+Chapter 3's `Query` stored a selected-column name, a filter-column name, and
+an integer boundary. In the expanded `query` production, both the `SELECT`
+position and the `WHERE` position now contain an `expression`, so the new
+`Query` stores an `Expr` for its projection and filter.
+
+Before rebuilding `parser.rs`, delete the complete old `impl Query` and
+`impl Parser` blocks. Keep `ParseError`, `parse()`, and the `Parser` struct;
+the following subsections will build a new `impl Parser` around them.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -548,24 +584,11 @@ Parser { tokens, current: 0 }.parse_query()
 
 ### 4.5.1 Move through the token list
 
-These helpers do not implement grammar productions. They provide the cursor
-operations that all production methods need. `peek()` borrows the next token
-without advancing. `consume()` advances only when that token matches.
-`expect()` turns a failed match into a parse error, while `identifier()`
-extracts the text stored inside an identifier token. The `binary()` helper
-constructs the node shared by every binary-operator level.
-
-`src/parser.rs`: add after `Parser`
-
-```rust
-fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
-    Expr::Binary {
-        left: Box::new(left),
-        op,
-        right: Box::new(right),
-    }
-}
-```
+Before implementing the grammar productions, add the operations they will use
+to inspect and consume tokens. `peek()` borrows the next token without
+advancing. `consume()` advances only when that token matches. `expect()` turns
+a failed match into a parse error, while `identifier()` extracts the text
+stored inside an identifier token.
 
 Now begin the parser implementation with the cursor helpers.
 
@@ -604,9 +627,13 @@ impl Parser {
     }
 ```
 
+`identifier()` calls `peek().cloned()` to copy the next token before advancing
+the cursor. It can then return the identifier's owned `String` without keeping
+a borrow of the token list.
+
 ### 4.5.2 Parse the query and its alias
 
-The outer method implements these two productions:
+We begin with the outer `query` and `alias` productions:
 
 ```text
 query = "SELECT" expression "FROM" identifier alias?
@@ -660,13 +687,13 @@ an alias either with `AS` or directly after the table name.
 ```
 
 `consume()` will return `true` and advance when the next token is `AS`.
-Without `AS`, `matches!` checks whether the next token contains an identifier;
-if it does, `identifier()` takes that name as the alias. Otherwise the query
-has no alias.
+Without `AS`, `matches!` returns `true` when the next token fits the
+`Identifier` pattern without extracting its text. If it matches,
+`identifier()` takes that name as the alias. Otherwise the query has no alias.
 
 ### 4.5.3 Parse Boolean operators
 
-Boolean precedence is described by four productions:
+Boolean expressions use four precedence productions:
 
 ```text
 expression     = or_expression ;
@@ -675,20 +702,30 @@ and_expression = not_expression ("AND" not_expression)* ;
 not_expression = "NOT" not_expression | predicate ;
 ```
 
-These named layers are new compared with Chapter 3's fixed clause grammar.
-Each layer asks the next tighter layer to produce its operands. The
-`or_expression` rule requires one `and_expression`, followed by zero or more
-groups containing `OR` and another `and_expression`. The `*` applies to that
-whole parenthesized group. The `and_expression` rule has the same shape one
-level lower.
+Each rule asks the next tighter rule for its operands, which makes the tree
+preserve precedence. Consider `a AND b OR c AND d`.
+`parse_or_expression()` first asks `parse_and_expression()` for its left
+operand. That call consumes `a AND b` and returns a complete `AND` node. After
+the `OR`, another call consumes `c AND d`. The resulting tree is
+`(a AND b) OR (c AND d)`.
 
-Precedence begins with `OR`. Because `parse_or_expression()` asks
-`parse_and_expression()` for each operand, an entire `AND` expression is
-assembled before `OR` can combine it.
+Every binary-operator level builds the same `Expr::Binary` shape. Add a small
+constructor here so the parsing methods can concentrate on when an operator
+belongs in the tree. The constructor does not use parser state, so it is an
+associated function called with `Self::binary()` rather than a method called
+with `self.binary()`.
 
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
+    fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+        Expr::Binary {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        }
+    }
+
     fn parse_expression(&mut self) -> Result<Expr, ParseError> {
         self.parse_or_expression()
     }
@@ -696,7 +733,7 @@ assembled before `OR` can combine it.
     fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_and_expression()?;
         while self.consume(&Token::Or) {
-            expression = binary(expression, BinaryOp::Or,
+            expression = Self::binary(expression, BinaryOp::Or,
                 self.parse_and_expression()?);
         }
         Ok(expression)
@@ -705,7 +742,7 @@ assembled before `OR` can combine it.
     fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_not_expression()?;
         while self.consume(&Token::And) {
-            expression = binary(expression, BinaryOp::And,
+            expression = Self::binary(expression, BinaryOp::And,
                 self.parse_not_expression()?);
         }
         Ok(expression)
@@ -716,15 +753,16 @@ The first call to `parse_and_expression()` implements the required first
 operand in the `or_expression` production. Then
 `while self.consume(&Token::Or)` implements
 `("OR" and_expression)*`: while the next token is `OR`, `consume()` both
-recognizes it and advances past it. The loop parses the required right operand
-and combines it with the expression accumulated on the left. The `AND` loop
-maps to its production in exactly the same way.
+recognizes it and advances past it. The `while` loop parses the required right
+operand and combines it with the expression accumulated on the left. The
+`AND` loop maps to its production in exactly the same way.
 
 The vertical bar in the `not_expression` production separates two
 alternatives. If the next token is `NOT`, the method consumes it and calls
 itself, allowing chains such as `NOT NOT condition`. Otherwise it chooses the
-`predicate` alternative, which ends the recursion. Because this production is
-below `AND`, `NOT` binds more tightly.
+`predicate` alternative, which ends the recursion. The `parse_predicate()`
+call also hands the work to the next precedence level, introduced in the
+following subsection.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -742,7 +780,7 @@ below `AND`, `NOT` binds more tightly.
 
 ### 4.5.4 Parse comparisons and null tests
 
-The predicate level has three alternatives:
+Comparisons and null tests come from the `predicate` production:
 
 ```text
 predicate = additive comparison_operator additive
@@ -774,7 +812,7 @@ tests bind more tightly than `NOT`.
         else { None };
 
         if let Some(op) = op {
-            return Ok(binary(left, op, self.parse_additive()?));
+            return Ok(Self::binary(left, op, self.parse_additive()?));
         }
 
         if self.consume(&Token::Is) {
@@ -795,7 +833,7 @@ or null result.
 
 ### 4.5.5 Parse arithmetic
 
-Three productions create the arithmetic precedence levels:
+Arithmetic uses three progressively tighter productions:
 
 ```text
 additive = term (("+" | "-") term)* ;
@@ -824,7 +862,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
             else if self.consume(&Token::Minus) { Some(BinaryOp::Subtract) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_term()?),
+                Some(op) => expression = Self::binary(
+                    expression, op, self.parse_term()?),
                 None => break,
             }
         }
@@ -838,7 +877,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
             else if self.consume(&Token::Slash) { Some(BinaryOp::Divide) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_factor()?),
+                Some(op) => expression = Self::binary(
+                    expression, op, self.parse_factor()?),
                 None => break,
             }
         }
@@ -849,7 +889,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
 The `factor` production uses alternatives rather than repetition. A leading
 sign is followed by another complete factor, so unary signs call themselves
 and `--salary` nests correctly. The recursion ends when the parser chooses the
-`primary` alternative.
+`primary` alternative. Any token other than `+` or `-` falls through to
+`parse_primary()` immediately.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -945,76 +986,51 @@ place.
 cursor. The resulting AST can therefore own identifier and string contents
 instead of borrowing them from the parser's token list.
 
+### 4.5.7 Remove obsolete parser tests
+
+The Chapter 3 parser tests still include two checks tied to the old `Query`.
+Remove `parses_the_supported_query_shape()`, which constructs the removed flat
+fields, and `parsed_sql_executes_the_employee_query()`, which calls the removed
+`into_plan()` method. Keep the tests for a required semicolon and trailing
+tokens. Those checks still describe valid parser behavior.
+
+The remaining tests use only `parse()`, so remove their obsolete `Query`,
+`Row`, and `Value` imports.
+
+`src/parser.rs`: replace the imports in `mod tests`
+
+```rust
+use super::parse;
+```
+
 > **Further reading**
 >
-> Robert Nystrom's [“Representing Code”](https://craftinginterpreters.com/representing-code.html)
-> motivates recursive syntax trees, while
-> [“Parsing Expressions”](https://craftinginterpreters.com/parsing-expressions.html)
+> In Robert Nystrom's *Crafting Interpreters*, Chapter 5,
+> [“Representing Code”](https://craftinginterpreters.com/representing-code.html),
+> motivates recursive syntax trees, while Chapter 6,
+> [“Parsing Expressions”](https://craftinginterpreters.com/parsing-expressions.html),
 > shows how layered grammar productions encode precedence and associativity.
 > The language differs from SQL, but the tree and parser ideas are the same.
 
 ## 4.6 Run an AST checkpoint
 
-Before binding names, make the recovered expression tree visible. Temporarily
-use the Chapter 3 prompt as an AST inspector.
-
-`src/main.rs`: temporarily replace the file
-
-```rust
-mod expression;
-mod lexer;
-mod parser;
-#[allow(dead_code)] // Row execution reconnects in Chapter 5.
-mod row;
-
-use std::io::{self, Write};
-use parser::parse;
-
-fn main() -> io::Result<()> {
-    run_prompt()
-}
-
-fn inspect_sql(sql: &str) {
-    match parse(sql) {
-        Ok(query) => println!("{query:#?}"),
-        Err(error) => eprintln!("error: {error}"),
-    }
-}
-```
-
-`src/main.rs`: add the prompt after `inspect_sql()`
-
-```rust
-fn run_prompt() -> io::Result<()> {
-    loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-        let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
-        }
-        if !sql.trim().is_empty() {
-            inspect_sql(&sql);
-        }
-    }
-}
-```
-
-Run the prompt and enter the representative query:
+The temporary shell installed before the parser replacement can now display
+the recovered expression tree. Run the prompt and enter the representative
+query:
 
 ```bash
 cargo run --quiet
 ```
 
 <figure class="book-illustration book-diagram">
-  <img src="images/004-complete-query-ast.png" alt="The complete query AST contains a projection column, employees table with alias e, and an AND filter whose children preserve arithmetic, comparison, and null-test precedence.">
+  <img src="images/004-complete-query-ast.png" alt="The query AST projects e.name and has an AND filter whose left child compares e.salary plus 5000 with 70000 and whose right child tests e.name for not null.">
   <figcaption>The complete AST records the query structure, including expression precedence, but its names are still unresolved.</figcaption>
 </figure>
 
-The printed tree places multiplication beneath addition and retains `e` as the
-qualifier on both column references. This proves that parsing recovered the
-intended structure. It does not prove that `employees`, `e`, or either column
+The printed tree places the addition inside the comparison, then joins that
+comparison and the null test beneath `AND`. It also retains `e` on each
+qualified column reference. This proves that parsing recovered the intended
+structure. It does not prove that `employees`, `e`, or any referenced column
 exists.
 
 ## 4.7 What we deliberately did not build
@@ -1050,7 +1066,8 @@ the result.
    make addition the deeper operation in the second.
 2. The `NOT` node contains the comparison because predicates bind more tightly
    than Boolean negation.
-3. The doubled quote becomes one quote inside a text literal.
+3. The AST contains `Literal(Text("It's ready"))`. The lexer consumes the
+   doubled quote and stores one quote in the text value before parsing begins.
 4. Parsing succeeds and preserves `x` as the qualifier; it cannot know whether
    that alias exists.
 5. Parsing succeeds because the tokens have a valid shape; it cannot know that

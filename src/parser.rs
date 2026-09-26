@@ -58,6 +58,14 @@ impl Parser {
         })
     }
 
+    fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+        Expr::Binary {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        }
+    }
+
     fn parse_expression(&mut self) -> Result<Expr, ParseError> {
         self.parse_or_expression()
     }
@@ -65,7 +73,7 @@ impl Parser {
     fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_and_expression()?;
         while self.consume(&Token::Or) {
-            expression = binary(expression, BinaryOp::Or, self.parse_and_expression()?);
+            expression = Self::binary(expression, BinaryOp::Or, self.parse_and_expression()?);
         }
         Ok(expression)
     }
@@ -73,7 +81,7 @@ impl Parser {
     fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_not_expression()?;
         while self.consume(&Token::And) {
-            expression = binary(expression, BinaryOp::And, self.parse_not_expression()?);
+            expression = Self::binary(expression, BinaryOp::And, self.parse_not_expression()?);
         }
         Ok(expression)
     }
@@ -106,7 +114,7 @@ impl Parser {
             None
         };
         if let Some(op) = op {
-            return Ok(binary(left, op, self.parse_additive()?));
+            return Ok(Self::binary(left, op, self.parse_additive()?));
         }
 
         if self.consume(&Token::Is) {
@@ -132,7 +140,7 @@ impl Parser {
                 None
             };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_term()?),
+                Some(op) => expression = Self::binary(expression, op, self.parse_term()?),
                 None => break,
             }
         }
@@ -150,7 +158,7 @@ impl Parser {
                 None
             };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_factor()?),
+                Some(op) => expression = Self::binary(expression, op, self.parse_factor()?),
                 None => break,
             }
         }
@@ -249,14 +257,6 @@ impl Parser {
     }
 }
 
-fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
-    Expr::Binary {
-        left: Box::new(left),
-        op,
-        right: Box::new(right),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::parse;
@@ -300,6 +300,26 @@ mod tests {
         assert_eq!(
             query.filter,
             Expr::Literal(crate::row::Value::Boolean(false))
+        );
+    }
+
+    #[test]
+    fn requires_the_semicolon() {
+        assert_eq!(
+            parse("SELECT name FROM employees WHERE salary > 50000")
+                .unwrap_err()
+                .to_string(),
+            "expected ; after query"
+        );
+    }
+
+    #[test]
+    fn rejects_tokens_after_the_query() {
+        assert_eq!(
+            parse("SELECT name FROM employees WHERE salary > 50000; extra")
+                .unwrap_err()
+                .to_string(),
+            "unexpected token after ;"
         );
     }
 }
