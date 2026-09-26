@@ -112,24 +112,9 @@ pub struct Query {
 
 There is nowhere to store the addition inside `e.salary + 5000`, the two
 conditions joined by `AND`, or the `IS NOT NULL` test. Adding one field for
-each new spelling would only work until the expressions were nested in a new
-way.
-
-Tree shape also records meaning. Consider this expression:
-
-```text
-salary + 2 * 3
-```
-
-The usual precedence rules interpret it as `salary + (2 * 3)`, not
-`(salary + 2) * 3`. Both interpretations contain the same tokens, but their
-trees differ and may produce different answers. The parser must build the tree
-required by the grammar.
-
-An expression tree solves that representation problem. Leaves store columns
-and literal values. Parent nodes store operations whose children are other
-expressions. The parser can build the same small set of node kinds into many
-different shapes. We will begin by extending the values those nodes may
+each operation would fail as soon as expressions nest in a different way. An
+expression tree can represent those combinations without adding a field for
+every possible shape. We will begin by extending the values its nodes may
 produce.
 
 ## 4.2 Extend `Value`
@@ -214,10 +199,10 @@ recognize it.
 
 ### 4.3.1 Add the new tokens
 
-The expanded expression grammar needs more vocabulary than Chapter 3. The
-representative query uses many of these tokens; the remaining ones make the
-other grammar forms executable, such as `name = 'Ada'` or
-`(salary + 5000) > 70000`.
+The representative query uses many of the new tokens. Others support
+additional forms in the grammar, such as `name = 'Ada'` or
+`(salary + 5000) > 70000`. The table groups the new token variants by the
+role they play.
 
 | Tokens | Purpose |
 | --- | --- |
@@ -495,28 +480,18 @@ from the outer query through each precedence level and build the corresponding
 
 ## 4.5 Parse columns, literals, and precedence
 
-Chapter 3's `Query` stored a selected-column name, a filter-column name, and
-an integer boundary. Those flat fields cannot represent a nested expression
-such as `salary + 5000 > 70000`. The new `Query` will therefore store an
-`Expr` for both its projection and filter.
-
-Parsing begins with the outer `query` production. When `parse_query()` reaches
-a projection or filter expression, it calls `parse_expression()`. Each named
-expression production represents one precedence level. The methods descend
-from `OR`, the weakest operator, to a primary expression, the tightest:
-
-```text
-parse_query()
-    ↓
-parse_expression()
-    ↓
-OR → AND → NOT → predicate → additive → term → factor → primary
-```
+The parser mirrors the grammar, beginning with `parse_query()` and descending
+through expression methods from the weakest precedence level to the tightest.
 
 As in Chapter 3, methods that implement grammar productions begin with
 `parse_`. Small helpers such as `peek()`, `consume()`, and `expect()` only
 inspect or move through the token list, so they do not use that prefix. We
 will define those helpers before the production methods that call them.
+
+Chapter 3's `Query` stored a selected-column name, a filter-column name, and
+an integer boundary. In the expanded `query` production, both the `SELECT`
+position and the `WHERE` position now contain an `expression`, so the new
+`Query` stores an `Expr` for its projection and filter.
 
 `src/parser.rs`: replace the imports and `Query`
 
@@ -548,24 +523,11 @@ Parser { tokens, current: 0 }.parse_query()
 
 ### 4.5.1 Move through the token list
 
-These helpers do not implement grammar productions. They provide the cursor
-operations that all production methods need. `peek()` borrows the next token
-without advancing. `consume()` advances only when that token matches.
-`expect()` turns a failed match into a parse error, while `identifier()`
-extracts the text stored inside an identifier token. The `binary()` helper
-constructs the node shared by every binary-operator level.
-
-`src/parser.rs`: add after `Parser`
-
-```rust
-fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
-    Expr::Binary {
-        left: Box::new(left),
-        op,
-        right: Box::new(right),
-    }
-}
-```
+Before implementing the grammar productions, add the operations they will use
+to inspect and consume tokens. `peek()` borrows the next token without
+advancing. `consume()` advances only when that token matches. `expect()` turns
+a failed match into a parse error, while `identifier()` extracts the text
+stored inside an identifier token.
 
 Now begin the parser implementation with the cursor helpers.
 
@@ -606,7 +568,7 @@ impl Parser {
 
 ### 4.5.2 Parse the query and its alias
 
-The outer method implements these two productions:
+We begin with the outer `query` and `alias` productions:
 
 ```text
 query = "SELECT" expression "FROM" identifier alias?
@@ -666,7 +628,7 @@ has no alias.
 
 ### 4.5.3 Parse Boolean operators
 
-Boolean precedence is described by four productions:
+Boolean expressions use four precedence productions:
 
 ```text
 expression     = or_expression ;
@@ -675,20 +637,30 @@ and_expression = not_expression ("AND" not_expression)* ;
 not_expression = "NOT" not_expression | predicate ;
 ```
 
-These named layers are new compared with Chapter 3's fixed clause grammar.
-Each layer asks the next tighter layer to produce its operands. The
-`or_expression` rule requires one `and_expression`, followed by zero or more
-groups containing `OR` and another `and_expression`. The `*` applies to that
-whole parenthesized group. The `and_expression` rule has the same shape one
-level lower.
+Each rule asks the next tighter rule for its operands, which makes the tree
+preserve precedence. Consider `a AND b OR c AND d`.
+`parse_or_expression()` first asks `parse_and_expression()` for its left
+operand. That call consumes `a AND b` and returns a complete `AND` node. After
+the `OR`, another call consumes `c AND d`. The resulting tree is
+`(a AND b) OR (c AND d)`.
 
-Precedence begins with `OR`. Because `parse_or_expression()` asks
-`parse_and_expression()` for each operand, an entire `AND` expression is
-assembled before `OR` can combine it.
+Every binary-operator level builds the same `Expr::Binary` shape. Add a small
+constructor here so the parsing methods can concentrate on when an operator
+belongs in the tree. The constructor does not use parser state, so it is an
+associated function called with `Self::binary()` rather than a method called
+with `self.binary()`.
 
 `src/parser.rs`: continue `impl Parser`
 
 ```rust
+    fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+        Expr::Binary {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        }
+    }
+
     fn parse_expression(&mut self) -> Result<Expr, ParseError> {
         self.parse_or_expression()
     }
@@ -696,7 +668,7 @@ assembled before `OR` can combine it.
     fn parse_or_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_and_expression()?;
         while self.consume(&Token::Or) {
-            expression = binary(expression, BinaryOp::Or,
+            expression = Self::binary(expression, BinaryOp::Or,
                 self.parse_and_expression()?);
         }
         Ok(expression)
@@ -705,7 +677,7 @@ assembled before `OR` can combine it.
     fn parse_and_expression(&mut self) -> Result<Expr, ParseError> {
         let mut expression = self.parse_not_expression()?;
         while self.consume(&Token::And) {
-            expression = binary(expression, BinaryOp::And,
+            expression = Self::binary(expression, BinaryOp::And,
                 self.parse_not_expression()?);
         }
         Ok(expression)
@@ -716,15 +688,15 @@ The first call to `parse_and_expression()` implements the required first
 operand in the `or_expression` production. Then
 `while self.consume(&Token::Or)` implements
 `("OR" and_expression)*`: while the next token is `OR`, `consume()` both
-recognizes it and advances past it. The loop parses the required right operand
-and combines it with the expression accumulated on the left. The `AND` loop
-maps to its production in exactly the same way.
+recognizes it and advances past it. The `while` loop parses the required right
+operand and combines it with the expression accumulated on the left. The
+`AND` loop maps to its production in exactly the same way.
 
 The vertical bar in the `not_expression` production separates two
 alternatives. If the next token is `NOT`, the method consumes it and calls
 itself, allowing chains such as `NOT NOT condition`. Otherwise it chooses the
-`predicate` alternative, which ends the recursion. Because this production is
-below `AND`, `NOT` binds more tightly.
+`predicate` alternative, which ends the recursion. That call also hands the
+work to the next precedence level, introduced in the following subsection.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -742,7 +714,7 @@ below `AND`, `NOT` binds more tightly.
 
 ### 4.5.4 Parse comparisons and null tests
 
-The predicate level has three alternatives:
+Comparisons and null tests come from the `predicate` production:
 
 ```text
 predicate = additive comparison_operator additive
@@ -774,7 +746,7 @@ tests bind more tightly than `NOT`.
         else { None };
 
         if let Some(op) = op {
-            return Ok(binary(left, op, self.parse_additive()?));
+            return Ok(Self::binary(left, op, self.parse_additive()?));
         }
 
         if self.consume(&Token::Is) {
@@ -795,7 +767,7 @@ or null result.
 
 ### 4.5.5 Parse arithmetic
 
-Three productions create the arithmetic precedence levels:
+Arithmetic uses three progressively tighter productions:
 
 ```text
 additive = term (("+" | "-") term)* ;
@@ -824,7 +796,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
             else if self.consume(&Token::Minus) { Some(BinaryOp::Subtract) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_term()?),
+                Some(op) => expression = Self::binary(
+                    expression, op, self.parse_term()?),
                 None => break,
             }
         }
@@ -838,7 +811,8 @@ becomes `(a - b) - c`. Subtraction is therefore left-associative.
             else if self.consume(&Token::Slash) { Some(BinaryOp::Divide) }
             else { None };
             match op {
-                Some(op) => expression = binary(expression, op, self.parse_factor()?),
+                Some(op) => expression = Self::binary(
+                    expression, op, self.parse_factor()?),
                 None => break,
             }
         }
@@ -947,9 +921,10 @@ instead of borrowing them from the parser's token list.
 
 > **Further reading**
 >
-> Robert Nystrom's [“Representing Code”](https://craftinginterpreters.com/representing-code.html)
-> motivates recursive syntax trees, while
-> [“Parsing Expressions”](https://craftinginterpreters.com/parsing-expressions.html)
+> In Robert Nystrom's *Crafting Interpreters*, Chapter 5,
+> [“Representing Code”](https://craftinginterpreters.com/representing-code.html),
+> motivates recursive syntax trees, while Chapter 6,
+> [“Parsing Expressions”](https://craftinginterpreters.com/parsing-expressions.html),
 > shows how layered grammar productions encode precedence and associativity.
 > The language differs from SQL, but the tree and parser ideas are the same.
 
