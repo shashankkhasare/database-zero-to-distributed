@@ -21,7 +21,8 @@ not design distant lessons prematurely.
 - [x] Install and verify the Rust development toolchain
 - [x] Install and verify Node.js, FFmpeg, and FFprobe
 - [x] Add `kokoro-js` as the initial local narration engine
-- [x] Add a full `LICENSE` file
+- [x] License code and code snippets under MIT, and book prose and original
+  illustrations under CC BY 4.0
 - [x] Publish Rust orientation as optional Appendix A instead of lesson 000
 - [x] Use one movable `lesson-NNN` tag per verified lesson while the series is in active development
 - [x] Define the smallest lesson directory only when lesson 001 needs it
