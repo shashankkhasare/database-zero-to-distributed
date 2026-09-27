@@ -1091,15 +1091,35 @@ the result.
 
 </details>
 
-## 4.9 Structure is not meaning
+## 4.9 The plan cannot use these trees yet
 
-The AST now answers structural questions. It knows that multiplication belongs
-inside addition, that `e.name` is a qualified column, and that `IS NOT NULL`
-is one predicate. It still stores `employees`, `e`, `salary`, and `name` as
-unchecked text.
+In Chapter 3, each parsed piece was a single, non-nested value. The projection
+was one column name, while the filter was one column, the fixed `>` operator,
+and one integer:
 
-That distinction becomes visible if `e` is replaced by `x` or `employees` by
-`missing_table`: both queries still produce an AST. The next chapter adds
-binding, which connects those names to a catalog, checks operand types, and
-turns the unresolved expression tree into work the executor may safely run.
+```text
+selected_column: name
+filter_column: salary
+greater_than: 50000
+```
+
+Those fields mapped directly into the fixed `Project` and `Filter` fields in
+our logical plan. This chapter changed that representation. The projection and
+filter are now nested trees:
+
+```text
+projection: Expr
+filter: Expr
+```
+
+The AST-only shell stops after printing those trees because the current plan
+cannot carry them. More importantly, the trees still contain unchecked names.
+Attaching them directly to the plan would force the executor to decide whether
+`employees`, `e`, and `salary` exist and whether an operation such as
+`name + 1` makes sense.
+
+The next chapter introduces the missing boundary. The binder will walk each
+expression tree, resolve its names through a catalog, check its operand types,
+and produce a checked expression tree that the logical plan can safely store
+and the executor can evaluate.
 
