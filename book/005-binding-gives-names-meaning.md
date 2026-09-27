@@ -28,47 +28,30 @@ FROM employees AS e
 WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
-The tree preserves the important structure. It knows that addition happens
-before comparison, that the two predicates are joined by `AND`, and that
-`IS NOT NULL` is one operation.
+The tree preserves precedence and nesting, but names such as `employees`, `e`,
+`name`, and `salary` remain unchecked. Grammar also cannot tell us whether
+`salary + 5000` is type-correct or whether the complete `WHERE` expression
+produces a Boolean.
 
-But several parts of that tree are still only text:
-
-- Does `employees` name a real table?
-- Does `e` refer to that table?
-- Do `name` and `salary` exist?
-- Is `salary` an integer that can be added to `5000`?
-- Does the complete `WHERE` expression produce a Boolean value?
-
-The parser cannot answer those questions from grammar alone. This chapter
-inserts a **binding** stage between parsing and planning. The binder performs
-three jobs:
+This chapter inserts a **binding** stage between parsing and planning. The
+binder performs three jobs:
 
 1. It resolves tables, aliases, and columns against the catalog.
 2. It checks that each operator receives compatible operand types.
 3. It converts each `Expr` into a `BoundExpr` and places those checked trees
    in the logical plan.
 
-We will make that progression visible at three checkpoints:
+Once the binder is in place, `Filter` and `Project` can trust their checked
+expression trees. One logical plan shape can then run many non-trivial
+single-table queries instead of one fixed comparison.
 
-- **Checkpoint 1, Sections 5.2–5.5:** complete all three binding jobs and print
-  the checked logical plan. Valid names and types appear as `BoundExpr` trees;
-  invalid queries stop with binding errors.
-- **Checkpoint 2, Sections 5.6–5.7:** evaluate each bound expression for a row,
-  apply SQL's Boolean and null rules, and make `Filter` and `Project` execute
-  those expressions to produce rows.
-- **Checkpoint 3, Sections 5.8–5.9:** put parsing, binding, and execution behind
-  one application function, reconnect the fixed demonstration and interactive
-  prompt, and verify the complete path with tests.
+We will stop at three checkpoints. Section 5.5 prints the checked plan after
+all three binding jobs are complete. Section 5.7 executes that plan to produce
+rows. Section 5.9 reconnects the complete application and verifies its fixed
+demonstration, interactive prompt, and tests.
 
-Once the binder is in place, planning and execution will be able to trust those
-expressions. `Filter` and `Project` will carry complete checked trees, allowing
-the same logical plan shape to support many non-trivial single-table queries
-instead of one fixed comparison.
-
-With that checked path complete, the representative query will return Ada and
-Grace but not Linus. The same path will reject missing tables, unknown columns,
-invalid qualifiers, and incompatible operand types before scanning any rows.
+The completed query returns Ada and Grace but not Linus. Invalid tables,
+columns, qualifiers, and operand types fail before any rows are scanned.
 
 Before changing the program, begin from the completed Chapter 4 checkpoint:
 
@@ -692,10 +675,27 @@ Run the prompt and enter the representative query:
 cargo run --quiet
 ```
 
-The output is a `Project` containing a bound `Column("name")`, above a
-`Filter` containing the checked Boolean expression, above a `Scan` containing
-the employee rows. No alias or unresolved column reference remains in the
-plan.
+The complete debug output includes the predicate tree and every employee row.
+This abridged rendering shows its important shape:
+
+```text
+Project {
+    expressions: [
+        ProjectExpression {
+            name: "name",
+            expression: Column("name"),
+        },
+    ],
+    input: Filter {
+        predicate: Binary { ... },
+        input: Scan { rows: [...] },
+    },
+}
+```
+
+The outer `Project` contains a checked column expression. Its input is a
+`Filter` containing the checked Boolean tree, whose input is the employee
+scan. No alias or unresolved column reference remains in the plan.
 
 Binding errors are visible at the same checkpoint:
 
@@ -711,7 +711,9 @@ error: arithmetic requires integers: found Text
 The binder has now completed the three jobs shown at the beginning of the
 chapter: it resolved names, checked types, and placed checked expressions in a
 logical plan. The plan is printable but not executable. That limitation gives
-us the next task: evaluate its bound expressions.
+us the next task: evaluate its bound expressions. The final application in
+Section 5.8 will replace this temporary shell; for now it makes the binder's
+work visible.
 
 ## 5.6 Evaluate the bound expression
 
@@ -921,13 +923,10 @@ variants and cannot express that narrower guarantee by itself.
 A bound expression can now evaluate one row. The checked plan from the first
 checkpoint must next call that evaluator for every row it filters or projects.
 
-## 5.7 Execute the bound plan
+## 5.7 Turn the plan into rows
 
-The first checkpoint produced a plan containing bound expression trees, but
-that plan had no `execute()` method. We can now make its filter and project
-nodes evaluate those trees.
-
-### 5.7.1 Construct projected rows
+Section 5.6 gave `BoundExpr` an evaluator. `Plan::Filter` and `Plan::Project`
+can now use it to turn the checked plan from the first checkpoint into rows.
 
 Projection will produce a `Vec<(String, Value)>` whose column names are already
 owned. `Row::new()` accepts borrowed names and converts each one into a new
@@ -943,7 +942,8 @@ pub fn from_owned(values: Vec<(String, Value)>) -> Self {
 }
 ```
 
-### 5.7.2 Execute the plan
+With a constructor for projected rows in place, the plan can evaluate its
+filter and projection.
 
 `plan.rs` already imports `Row`. Execution also inspects Boolean and null
 values, so extend that import.
@@ -1037,9 +1037,9 @@ demonstration, and then reconnect the final prompt.
 
 ### 5.8.1 Complete the application path
 
-The two temporary prompts repeated parsing, binding, and eventually execution
-inside their loops. Move that pipeline into the shared SQL entry point that
-both final application paths will call.
+The temporary `run_binding_prompt()` began by printing plans and, after
+Section 5.7, executed them inline. Move that pipeline into the shared SQL entry
+point that both final application paths will call.
 
 `src/main.rs`: add after `employee_catalog()`
 
