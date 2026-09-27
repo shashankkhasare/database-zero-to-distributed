@@ -37,13 +37,7 @@ impl Parser {
         let projection = self.parse_expression()?;
         self.expect(Token::From, "expected FROM after selected expression")?;
         let table = self.identifier("expected a table name after FROM")?;
-        let table_alias = if self.consume(&Token::As) {
-            Some(self.identifier("expected an alias after AS")?)
-        } else if matches!(self.peek(), Some(Token::Identifier(_))) {
-            Some(self.identifier("expected a table alias")?)
-        } else {
-            None
-        };
+        let table_alias = self.parse_alias()?;
         self.expect(Token::Where, "expected WHERE after table name")?;
         let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
@@ -56,6 +50,17 @@ impl Parser {
             table_alias,
             filter,
         })
+    }
+
+    fn parse_alias(&mut self) -> Result<Option<String>, ParseError> {
+        let alias = if self.consume(&Token::As) {
+            Some(self.identifier("expected an alias after AS")?)
+        } else if matches!(self.peek(), Some(Token::Identifier(_))) {
+            Some(self.identifier("expected a table alias")?)
+        } else {
+            None
+        };
+        Ok(alias)
     }
 
     fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
@@ -98,22 +103,7 @@ impl Parser {
 
     fn parse_predicate(&mut self) -> Result<Expr, ParseError> {
         let left = self.parse_additive()?;
-        let op = if self.consume(&Token::Equal) {
-            Some(BinaryOp::Equal)
-        } else if self.consume(&Token::NotEqual) {
-            Some(BinaryOp::NotEqual)
-        } else if self.consume(&Token::Less) {
-            Some(BinaryOp::Less)
-        } else if self.consume(&Token::LessOrEqual) {
-            Some(BinaryOp::LessOrEqual)
-        } else if self.consume(&Token::Greater) {
-            Some(BinaryOp::Greater)
-        } else if self.consume(&Token::GreaterOrEqual) {
-            Some(BinaryOp::GreaterOrEqual)
-        } else {
-            None
-        };
-        if let Some(op) = op {
+        if let Some(op) = self.parse_comparison_operator() {
             return Ok(Self::binary(left, op, self.parse_additive()?));
         }
 
@@ -127,6 +117,24 @@ impl Parser {
         }
 
         Ok(left)
+    }
+
+    fn parse_comparison_operator(&mut self) -> Option<BinaryOp> {
+        if self.consume(&Token::Equal) {
+            Some(BinaryOp::Equal)
+        } else if self.consume(&Token::NotEqual) {
+            Some(BinaryOp::NotEqual)
+        } else if self.consume(&Token::Less) {
+            Some(BinaryOp::Less)
+        } else if self.consume(&Token::LessOrEqual) {
+            Some(BinaryOp::LessOrEqual)
+        } else if self.consume(&Token::Greater) {
+            Some(BinaryOp::Greater)
+        } else if self.consume(&Token::GreaterOrEqual) {
+            Some(BinaryOp::GreaterOrEqual)
+        } else {
+            None
+        }
     }
 
     fn parse_additive(&mut self) -> Result<Expr, ParseError> {
@@ -183,21 +191,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         match self.peek().cloned() {
-            Some(Token::Identifier(first)) => {
-                self.current += 1;
-                if self.consume(&Token::Dot) {
-                    let name = self.identifier("expected a column name after .")?;
-                    Ok(Expr::Column {
-                        qualifier: Some(first),
-                        name,
-                    })
-                } else {
-                    Ok(Expr::Column {
-                        qualifier: None,
-                        name: first,
-                    })
-                }
-            }
+            Some(Token::Identifier(_)) => self.parse_column_reference(),
             Some(Token::Integer(value)) => {
                 self.current += 1;
                 Ok(Expr::Literal(Value::Integer(value)))
@@ -225,6 +219,22 @@ impl Parser {
                 Ok(expression)
             }
             _ => Err(ParseError("expected an expression".into())),
+        }
+    }
+
+    fn parse_column_reference(&mut self) -> Result<Expr, ParseError> {
+        let first = self.identifier("expected a column name")?;
+        if self.consume(&Token::Dot) {
+            let name = self.identifier("expected a column name after .")?;
+            Ok(Expr::Column {
+                qualifier: Some(first),
+                name,
+            })
+        } else {
+            Ok(Expr::Column {
+                qualifier: None,
+                name: first,
+            })
         }
     }
 

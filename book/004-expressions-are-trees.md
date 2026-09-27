@@ -655,8 +655,8 @@ SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000;
 ```
 
 `parse_query()` follows that order. It delegates both expression-shaped
-pieces to `parse_expression()`, reads the table identifier itself, and accepts
-an alias either with `AS` or directly after the table name.
+pieces to `parse_expression()`, reads the table identifier itself, and
+delegates the optional alias to `parse_alias()`.
 
 `src/parser.rs`: continue `impl Parser`
 
@@ -666,14 +666,7 @@ an alias either with `AS` or directly after the table name.
         let projection = self.parse_expression()?;
         self.expect(Token::From, "expected FROM after selected expression")?;
         let table = self.identifier("expected a table name after FROM")?;
-
-        let table_alias = if self.consume(&Token::As) {
-            Some(self.identifier("expected an alias after AS")?)
-        } else if matches!(self.peek(), Some(Token::Identifier(_))) {
-            Some(self.identifier("expected a table alias")?)
-        } else {
-            None
-        };
+        let table_alias = self.parse_alias()?;
         self.expect(Token::Where, "expected WHERE after table name")?;
         let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
@@ -684,12 +677,24 @@ an alias either with `AS` or directly after the table name.
 
         Ok(Query { projection, table, table_alias, filter })
     }
+
+    fn parse_alias(&mut self) -> Result<Option<String>, ParseError> {
+        let alias = if self.consume(&Token::As) {
+            Some(self.identifier("expected an alias after AS")?)
+        } else if matches!(self.peek(), Some(Token::Identifier(_))) {
+            Some(self.identifier("expected a table alias")?)
+        } else {
+            None
+        };
+        Ok(alias)
+    }
 ```
 
-`consume()` will return `true` and advance when the next token is `AS`.
-Without `AS`, `matches!` returns `true` when the next token fits the
-`Identifier` pattern without extracting its text. If it matches,
-`identifier()` takes that name as the alias. Otherwise the query has no alias.
+`parse_alias()` implements the second production. `consume()` returns `true`
+and advances when the next token is `AS`. Without `AS`, `matches!` returns
+`true` when the next token fits the `Identifier` pattern without extracting
+its text. If it matches, `identifier()` takes that name as the alias.
+Otherwise the query has no alias.
 
 ### 4.5.3 Parse Boolean operators
 
@@ -803,15 +808,8 @@ tests bind more tightly than `NOT`.
 ```rust
     fn parse_predicate(&mut self) -> Result<Expr, ParseError> {
         let left = self.parse_additive()?;
-        let op = if self.consume(&Token::Equal) { Some(BinaryOp::Equal) }
-        else if self.consume(&Token::NotEqual) { Some(BinaryOp::NotEqual) }
-        else if self.consume(&Token::Less) { Some(BinaryOp::Less) }
-        else if self.consume(&Token::LessOrEqual) { Some(BinaryOp::LessOrEqual) }
-        else if self.consume(&Token::Greater) { Some(BinaryOp::Greater) }
-        else if self.consume(&Token::GreaterOrEqual) { Some(BinaryOp::GreaterOrEqual) }
-        else { None };
 
-        if let Some(op) = op {
+        if let Some(op) = self.parse_comparison_operator() {
             return Ok(Self::binary(left, op, self.parse_additive()?));
         }
 
@@ -825,11 +823,22 @@ tests bind more tightly than `NOT`.
 
         Ok(left)
     }
+
+    fn parse_comparison_operator(&mut self) -> Option<BinaryOp> {
+        if self.consume(&Token::Equal) { Some(BinaryOp::Equal) }
+        else if self.consume(&Token::NotEqual) { Some(BinaryOp::NotEqual) }
+        else if self.consume(&Token::Less) { Some(BinaryOp::Less) }
+        else if self.consume(&Token::LessOrEqual) { Some(BinaryOp::LessOrEqual) }
+        else if self.consume(&Token::Greater) { Some(BinaryOp::Greater) }
+        else if self.consume(&Token::GreaterOrEqual) { Some(BinaryOp::GreaterOrEqual) }
+        else { None }
+    }
 ```
 
-If there is no comparison or null test, the arithmetic expression itself is
-returned. Binding will later reject it in `WHERE` unless it produces a Boolean
-or null result.
+`parse_comparison_operator()` implements the operator production and returns
+the matching `BinaryOp`, if one is present. If there is no comparison or null
+test, `parse_predicate()` returns the arithmetic expression itself. Binding
+will later reject it in `WHERE` unless it produces a Boolean or null result.
 
 ### 4.5.5 Parse arithmetic
 
@@ -935,20 +944,22 @@ place.
 `src/parser.rs`: finish `impl Parser` with `parse_primary()`
 
 ```rust
+    fn parse_column_reference(&mut self) -> Result<Expr, ParseError> {
+        let first = self.identifier("expected a column name")?;
+        if self.consume(&Token::Dot) {
+            let name = self.identifier(
+                "expected a column name after .")?;
+            Ok(Expr::Column {
+                qualifier: Some(first), name,
+            })
+        } else {
+            Ok(Expr::Column { qualifier: None, name: first })
+        }
+    }
+
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         match self.peek().cloned() {
-            Some(Token::Identifier(first)) => {
-                self.current += 1;
-                if self.consume(&Token::Dot) {
-                    let name = self.identifier(
-                        "expected a column name after .")?;
-                    Ok(Expr::Column {
-                        qualifier: Some(first), name,
-                    })
-                } else {
-                    Ok(Expr::Column { qualifier: None, name: first })
-                }
-            }
+            Some(Token::Identifier(_)) => self.parse_column_reference(),
             Some(Token::Integer(value)) => {
                 self.current += 1;
                 Ok(Expr::Literal(Value::Integer(value)))
@@ -981,6 +992,11 @@ place.
     }
 }
 ```
+
+`parse_column_reference()` implements the second production. It first reads an
+identifier. A following dot makes that first name the qualifier and requires
+another identifier for the column; without a dot, the first name is the
+unqualified column.
 
 `peek().cloned()` gives this method an owned token before it advances the
 cursor. The resulting AST can therefore own identifier and string contents
