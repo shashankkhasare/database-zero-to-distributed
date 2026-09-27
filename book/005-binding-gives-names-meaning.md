@@ -16,8 +16,8 @@ qualifiers, and invalid operand types fail before execution.
 > A parser can recognize a name. A database must decide what it names.
 
 <figure class="book-illustration">
-  <img src="images/005-parsing-is-not-binding.png" alt="The missing_table query passes a structural parser check, then fails when a binder compares its table name with a catalog containing only employees.">
-  <figcaption>Valid structure does not guarantee that the names in a query exist.</figcaption>
+  <img src="images/005-three-jobs-of-binding.png" alt="A Query AST with unresolved table, alias, and column names enters a binder supplied by an employees catalog, becomes a typed bound expression, and enters a logical plan where rows flow upward from Scan through Filter to Project.">
+  <figcaption>Chapter 4 supplied the Query AST; binding resolves its names against the real schema, checks its types, and carries the resulting expressions into the logical plan.</figcaption>
 </figure>
 
 Chapter 4 can now parse this richer request:
@@ -209,7 +209,10 @@ BoundExpr::Column("salary")
 
 The original `Expr` remains an honest record of what the user wrote.
 `BoundExpr` is the simpler form that later planning and execution stages may
-trust. We can now write the binder without referring to a type defined later.
+trust. Code that receives `Expr::Column` must still ask whether its qualifier
+and name exist. Code that receives `BoundExpr::Column` knows the binder has
+already answered those questions. Writing that binder starts with the names
+available for a lookup, which we will collect in a scope.
 
 ## 5.4 Bind an expression in one recursive walk
 
@@ -324,8 +327,14 @@ parent node.
 ```
 
 Unary arithmetic requires an integer, while `NOT` requires a Boolean. Binary
-operators fall into three groups: arithmetic requires integers, `AND` and
-`OR` require Booleans, and comparisons require compatible operands.
+operators fall into four groups with distinct operand rules:
+
+| Operator group | Operand rule |
+| --- | --- |
+| `+`, `-`, `*`, `/` | integers on both sides |
+| `AND`, `OR` | Booleans on both sides |
+| `=`, `<>` | matching integer, text, or Boolean types; either side may be `NULL` |
+| `<`, `<=`, `>`, `>=` | matching integer or text types; either side may be `NULL` |
 
 `src/catalog.rs`: continue the `match`
 
@@ -469,6 +478,8 @@ lets evaluation focus on one question: what value does this checked expression
 produce for the current row? We will import `Row` alongside `Value` and give
 the bound tree an evaluation method.
 
+### 5.5.1 Evaluate the bound tree
+
 `src/expression.rs`: replace the first import
 
 ```rust
@@ -524,6 +535,12 @@ fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
     }
 }
 ```
+
+Columns and literals produce values directly. Unary nodes evaluate their one
+child before applying their operator. Binary nodes need an additional rule:
+SQL can produce an unknown result represented by `NULL`.
+
+### 5.5.2 Apply binary and three-valued logic
 
 Binary evaluation must account for SQL's unknown value. `NULL` propagates
 through arithmetic and comparisons: for example, both `1 + NULL` and
@@ -623,6 +640,8 @@ Binding guarantees that `compare()` receives a comparison operator. Its error
 arm remains because the Rust type `BinaryOp` also contains non-comparison
 variants and cannot express that narrower guarantee by itself.
 
+### 5.5.3 Implement the Boolean helpers
+
 The Boolean helpers encode the truth tables directly.
 
 `src/expression.rs`: add the three-valued Boolean helpers
@@ -666,10 +685,13 @@ shape it described. Bound expression trees can replace those fixed fields, so
 the same filter and project nodes can execute every expression this chapter
 accepts.
 
+### 5.6.1 Construct projected rows
+
 Projection will produce a `Vec<(String, Value)>` whose column names are already
 owned. `Row::new()` accepts borrowed names and converts each one into a new
 `String`; this second constructor can instead move the completed vector into
-the row directly.
+the row directly. The project node added below will use this constructor after
+it evaluates its expressions.
 
 `src/row.rs`: add to the first `impl Row`
 
@@ -678,6 +700,11 @@ pub fn from_owned(values: Vec<(String, Value)>) -> Self {
     Self { values }
 }
 ```
+
+### 5.6.2 Store bound expressions in the plan
+
+The plan can now replace its fixed filter boundary and projected column names
+with the bound expressions that produce those values.
 
 `src/plan.rs`: replace the file
 
@@ -755,6 +782,8 @@ in the same scope, require a valid `WHERE` type, and assemble the familiar
 `Scan → Filter → Project` tree. Once that path exists, both the fixed
 demonstration and the prompt can use it.
 
+### 5.7.1 Complete the binder
+
 `src/catalog.rs`: add with the imports
 
 ```rust
@@ -802,12 +831,10 @@ pub fn bind(&self, query: Query) -> Result<Plan, String> {
 }
 ```
 
-This method gives the complete query its database meaning. It resolves the
-table, binds the projection and filter in the same scope, requires a Boolean
-`WHERE` result, and builds the familiar scan-filter-project plan. Only now do
-we connect that complete path to the application.
+The binder now produces the complete scan-filter-project plan. We can connect
+that path to the application.
 
-### 5.7.1 Restore the fixed demonstration
+### 5.7.2 Restore the fixed demonstration
 
 The AST-only shell has served its checkpoint. We can now restore the complete
 set of database modules and import the catalog.
@@ -904,7 +931,7 @@ fn run_demo(catalog: &Catalog) {
 }
 ```
 
-### 5.7.2 Connect the prompt
+### 5.7.3 Connect the prompt
 
 With the fixed demonstration working, `main()` can choose between it and the
 prompt.
@@ -956,10 +983,7 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 evaluates expressions instead of copying a fixed list of columns. Remove the
 old method from `row.rs`.
 
-This second phase changes expressions, binding, plans, and the application as
-one connected representation. Compile after all four pieces are present.
-
-### 5.7.3 Verify that the code compiles
+### 5.7.4 Verify that the code compiles
 
 The application now connects the parser, catalog and binder, plan, and
 executor. Compile it before running queries so missing modules, stale imports,
@@ -1041,6 +1065,7 @@ cargo clippy -- -D warnings
 
 ## 5.9 What we deliberately did not build
 
+With the complete path verified, we can state the boundaries that remain.
 The new frontend remains intentionally bounded:
 
 - A query has one input table and one selected expression.
@@ -1087,8 +1112,8 @@ then test it.
 ## 5.11 One scope is no longer enough
 
 The frontend can now preserve expression structure, and the binder can reject
-unknown names and incompatible types before execution. One simplifying fact
-made that possible: every query had exactly one input table. An unqualified
+unknown names and incompatible types before execution. The last exercise
+worked because every query still had exactly one input table. An unqualified
 column such as `name` could belong to only that table, and a bound column could
 be stored by name alone.
 
