@@ -17,7 +17,7 @@ qualifiers, and invalid operand types fail before execution.
 
 <figure class="book-illustration">
   <img src="images/005-three-jobs-of-binding.png" alt="A Query AST with unresolved table, alias, and column names enters a binder supplied by an employees catalog, becomes a typed bound expression, and enters a logical plan where rows flow upward from Scan through Filter to Project.">
-  <figcaption>Chapter 4 supplied the Query AST; binding resolves its names against the real schema, checks its types, and carries the resulting expressions into the logical plan.</figcaption>
+  <figcaption>Chapter 4 supplied the Query AST. This chapter resolves its names, checks its types, and carries the resulting expressions into the logical plan.</figcaption>
 </figure>
 
 Chapter 4 can now parse this richer request:
@@ -34,34 +34,25 @@ boundary. Chapter 4 replaced those fixed pieces with expression trees so the
 frontend could preserve nesting and precedence.
 
 That created the next problem. The logical plan needs those trees, but it
-should not receive unchecked SQL names. A separate **binding** stage must
-translate the unresolved AST expressions into expressions that planning and
-execution may trust:
+should not receive unchecked SQL names. A separate **binding** stage consults
+the catalog and transforms the unresolved query AST into a logical plan
+containing checked expressions.
 
-```text
-AST → binding → bound plan → rows
-         ↑
-       catalog
-```
-
-```text
-Query AST                      Logical plan
-
-projection: Expr      →        Project(BoundExpr)
-filter: Expr          →          Filter(BoundExpr)
-                                   Scan(table rows)
-```
-
-The binder performs three jobs during that translation:
+The binder performs three jobs:
 
 1. It resolves tables, aliases, and columns against the catalog.
 2. It checks that each operator receives compatible operand types.
 3. It converts each `Expr` into a `BoundExpr` and places those checked trees
    in the logical plan.
 
-The catalog supplies the available tables, columns, and types. The binder uses
-that information; the executor receives the result and does not need to
-interpret unresolved SQL names.
+Planning and execution can trust the result: they receive resolved columns and
+type-checked expressions rather than names copied directly from SQL.
+
+Because `Filter` and `Project` can now carry bound expression trees instead of
+one fixed column or integer boundary, the same logical plan shape can execute
+many non-trivial single-table queries. Their expressions may combine
+arithmetic, comparisons, Boolean operators, parentheses, qualified columns,
+and null tests without requiring a new plan node for every combination.
 
 Ada and Grace satisfy the representative query. Linus does not. Just as
 importantly, the same path will reject missing tables, unknown columns,
