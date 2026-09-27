@@ -20,7 +20,7 @@ qualifiers, and invalid operand types fail before execution.
   <figcaption>Chapter 4 supplied the Query AST. This chapter resolves its names, checks its types, and carries the resulting expressions into the logical plan.</figcaption>
 </figure>
 
-Chapter 4 can now parse this richer request:
+Chapter 4 can now parse this request into an expression tree:
 
 ```sql
 SELECT e.name
@@ -28,35 +28,35 @@ FROM employees AS e
 WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
-Chapters 1 through 3 used single, non-nested plan inputs: a projection
-contained column names, and a filter contained one column and one integer
-boundary. Chapter 4 replaced those fixed pieces with expression trees so the
-frontend could preserve nesting and precedence.
+The tree preserves the important structure. It knows that addition happens
+before comparison, that the two predicates are joined by `AND`, and that
+`IS NOT NULL` is one operation.
 
-That created the next problem. The logical plan needs those trees, but it
-should not receive unchecked SQL names. A separate **binding** stage consults
-the catalog and transforms the unresolved query AST into a logical plan
-containing checked expressions.
+But several parts of that tree are still only text:
 
-The binder performs three jobs:
+- Does `employees` name a real table?
+- Does `e` refer to that table?
+- Do `name` and `salary` exist?
+- Is `salary` an integer that can be added to `5000`?
+- Does the complete `WHERE` expression produce a Boolean value?
+
+The parser cannot answer those questions from grammar alone. This chapter
+inserts a **binding** stage between parsing and planning. The binder performs
+three jobs:
 
 1. It resolves tables, aliases, and columns against the catalog.
 2. It checks that each operator receives compatible operand types.
 3. It converts each `Expr` into a `BoundExpr` and places those checked trees
    in the logical plan.
 
-Planning and execution can trust the result: they receive resolved columns and
-type-checked expressions rather than names copied directly from SQL.
+Once the binder is in place, planning and execution will be able to trust those
+expressions. `Filter` and `Project` will carry complete checked trees, allowing
+the same logical plan shape to support many non-trivial single-table queries
+instead of one fixed comparison.
 
-Because `Filter` and `Project` can now carry bound expression trees instead of
-one fixed column or integer boundary, the same logical plan shape can execute
-many non-trivial single-table queries. Their expressions may combine
-arithmetic, comparisons, Boolean operators, parentheses, qualified columns,
-and null tests without requiring a new plan node for every combination.
-
-Ada and Grace satisfy the representative query. Linus does not. Just as
-importantly, the same path will reject missing tables, unknown columns,
-invalid qualifiers, and incompatible operand types before scanning rows.
+With that checked path complete, the representative query will return Ada and
+Grace but not Linus. The same path will reject missing tables, unknown columns,
+invalid qualifiers, and incompatible operand types before scanning any rows.
 
 Before changing the program, begin from the completed Chapter 4 checkpoint:
 
@@ -93,10 +93,7 @@ is also expression vocabulary because the binder uses it to describe the type
 produced by an expression. We therefore add it to `expression.rs` beside the
 operator and expression types.
 
-The catalog must record what kind of values each column may contain. A
-`DataType` describes a category such as integers or text, while `Value`
-stores one actual piece of row data such as `Value::Integer(70000)` or
-`Value::Text("Ada")`.
+Begin with the type categories that the catalog and binder need.
 
 `src/expression.rs`: add before `UnaryOp`
 
@@ -110,10 +107,13 @@ pub enum DataType {
 }
 ```
 
-A column describes every value allowed in that position. Using `Value` in
-the catalog would require a meaningless placeholder such as
-`Value::Integer(0)` merely to say that a column contains integers. We instead
-pair the column name with its `DataType`.
+`DataType` describes a category such as integers or text, while `Value` stores
+one actual piece of row data such as `Value::Integer(70000)` or
+`Value::Text("Ada")`. A catalog column must describe every value allowed in
+that position, not hold one representative value. Using `Value` there would
+require a meaningless placeholder such as `Value::Integer(0)` merely to say
+that a column contains integers. We therefore pair the column name with its
+`DataType`.
 
 `src/catalog.rs`: create this file
 
@@ -160,12 +160,17 @@ name; next we define what it produces after a lookup succeeds.
 
 The AST checkpoint showed an unresolved tree: `e.name` still contains two
 strings whose meaning has not been checked. Binding needs to produce a second
-tree that records the result of those checks.
+tree for the executable form that remains after those checks succeed.
 
-A bound column no longer needs its qualifier because the binder has already
-identified its table and verified the column. Keeping a separate type makes
-that guarantee visible: code that receives `BoundExpr` cannot accidentally
-accept an unresolved SQL name.
+In this single-table engine, a bound column no longer needs its qualifier. The
+binder has already checked the qualifier, found the column in the selected
+table, and recovered its type. It can therefore discard the qualifier and
+retain only the column name used to read the row.
+
+Keeping `Expr` and `BoundExpr` as separate Rust enums makes that completed
+validation step visible. Code that accepts `Expr` must still resolve its names
+and check its operators. Code reached through the binder can accept
+`BoundExpr` knowing those checks have already succeeded.
 
 `src/expression.rs`: add after `Expr`
 
@@ -198,12 +203,14 @@ Expr::Column { qualifier: Some("e"), name: "salary" }
 BoundExpr::Column("salary")
 ```
 
-The original `Expr` remains an honest record of what the user wrote.
-`BoundExpr` is the simpler form that later planning and execution stages may
-trust. Code that receives `Expr::Column` must still ask whether its qualifier
-and name exist. Code that receives `BoundExpr::Column` knows the binder has
-already answered those questions. Writing that binder starts with the names
-available for a lookup, which we will collect in a scope.
+The two trees represent different stages. `Expr` records what the user wrote;
+`BoundExpr` is the executable form produced after validation. In this
+chapter's one-table plans, a checked column can be represented by its name
+alone. Plans with multiple inputs will eventually need a less ambiguous
+column identity.
+
+Writing the binder starts with the names available for a lookup, which we will
+collect in a scope.
 
 ## 5.4 Bind an expression in one recursive walk
 
@@ -220,20 +227,9 @@ our one-table query, those names are the table name, its optional alias, and
 its columns. We will keep that information together in a `Scope` and pass it
 through every recursive binding call.
 
-Binding belongs in `catalog.rs`, whose imports need the expression types the
-binder will use:
-
-`src/catalog.rs`: replace the imports
-
-```rust
-use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
-use crate::row::Row;
-```
-
-The scope collects the names visible while binding one query. Passing one
-shared scope by reference lets every recursive call inherit the same table,
-alias, and columns without copying them or threading three separate arguments
-through the expression tree.
+The whole-query binder will create one `Scope` after it finds the catalog table
+named by the query. It will borrow the table name and column definitions from
+that catalog entry and the optional alias from the parsed query.
 
 `src/catalog.rs`: add after `impl Catalog`
 
@@ -245,15 +241,42 @@ struct Scope<'a> {
 }
 ```
 
-If an alias exists, it is the qualifier accepted by this scope. Otherwise the
+`table_name` and `alias` determine which qualifier is valid. `columns` is the
+selected table's catalog schema, not its row data; the binder searches it to
+verify a column name and recover its type. The whole-query binder will pass the
+same shared `&Scope` to the projection and filter:
+
+```text
+catalog table + query alias
+           ↓
+       one Scope
+        ↙     ↘
+projection   filter
+    ↓          ↓
+recursive calls reuse &scope
+```
+
+Binding changes the expression as it walks the tree, but it never changes the
+scope. If an alias exists, that alias is the accepted qualifier. Otherwise the
 table name itself may qualify a column.
 
 ### 5.4.2 Resolve names against the catalog
 
-`bind_expression()` returns two results for every AST node: a checked
-expression and the type that expression produces. Its column arm first checks
-an optional qualifier against the table name or alias, then looks up the
-column in the scope. Either lookup can stop binding with an error.
+`bind_expression()` handles one expression tree rather than a complete
+`Query`. It returns two results for every AST node: a checked expression and
+the type that expression produces. Its column arm first checks an optional
+qualifier against the table name or alias, then looks up the column in the
+scope. Either lookup can stop binding with an error.
+
+The complete walk consumes `Expr`, inspects its unary and binary operators,
+produces `BoundExpr`, and returns `DataType`. Add those expression types in one
+import edit.
+
+`src/catalog.rs`: replace the `DataType` import
+
+```rust
+use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
+```
 
 `src/catalog.rs`: begin `bind_expression()` after `Scope`
 
@@ -288,6 +311,11 @@ type information.
 A literal's `Value` determines its type. Unary and binary nodes recursively
 bind their children, then check the returned types before constructing the
 parent node.
+
+A bare `NULL` receives the temporary type `DataType::Null`. The type helpers
+accept it where another operand type is expected because evaluation normally
+propagates the unknown value as `Value::Null` rather than treating it as a type
+error.
 
 `src/catalog.rs`: continue the `match` in `bind_expression()`
 
@@ -386,11 +414,6 @@ also closes the `match` and the function.
 }
 ```
 
-A bare `NULL` receives the temporary type `DataType::Null`. The helpers accept
-it where another operand type is expected because evaluation normally
-propagates the unknown value as `Value::Null` rather than treating it as a type
-error.
-
 `src/catalog.rs`: add the type helper after `bind_expression()`
 
 ```rust
@@ -456,6 +479,11 @@ validated:
 Because the recursive calls return `BoundExpr`, a parent can be produced only
 after all of its children have resolved names and passed their type checks.
 The completed tree is therefore safe for the next stages to evaluate.
+
+This walk handles one expression tree. The whole-query binder later in this
+chapter will create the scope, call `bind_expression()` once for the
+projection and once for the filter, and place both checked trees in a logical
+plan.
 
 <figure class="book-illustration book-diagram">
   <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.">
@@ -531,7 +559,7 @@ Columns and literals produce values directly. Unary nodes evaluate their one
 child before applying their operator. Binary nodes need an additional rule:
 SQL can produce an unknown result represented by `NULL`.
 
-### 5.5.2 Apply binary and three-valued logic
+### 5.5.2 Define three-valued Boolean logic
 
 Binary evaluation must account for SQL's unknown value. `NULL` propagates
 through arithmetic and comparisons: for example, both `1 + NULL` and
@@ -561,9 +589,45 @@ operand can sometimes decide the result. They follow these truth tables:
 </table>
 
 A false value decides `AND` even when the other side is unknown. A true value
-similarly decides `OR`. With those rules established, binary evaluation can
-handle nulls before dispatching ordinary arithmetic, comparison, and Boolean
-operations. Division by zero remains an execution error.
+similarly decides `OR`. Encode those two tables before adding the binary
+evaluator that calls them.
+
+`src/expression.rs`: add the three-valued Boolean helpers after
+`evaluate_unary()`
+
+```rust
+fn and(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(false), _) | (_, Value::Boolean(false)) =>
+            Ok(Value::Boolean(false)),
+        (Value::Boolean(true), Value::Boolean(true)) =>
+            Ok(Value::Boolean(true)),
+        (Value::Boolean(true), Value::Null)
+        | (Value::Null, Value::Boolean(true))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("AND received a non-Boolean value".into()),
+    }
+}
+
+fn or(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(true), _) | (_, Value::Boolean(true)) =>
+            Ok(Value::Boolean(true)),
+        (Value::Boolean(false), Value::Boolean(false)) =>
+            Ok(Value::Boolean(false)),
+        (Value::Boolean(false), Value::Null)
+        | (Value::Null, Value::Boolean(false))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("OR received a non-Boolean value".into()),
+    }
+}
+```
+
+### 5.5.3 Evaluate binary operations
+
+With the Boolean helpers in place, binary evaluation can handle nulls before
+dispatching ordinary arithmetic, comparison, and Boolean operations. Division
+by zero remains an execution error.
 
 `src/expression.rs`: add after `evaluate_unary()`
 
@@ -631,40 +695,6 @@ Binding guarantees that `compare()` receives a comparison operator. Its error
 arm remains because the Rust type `BinaryOp` also contains non-comparison
 variants and cannot express that narrower guarantee by itself.
 
-### 5.5.3 Implement the Boolean helpers
-
-The Boolean helpers encode the truth tables directly.
-
-`src/expression.rs`: add the three-valued Boolean helpers
-
-```rust
-fn and(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(false), _) | (_, Value::Boolean(false)) =>
-            Ok(Value::Boolean(false)),
-        (Value::Boolean(true), Value::Boolean(true)) =>
-            Ok(Value::Boolean(true)),
-        (Value::Boolean(true), Value::Null)
-        | (Value::Null, Value::Boolean(true))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("AND received a non-Boolean value".into()),
-    }
-}
-
-fn or(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(true), _) | (_, Value::Boolean(true)) =>
-            Ok(Value::Boolean(true)),
-        (Value::Boolean(false), Value::Boolean(false)) =>
-            Ok(Value::Boolean(false)),
-        (Value::Boolean(false), Value::Null)
-        | (Value::Null, Value::Boolean(false))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("OR received a non-Boolean value".into()),
-    }
-}
-```
-
 A bound expression can now evaluate one row. The plan must next store these
 expressions instead of the fixed column and integer fields from Chapter 3.
 
@@ -697,6 +727,11 @@ pub fn from_owned(values: Vec<(String, Value)>) -> Self {
 The plan can now replace its fixed filter boundary and projected column names
 with the bound expressions that produce those values.
 
+`ProjectExpression` keeps both an expression and the name printed for its
+result. A bare column will retain its column name, while a computed value will
+use the placeholder `"expression"`. The whole-query binder will choose between
+those cases when it constructs the plan.
+
 `src/plan.rs`: replace the file
 
 ```rust
@@ -721,9 +756,11 @@ pub enum Plan {
 ```
 
 A filter retains only `TRUE`. `FALSE` and `NULL` both remove the row, which is
-how SQL treats an unknown `WHERE` condition. Execution does not search the
-catalog or reinterpret SQL because binding has already settled those
-questions.
+how SQL treats an unknown `WHERE` condition. The whole-query binder later
+allows a `WHERE` expression with a Boolean or temporary null type; this match
+defines what those accepted results do during execution. Execution does not
+search the catalog or reinterpret SQL because binding has already settled
+those questions.
 
 `src/plan.rs`: add `Plan::execute()`
 
@@ -770,8 +807,9 @@ We can bind an individual expression and execute a plan that contains one, but
 no function yet turns an entire parsed `Query` into that plan.
 `Catalog::bind()` will resolve the input table, bind the projection and filter
 in the same scope, require a valid `WHERE` type, and assemble the familiar
-`Scan → Filter → Project` tree. Once that path exists, both the fixed
-demonstration and the prompt can use it.
+`Scan → Filter → Project` tree. This is where the `Scope` introduced earlier
+is finally created from the parsed query and its catalog table. Once that path
+exists, both the fixed demonstration and the prompt can use it.
 
 ### 5.7.1 Complete the binder
 
