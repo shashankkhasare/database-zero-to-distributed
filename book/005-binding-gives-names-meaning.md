@@ -28,12 +28,15 @@ FROM employees AS e
 WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
-Its AST preserves the alias, qualified columns, arithmetic, comparison,
-Boolean operator, and null test. Yet every name in that tree is still text.
-The parser cannot know whether `employees` exists, whether `e` names that
-table, or whether adding `5000` to `e.salary` makes sense.
+Chapters 1 through 3 used single, non-nested plan inputs: a projection
+contained column names, and a filter contained one column and one integer
+boundary. Chapter 4 replaced those fixed pieces with expression trees so the
+frontend could preserve nesting and precedence.
 
-This chapter adds **binding**, the stage that answers those questions:
+That created the next problem. The logical plan needs those trees, but it
+should not receive unchecked SQL names. A separate **binding** stage must
+translate the unresolved AST expressions into expressions that planning and
+execution may trust:
 
 ```text
 AST → binding → bound plan → rows
@@ -41,10 +44,24 @@ AST → binding → bound plan → rows
        catalog
 ```
 
-The catalog describes the tables and columns available to the query. The
-binder resolves names against that catalog and checks operator types before
-execution. The resulting bound expressions no longer contain unchecked table
-qualifiers.
+```text
+Query AST                      Logical plan
+
+projection: Expr      →        Project(BoundExpr)
+filter: Expr          →          Filter(BoundExpr)
+                                   Scan(table rows)
+```
+
+The binder performs three jobs during that translation:
+
+1. It resolves tables, aliases, and columns against the catalog.
+2. It checks that each operator receives compatible operand types.
+3. It converts each `Expr` into a `BoundExpr` and places those checked trees
+   in the logical plan.
+
+The catalog supplies the available tables, columns, and types. The binder uses
+that information; the executor receives the result and does not need to
+interpret unresolved SQL names.
 
 Ada and Grace satisfy the representative query. Linus does not. Just as
 importantly, the same path will reject missing tables, unknown columns,
@@ -148,7 +165,7 @@ This catalog describes tables, columns, and rows in memory. Persisting catalog
 information to storage comes later. We now know where binding can look up a
 name; next we define what it produces after a lookup succeeds.
 
-## 5.3 Define what binding produces
+## 5.3 Represent a checked expression
 
 The AST checkpoint showed an unresolved tree: `e.name` still contains two
 strings whose meaning has not been checked. Binding needs to produce a second
@@ -194,7 +211,13 @@ The original `Expr` remains an honest record of what the user wrote.
 `BoundExpr` is the simpler form that later planning and execution stages may
 trust. We can now write the binder without referring to a type defined later.
 
-## 5.4 Bind names and check types
+## 5.4 Bind an expression in one recursive walk
+
+The binder has three responsibilities: resolve names against the catalog,
+check that operators receive compatible types, and replace each unresolved
+`Expr` node with a checked `BoundExpr` node. These responsibilities are easier
+to study separately, but the implementation performs them together as it
+walks the expression tree once.
 
 ### 5.4.1 Establish the scope
 
@@ -231,19 +254,14 @@ struct Scope<'a> {
 If an alias exists, it is the qualifier accepted by this scope. Otherwise the
 table name itself may qualify a column.
 
-### 5.4.2 Bind and type-check the expression
+### 5.4.2 Resolve names against the catalog
 
-Binding walks the AST and returns two results: an expression safe for execution
-and the type of its result. In one recursive walk, it resolves columns against
-the scope, assigns types to literals, checks unary operands, groups binary
-operators by their required types, and accepts null tests for any operand.
+`bind_expression()` returns two results for every AST node: a checked
+expression and the type that expression produces. Its column arm first checks
+an optional qualifier against the table name or alias, then looks up the
+column in the scope. Either lookup can stop binding with an error.
 
-A bare `NULL` receives the temporary type `DataType::Null`. The type helper
-accepts it where another operand type is expected because evaluation normally
-propagates the unknown value as `Value::Null` rather than treating it as a type
-error.
-
-`src/catalog.rs`: add after `Scope`
+`src/catalog.rs`: begin `bind_expression()` after `Scope`
 
 ```rust
 fn bind_expression(expression: Expr, scope: &Scope<'_>)
@@ -264,6 +282,22 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
                 .ok_or_else(|| format!("unknown column: {name}"))?;
             Ok((BoundExpr::Column(name), column.data_type.clone()))
         }
+```
+
+Once the column exists, the binder no longer needs its qualifier. It produces
+`BoundExpr::Column(name)` and returns the column type recorded by the catalog.
+Literal and operator nodes do not require name lookup, but they do require
+type information.
+
+### 5.4.3 Check operator types
+
+A literal's `Value` determines its type. Unary and binary nodes recursively
+bind their children, then check the returned types before constructing the
+parent node.
+
+`src/catalog.rs`: continue the `match` in `bind_expression()`
+
+```rust
         Expr::Literal(value) => {
             let data_type = match &value {
                 crate::row::Value::Integer(_) => DataType::Integer,
@@ -287,6 +321,15 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
                 expression: Box::new(expression),
             }, expected))
         }
+```
+
+Unary arithmetic requires an integer, while `NOT` requires a Boolean. Binary
+operators fall into three groups: arithmetic requires integers, `AND` and
+`OR` require Booleans, and comparisons require compatible operands.
+
+`src/catalog.rs`: continue the `match`
+
+```rust
         Expr::Binary { left, op, right } => {
             let (left, left_type) = bind_expression(*left, scope)?;
             let (right, right_type) = bind_expression(*right, scope)?;
@@ -324,6 +367,14 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
                 right: Box::new(right),
             }, result_type))
         }
+```
+
+A null test accepts any operand and always produces a Boolean result. This arm
+also closes the `match` and the function.
+
+`src/catalog.rs`: finish `bind_expression()`
+
+```rust
         Expr::IsNull { expression, negated } => {
             let (expression, _) = bind_expression(*expression, scope)?;
             Ok((BoundExpr::IsNull {
@@ -335,11 +386,10 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
 }
 ```
 
-Unary arithmetic requires an integer, while `NOT` requires a Boolean.
-Arithmetic operators require integers, and `AND` and `OR` require Booleans.
-Equality accepts matching integer, text, or Boolean operands. Ordered
-comparisons accept matching integers or text. A null test accepts any operand
-and always produces a Boolean result.
+A bare `NULL` receives the temporary type `DataType::Null`. The helpers accept
+it where another operand type is expected because evaluation normally
+propagates the unknown value as `Value::Null` rather than treating it as a type
+error.
 
 `src/catalog.rs`: add the type helper after `bind_expression()`
 
@@ -384,15 +434,35 @@ fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
 }
 ```
 
-`name + 1` now fails during binding because `name` is text. Execution will not
-discover that mistake halfway through a scan.
+Equality therefore accepts matching integer, text, or Boolean operands.
+Ordered comparisons accept matching integers or text. `name + 1` fails during
+binding because `name` is text, so execution does not discover that mistake
+halfway through a scan.
+
+### 5.4.4 Produce the bound expression tree
+
+Type checking does not happen in a separate pass. Each successful match arm
+constructs the checked node that corresponds to the AST node it just
+validated:
+
+| AST node | Bound result | Result type |
+| --- | --- | --- |
+| `Expr::Column` | verified column name | catalog column type |
+| `Expr::Literal` | literal value | type of the value |
+| `Expr::Unary` | checked operator and child | operator's result type |
+| `Expr::Binary` | checked operator and children | operator's result type |
+| `Expr::IsNull` | checked child and null test | Boolean |
+
+Because the recursive calls return `BoundExpr`, a parent can be produced only
+after all of its children have resolved names and passed their type checks.
+The completed tree is therefore safe for the next stages to evaluate.
 
 <figure class="book-illustration book-diagram">
   <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.">
   <figcaption>Binding checks the qualifier and column, recovers the type, and produces a simpler expression for execution.</figcaption>
 </figure>
 
-## 5.5 Evaluate bound expressions
+## 5.5 Evaluate the bound expression
 
 Binding has removed unresolved names and rejected invalid operand types. That
 lets evaluation focus on one question: what value does this checked expression
@@ -460,17 +530,27 @@ through arithmetic and comparisons: for example, both `1 + NULL` and
 `1 = NULL` produce `NULL`. `AND` and `OR` are different because one known
 operand can sometimes decide the result. They follow these truth tables:
 
-| `AND` | `TRUE` | `FALSE` | `NULL` |
-| --- | --- | --- | --- |
-| `TRUE` | `TRUE` | `FALSE` | `NULL` |
-| `FALSE` | `FALSE` | `FALSE` | `FALSE` |
-| `NULL` | `NULL` | `FALSE` | `NULL` |
+<table class="truth-table">
+  <thead>
+    <tr><th><code>AND</code></th><th><code>TRUE</code></th><th><code>FALSE</code></th><th><code>NULL</code></th></tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row"><code>TRUE</code></th><td><code>TRUE</code></td><td><code>FALSE</code></td><td><code>NULL</code></td></tr>
+    <tr><th scope="row"><code>FALSE</code></th><td><code>FALSE</code></td><td><code>FALSE</code></td><td><code>FALSE</code></td></tr>
+    <tr><th scope="row"><code>NULL</code></th><td><code>NULL</code></td><td><code>FALSE</code></td><td><code>NULL</code></td></tr>
+  </tbody>
+</table>
 
-| `OR` | `TRUE` | `FALSE` | `NULL` |
-| --- | --- | --- | --- |
-| `TRUE` | `TRUE` | `TRUE` | `TRUE` |
-| `FALSE` | `TRUE` | `FALSE` | `NULL` |
-| `NULL` | `TRUE` | `NULL` | `NULL` |
+<table class="truth-table">
+  <thead>
+    <tr><th><code>OR</code></th><th><code>TRUE</code></th><th><code>FALSE</code></th><th><code>NULL</code></th></tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row"><code>TRUE</code></th><td><code>TRUE</code></td><td><code>TRUE</code></td><td><code>TRUE</code></td></tr>
+    <tr><th scope="row"><code>FALSE</code></th><td><code>TRUE</code></td><td><code>FALSE</code></td><td><code>NULL</code></td></tr>
+    <tr><th scope="row"><code>NULL</code></th><td><code>TRUE</code></td><td><code>NULL</code></td><td><code>NULL</code></td></tr>
+  </tbody>
+</table>
 
 A false value decides `AND` even when the other side is unknown. A true value
 similarly decides `OR`. With those rules established, binary evaluation can
@@ -578,7 +658,7 @@ fn or(left: Value, right: Value) -> Result<Value, String> {
 A bound expression can now evaluate one row. The plan must next store these
 expressions instead of the fixed column and integer fields from Chapter 3.
 
-## 5.6 Update plan execution
+## 5.6 Put bound expressions in the logical plan
 
 The Chapter 3 plan stored one filter column, one integer boundary, and a list
 of projected column names. That representation could execute only the query
@@ -890,7 +970,13 @@ cargo fmt
 cargo check
 ```
 
-## 5.8 Run the fixed demonstration
+## 5.8 Run and verify
+
+The complete path is now connected. We will verify it at three levels: the
+fixed demonstration, interactive failures at the prompt, and the automated
+test suite.
+
+### 5.8.1 Run the fixed demonstration
 
 Run the completed path:
 
@@ -907,7 +993,7 @@ Employees matching the bound expression:
 The source text now becomes an unresolved AST, then a checked bound plan, and
 only then rows. The executor itself never sees an alias or table name.
 
-## 5.9 Run the prompt and its errors
+### 5.8.2 Run the prompt and its errors
 
 Start the interactive path:
 
@@ -934,7 +1020,7 @@ error: arithmetic requires integers: found Text
 The prompt remains ready after each failure. A bad query no longer becomes a
 process panic or silently reads an unrelated table.
 
-## 5.10 Verify the tests
+### 5.8.3 Verify the tests
 
 Run the complete suite:
 
@@ -953,7 +1039,7 @@ cargo fmt --check
 cargo clippy -- -D warnings
 ```
 
-## 5.11 What we deliberately did not build
+## 5.9 What we deliberately did not build
 
 The new frontend remains intentionally bounded:
 
@@ -970,7 +1056,7 @@ The new frontend remains intentionally bounded:
 These limits keep the chapter focused on the boundary between syntax and
 meaning. Appendix B records where the remaining expression forms belong.
 
-## 5.12 Try it
+## 5.10 Try it
 
 Run the prompt, predict the stage that will accept or reject each query, and
 then test it.
@@ -998,7 +1084,7 @@ then test it.
 
 </details>
 
-## 5.13 One scope is no longer enough
+## 5.11 One scope is no longer enough
 
 The frontend can now preserve expression structure, and the binder can reject
 unknown names and incompatible types before execution. One simplifying fact

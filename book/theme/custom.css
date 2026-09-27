@@ -92,6 +92,11 @@ table {
   font-size: 1.5rem;
 }
 
+.truth-table th:first-child {
+  border-right-width: 2px;
+  border-right-color: var(--table-border-color);
+}
+
 blockquote {
   margin: 2rem 0;
   padding: 0.2rem 1.25rem;
