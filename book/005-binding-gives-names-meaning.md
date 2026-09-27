@@ -20,7 +20,7 @@ qualifiers, and invalid operand types fail before execution.
   <figcaption>Chapter 4 supplied the Query AST. This chapter resolves its names, checks its types, and carries the resulting expressions into the logical plan.</figcaption>
 </figure>
 
-Chapter 4 can now parse this richer request:
+Chapter 4 can now parse this request into an expression tree:
 
 ```sql
 SELECT e.name
@@ -28,35 +28,47 @@ FROM employees AS e
 WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
-Chapters 1 through 3 used single, non-nested plan inputs: a projection
-contained column names, and a filter contained one column and one integer
-boundary. Chapter 4 replaced those fixed pieces with expression trees so the
-frontend could preserve nesting and precedence.
+The tree preserves the important structure. It knows that addition happens
+before comparison, that the two predicates are joined by `AND`, and that
+`IS NOT NULL` is one operation.
 
-That created the next problem. The logical plan needs those trees, but it
-should not receive unchecked SQL names. A separate **binding** stage consults
-the catalog and transforms the unresolved query AST into a logical plan
-containing checked expressions.
+But several parts of that tree are still only text:
 
-The binder performs three jobs:
+- Does `employees` name a real table?
+- Does `e` refer to that table?
+- Do `name` and `salary` exist?
+- Is `salary` an integer that can be added to `5000`?
+- Does the complete `WHERE` expression produce a Boolean value?
+
+The parser cannot answer those questions from grammar alone. This chapter
+inserts a **binding** stage between parsing and planning. The binder performs
+three jobs:
 
 1. It resolves tables, aliases, and columns against the catalog.
 2. It checks that each operator receives compatible operand types.
 3. It converts each `Expr` into a `BoundExpr` and places those checked trees
    in the logical plan.
 
-Planning and execution can trust the result: they receive resolved columns and
-type-checked expressions rather than names copied directly from SQL.
+We will make that progression visible at three checkpoints:
 
-Because `Filter` and `Project` can now carry bound expression trees instead of
-one fixed column or integer boundary, the same logical plan shape can execute
-many non-trivial single-table queries. Their expressions may combine
-arithmetic, comparisons, Boolean operators, parentheses, qualified columns,
-and null tests without requiring a new plan node for every combination.
+- **Checkpoint 1, Sections 5.2–5.5:** complete all three binding jobs and print
+  the checked logical plan. Valid names and types appear as `BoundExpr` trees;
+  invalid queries stop with binding errors.
+- **Checkpoint 2, Sections 5.6–5.7:** evaluate each bound expression for a row,
+  apply SQL's Boolean and null rules, and make `Filter` and `Project` execute
+  those expressions to produce rows.
+- **Checkpoint 3, Sections 5.8–5.9:** put parsing, binding, and execution behind
+  one application function, reconnect the fixed demonstration and interactive
+  prompt, and verify the complete path with tests.
 
-Ada and Grace satisfy the representative query. Linus does not. Just as
-importantly, the same path will reject missing tables, unknown columns,
-invalid qualifiers, and incompatible operand types before scanning rows.
+Once the binder is in place, planning and execution will be able to trust those
+expressions. `Filter` and `Project` will carry complete checked trees, allowing
+the same logical plan shape to support many non-trivial single-table queries
+instead of one fixed comparison.
+
+With that checked path complete, the representative query will return Ada and
+Grace but not Linus. The same path will reject missing tables, unknown columns,
+invalid qualifiers, and incompatible operand types before scanning any rows.
 
 Before changing the program, begin from the completed Chapter 4 checkpoint:
 
@@ -93,10 +105,7 @@ is also expression vocabulary because the binder uses it to describe the type
 produced by an expression. We therefore add it to `expression.rs` beside the
 operator and expression types.
 
-The catalog must record what kind of values each column may contain. A
-`DataType` describes a category such as integers or text, while `Value`
-stores one actual piece of row data such as `Value::Integer(70000)` or
-`Value::Text("Ada")`.
+Begin with the type categories that the catalog and binder need.
 
 `src/expression.rs`: add before `UnaryOp`
 
@@ -110,10 +119,13 @@ pub enum DataType {
 }
 ```
 
-A column describes every value allowed in that position. Using `Value` in
-the catalog would require a meaningless placeholder such as
-`Value::Integer(0)` merely to say that a column contains integers. We instead
-pair the column name with its `DataType`.
+`DataType` describes a category such as integers or text, while `Value` stores
+one actual piece of row data such as `Value::Integer(70000)` or
+`Value::Text("Ada")`. A catalog column must describe every value allowed in
+that position, not hold one representative value. Using `Value` there would
+require a meaningless placeholder such as `Value::Integer(0)` merely to say
+that a column contains integers. We therefore pair the column name with its
+`DataType`.
 
 `src/catalog.rs`: create this file
 
@@ -160,12 +172,17 @@ name; next we define what it produces after a lookup succeeds.
 
 The AST checkpoint showed an unresolved tree: `e.name` still contains two
 strings whose meaning has not been checked. Binding needs to produce a second
-tree that records the result of those checks.
+tree for the executable form that remains after those checks succeed.
 
-A bound column no longer needs its qualifier because the binder has already
-identified its table and verified the column. Keeping a separate type makes
-that guarantee visible: code that receives `BoundExpr` cannot accidentally
-accept an unresolved SQL name.
+In this single-table engine, a bound column no longer needs its qualifier. The
+binder has already checked the qualifier, found the column in the selected
+table, and recovered its type. It can therefore discard the qualifier and
+retain only the column name used to read the row.
+
+Keeping `Expr` and `BoundExpr` as separate Rust enums makes that completed
+validation step visible. Code that accepts `Expr` must still resolve its names
+and check its operators. Code reached through the binder can accept
+`BoundExpr` knowing those checks have already succeeded.
 
 `src/expression.rs`: add after `Expr`
 
@@ -198,42 +215,35 @@ Expr::Column { qualifier: Some("e"), name: "salary" }
 BoundExpr::Column("salary")
 ```
 
-The original `Expr` remains an honest record of what the user wrote.
-`BoundExpr` is the simpler form that later planning and execution stages may
-trust. Code that receives `Expr::Column` must still ask whether its qualifier
-and name exist. Code that receives `BoundExpr::Column` knows the binder has
-already answered those questions. Writing that binder starts with the names
-available for a lookup, which we will collect in a scope.
+The two trees represent different stages. `Expr` records what the user wrote;
+`BoundExpr` is the executable form produced after validation. In this
+chapter's one-table plans, a checked column can be represented by its name
+alone. Plans with multiple inputs will eventually need a less ambiguous
+column identity.
 
-## 5.4 Bind an expression in one recursive walk
+Writing the binder starts with the names available for a lookup, which we will
+collect in a scope.
 
-The binder has three responsibilities: resolve names against the catalog,
-check that operators receive compatible types, and replace each unresolved
-`Expr` node with a checked `BoundExpr` node. These responsibilities are easier
-to study separately, but the implementation performs them together as it
-walks the expression tree once.
+## 5.4 Bind a whole query
+
+Binding the complete query follows the three steps shown in the opening
+illustration. It resolves the input table and column references, checks
+operand types while converting `Expr` into `BoundExpr`, and places the checked
+projection and filter in a logical plan. The recursive expression walk handles
+the middle of that path; the final subsection connects it to the whole query.
 
 ### 5.4.1 Establish the scope
 
-A column name can be resolved only among the names visible to its query. For
-our one-table query, those names are the table name, its optional alias, and
-its columns. We will keep that information together in a `Scope` and pass it
-through every recursive binding call.
+This step begins after parsing has produced a `Query`. That value supplies the
+input table name, its optional alias, and the projection and filter expression
+trees. A column in either tree can be resolved only among the names visible
+from that input.
 
-Binding belongs in `catalog.rs`, whose imports need the expression types the
-binder will use:
-
-`src/catalog.rs`: replace the imports
-
-```rust
-use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
-use crate::row::Row;
-```
-
-The scope collects the names visible while binding one query. Passing one
-shared scope by reference lets every recursive call inherit the same table,
-alias, and columns without copying them or threading three separate arguments
-through the expression tree.
+The whole-query binder will use `query.table` to find the corresponding
+catalog table, then create one `Scope`. The scope borrows the verified table
+name and column definitions from that catalog entry and the optional alias
+from the parsed query. We will pass it through every recursive expression
+binding call.
 
 `src/catalog.rs`: add after `impl Catalog`
 
@@ -245,15 +255,42 @@ struct Scope<'a> {
 }
 ```
 
-If an alias exists, it is the qualifier accepted by this scope. Otherwise the
+`table_name` and `alias` determine which qualifier is valid. `columns` is the
+selected table's catalog schema, not its row data; the binder searches it to
+verify a column name and recover its type. The whole-query binder will pass the
+same shared `&Scope` to the projection and filter:
+
+```text
+catalog table + query alias
+           ↓
+       one Scope
+        ↙     ↘
+projection   filter
+    ↓          ↓
+recursive calls reuse &scope
+```
+
+Binding changes the expression as it walks the tree, but it never changes the
+scope. If an alias exists, that alias is the accepted qualifier. Otherwise the
 table name itself may qualify a column.
 
-### 5.4.2 Resolve names against the catalog
+### 5.4.2 Resolve column references
 
-`bind_expression()` returns two results for every AST node: a checked
-expression and the type that expression produces. Its column arm first checks
-an optional qualifier against the table name or alias, then looks up the
-column in the scope. Either lookup can stop binding with an error.
+`bind_expression()` handles one expression tree rather than a complete
+`Query`. It returns two results for every AST node: a checked expression and
+the type that expression produces. Its column arm first checks an optional
+qualifier against the table name or alias, then looks up the column in the
+scope. Either lookup can stop binding with an error.
+
+The complete walk consumes `Expr`, inspects its unary and binary operators,
+produces `BoundExpr`, and returns `DataType`. Add those expression types in one
+import edit.
+
+`src/catalog.rs`: replace the `DataType` import
+
+```rust
+use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
+```
 
 `src/catalog.rs`: begin `bind_expression()` after `Scope`
 
@@ -288,6 +325,11 @@ type information.
 A literal's `Value` determines its type. Unary and binary nodes recursively
 bind their children, then check the returned types before constructing the
 parent node.
+
+A bare `NULL` receives the temporary type `DataType::Null`. The type helpers
+accept it where another operand type is expected because evaluation normally
+propagates the unknown value as `Value::Null` rather than treating it as a type
+error.
 
 `src/catalog.rs`: continue the `match` in `bind_expression()`
 
@@ -386,11 +428,6 @@ also closes the `match` and the function.
 }
 ```
 
-A bare `NULL` receives the temporary type `DataType::Null`. The helpers accept
-it where another operand type is expected because evaluation normally
-propagates the unknown value as `Value::Null` rather than treating it as a type
-error.
-
 `src/catalog.rs`: add the type helper after `bind_expression()`
 
 ```rust
@@ -439,10 +476,100 @@ Ordered comparisons accept matching integers or text. `name + 1` fails during
 binding because `name` is text, so execution does not discover that mistake
 halfway through a scan.
 
-### 5.4.4 Produce the bound expression tree
+### 5.4.4 Assemble the bound plan
 
-Type checking does not happen in a separate pass. Each successful match arm
-constructs the checked node that corresponds to the AST node it just
+`bind_expression()` handles one tree. A complete `Query` has two of them—the
+projection and the filter—plus an input table that must be resolved first. The
+whole-query binder will find that table, construct the scope, bind both trees,
+check the filter's result type, and assemble a logical plan.
+
+That plan needs to carry bound expressions before it can be constructed.
+Replace the Chapter 4 plan shape now, but leave execution for the second
+checkpoint.
+
+`src/plan.rs`: replace the file
+
+```rust
+use crate::expression::BoundExpr;
+use crate::row::Row;
+
+#[derive(Debug)]
+pub struct ProjectExpression {
+    pub name: String,
+    pub expression: BoundExpr,
+}
+
+#[derive(Debug)]
+pub enum Plan {
+    Scan { rows: Vec<Row> },
+    Filter { predicate: BoundExpr, input: Box<Plan> },
+    Project {
+        expressions: Vec<ProjectExpression>,
+        input: Box<Plan>,
+    },
+}
+```
+
+`ProjectExpression` stores both a checked expression and the name printed for
+its result. A bare column retains its column name. Until aliases for selected
+expressions arrive, a computed value uses the placeholder `"expression"`.
+
+The catalog binder consumes the parsed query and produces this plan.
+
+`src/catalog.rs`: add with the imports
+
+```rust
+use crate::parser::Query;
+use crate::plan::{Plan, ProjectExpression};
+```
+
+`src/catalog.rs`: add to `impl Catalog`
+
+```rust
+pub fn bind(&self, query: Query) -> Result<Plan, String> {
+    let table = self.tables.iter()
+        .find(|table| table.name == query.table)
+        .ok_or_else(|| format!("unknown table: {}", query.table))?;
+
+    let scope = Scope {
+        table_name: &table.name,
+        alias: query.table_alias.as_deref(),
+        columns: &table.columns,
+    };
+
+    let (projection, _) = bind_expression(query.projection, &scope)?;
+    let projection_name = match &projection {
+        BoundExpr::Column(name) => name.clone(),
+        _ => "expression".to_string(),
+    };
+    let (predicate, predicate_type) =
+        bind_expression(query.filter, &scope)?;
+    if predicate_type != DataType::Boolean
+        && predicate_type != DataType::Null
+    {
+        return Err("WHERE expression must be Boolean".to_string());
+    }
+
+    Ok(Plan::Project {
+        expressions: vec![ProjectExpression {
+            name: projection_name,
+            expression: projection,
+        }],
+        input: Box::new(Plan::Filter {
+            predicate,
+            input: Box::new(Plan::Scan { rows: table.rows.clone() }),
+        }),
+    })
+}
+```
+
+The `Scope` introduced at the start of this section is now concrete. Its table
+name and columns come from the catalog entry found through `query.table`; its
+alias comes from the parsed query. Both expression walks receive a shared
+reference to that same scope.
+
+Type checking does not happen in a separate pass. Each successful expression
+match arm constructs the checked node that corresponds to the AST node it just
 validated:
 
 | AST node | Bound result | Result type |
@@ -455,21 +582,145 @@ validated:
 
 Because the recursive calls return `BoundExpr`, a parent can be produced only
 after all of its children have resolved names and passed their type checks.
-The completed tree is therefore safe for the next stages to evaluate.
+The resulting plan contains two checked trees but has no execution method yet.
 
 <figure class="book-illustration book-diagram">
   <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.">
   <figcaption>Binding checks the qualifier and column, recovers the type, and produces a simpler expression for execution.</figcaption>
 </figure>
 
-## 5.5 Evaluate the bound expression
+## 5.5 Inspect the bound plan
+
+The first checkpoint makes binding visible before evaluation is added. We will
+populate the catalog, parse each entered query, bind it, and print the checked
+plan. The temporary shell allows dead code in modules whose execution methods
+will arrive in the next two sections.
+
+`src/main.rs`: temporarily replace the file
+
+```rust
+mod catalog;
+#[allow(dead_code)]
+mod expression;
+mod lexer;
+mod parser;
+#[allow(dead_code)]
+mod plan;
+#[allow(dead_code)]
+mod row;
+
+use std::io::{self, Write};
+use catalog::{Catalog, Column, Table};
+use expression::DataType;
+use parser::parse;
+use row::{Row, Value};
+
+fn main() -> io::Result<()> {
+    let catalog = employee_catalog();
+    run_binding_prompt(&catalog)
+}
+```
+
+Add the employee table that gives the catalog real names and types to resolve.
+
+`src/main.rs`: add after `main()`
+
+```rust
+fn employee(id: i64, name: &str, salary: i64) -> Row {
+    Row::new(vec![
+        ("id", Value::Integer(id)),
+        ("name", Value::Text(name.to_string())),
+        ("salary", Value::Integer(salary)),
+    ])
+}
+
+fn employee_catalog() -> Catalog {
+    Catalog::new(vec![Table {
+        name: "employees".to_string(),
+        columns: vec![
+            Column { name: "id".to_string(),
+                data_type: DataType::Integer },
+            Column { name: "name".to_string(),
+                data_type: DataType::Text },
+            Column { name: "salary".to_string(),
+                data_type: DataType::Integer },
+        ],
+        rows: vec![
+            employee(1, "Ada", 70_000),
+            employee(2, "Linus", 50_000),
+            employee(3, "Grace", 72_000),
+        ],
+    }])
+}
+```
+
+The column list is the schema for the rows below it. Nothing in this small
+catalog forces that schema and `employee()` to agree, so adding or changing a
+column requires updating both. A later storage representation will remove
+this manually maintained duplication.
+
+The prompt stops after binding and prints the plan rather than executing it.
+
+`src/main.rs`: add after `employee_catalog()`
+
+```rust
+fn run_binding_prompt(catalog: &Catalog) -> io::Result<()> {
+    loop {
+        print!("sql> ");
+        io::stdout().flush()?;
+        let mut sql = String::new();
+        if io::stdin().read_line(&mut sql)? == 0 {
+            println!();
+            return Ok(());
+        }
+        if !sql.trim().is_empty() {
+            let result = parse(&sql)
+                .map_err(|error| error.to_string())
+                .and_then(|query| catalog.bind(query));
+            match result {
+                Ok(plan) => println!("{plan:#?}"),
+                Err(error) => eprintln!("error: {error}"),
+            }
+        }
+    }
+}
+```
+
+Run the prompt and enter the representative query:
+
+```bash
+cargo run --quiet
+```
+
+The output is a `Project` containing a bound `Column("name")`, above a
+`Filter` containing the checked Boolean expression, above a `Scan` containing
+the employee rows. No alias or unresolved column reference remains in the
+plan.
+
+Binding errors are visible at the same checkpoint:
+
+```text
+sql> SELECT name FROM missing_table WHERE salary > 50000;
+error: unknown table: missing_table
+sql> SELECT x.name FROM employees AS e WHERE e.salary > 50000;
+error: unknown table or alias: x
+sql> SELECT name FROM employees WHERE name + 1 > 0;
+error: arithmetic requires integers: found Text
+```
+
+The binder has now completed the three jobs shown at the beginning of the
+chapter: it resolved names, checked types, and placed checked expressions in a
+logical plan. The plan is printable but not executable. That limitation gives
+us the next task: evaluate its bound expressions.
+
+## 5.6 Evaluate the bound expression
 
 Binding has removed unresolved names and rejected invalid operand types. That
 lets evaluation focus on one question: what value does this checked expression
 produce for the current row? We will import `Row` alongside `Value` and give
 the bound tree an evaluation method.
 
-### 5.5.1 Evaluate the bound tree
+### 5.6.1 Evaluate the bound tree
 
 `src/expression.rs`: replace the first import
 
@@ -531,7 +782,7 @@ Columns and literals produce values directly. Unary nodes evaluate their one
 child before applying their operator. Binary nodes need an additional rule:
 SQL can produce an unknown result represented by `NULL`.
 
-### 5.5.2 Apply binary and three-valued logic
+### 5.6.2 Define three-valued Boolean logic
 
 Binary evaluation must account for SQL's unknown value. `NULL` propagates
 through arithmetic and comparisons: for example, both `1 + NULL` and
@@ -561,9 +812,45 @@ operand can sometimes decide the result. They follow these truth tables:
 </table>
 
 A false value decides `AND` even when the other side is unknown. A true value
-similarly decides `OR`. With those rules established, binary evaluation can
-handle nulls before dispatching ordinary arithmetic, comparison, and Boolean
-operations. Division by zero remains an execution error.
+similarly decides `OR`. Encode those two tables before adding the binary
+evaluator that calls them.
+
+`src/expression.rs`: add the three-valued Boolean helpers after
+`evaluate_unary()`
+
+```rust
+fn and(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(false), _) | (_, Value::Boolean(false)) =>
+            Ok(Value::Boolean(false)),
+        (Value::Boolean(true), Value::Boolean(true)) =>
+            Ok(Value::Boolean(true)),
+        (Value::Boolean(true), Value::Null)
+        | (Value::Null, Value::Boolean(true))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("AND received a non-Boolean value".into()),
+    }
+}
+
+fn or(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(true), _) | (_, Value::Boolean(true)) =>
+            Ok(Value::Boolean(true)),
+        (Value::Boolean(false), Value::Boolean(false)) =>
+            Ok(Value::Boolean(false)),
+        (Value::Boolean(false), Value::Null)
+        | (Value::Null, Value::Boolean(false))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("OR received a non-Boolean value".into()),
+    }
+}
+```
+
+### 5.6.3 Evaluate binary operations
+
+With the Boolean helpers in place, binary evaluation can handle nulls before
+dispatching ordinary arithmetic, comparison, and Boolean operations. Division
+by zero remains an execution error.
 
 `src/expression.rs`: add after `evaluate_unary()`
 
@@ -631,52 +918,16 @@ Binding guarantees that `compare()` receives a comparison operator. Its error
 arm remains because the Rust type `BinaryOp` also contains non-comparison
 variants and cannot express that narrower guarantee by itself.
 
-### 5.5.3 Implement the Boolean helpers
+A bound expression can now evaluate one row. The checked plan from the first
+checkpoint must next call that evaluator for every row it filters or projects.
 
-The Boolean helpers encode the truth tables directly.
+## 5.7 Execute the bound plan
 
-`src/expression.rs`: add the three-valued Boolean helpers
+The first checkpoint produced a plan containing bound expression trees, but
+that plan had no `execute()` method. We can now make its filter and project
+nodes evaluate those trees.
 
-```rust
-fn and(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(false), _) | (_, Value::Boolean(false)) =>
-            Ok(Value::Boolean(false)),
-        (Value::Boolean(true), Value::Boolean(true)) =>
-            Ok(Value::Boolean(true)),
-        (Value::Boolean(true), Value::Null)
-        | (Value::Null, Value::Boolean(true))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("AND received a non-Boolean value".into()),
-    }
-}
-
-fn or(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(true), _) | (_, Value::Boolean(true)) =>
-            Ok(Value::Boolean(true)),
-        (Value::Boolean(false), Value::Boolean(false)) =>
-            Ok(Value::Boolean(false)),
-        (Value::Boolean(false), Value::Null)
-        | (Value::Null, Value::Boolean(false))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("OR received a non-Boolean value".into()),
-    }
-}
-```
-
-A bound expression can now evaluate one row. The plan must next store these
-expressions instead of the fixed column and integer fields from Chapter 3.
-
-## 5.6 Put bound expressions in the logical plan
-
-The Chapter 3 plan stored one filter column, one integer boundary, and a list
-of projected column names. That representation could execute only the query
-shape it described. Bound expression trees can replace those fixed fields, so
-the same filter and project nodes can execute every expression this chapter
-accepts.
-
-### 5.6.1 Construct projected rows
+### 5.7.1 Construct projected rows
 
 Projection will produce a `Vec<(String, Value)>` whose column names are already
 owned. `Row::new()` accepts borrowed names and converts each one into a new
@@ -692,38 +943,22 @@ pub fn from_owned(values: Vec<(String, Value)>) -> Self {
 }
 ```
 
-### 5.6.2 Store bound expressions in the plan
+### 5.7.2 Execute the plan
 
-The plan can now replace its fixed filter boundary and projected column names
-with the bound expressions that produce those values.
+`plan.rs` already imports `Row`. Execution also inspects Boolean and null
+values, so extend that import.
 
-`src/plan.rs`: replace the file
+`src/plan.rs`: replace the `Row` import
 
 ```rust
-use crate::expression::BoundExpr;
 use crate::row::{Row, Value};
-
-#[derive(Debug)]
-pub struct ProjectExpression {
-    pub name: String,
-    pub expression: BoundExpr,
-}
-
-#[derive(Debug)]
-pub enum Plan {
-    Scan { rows: Vec<Row> },
-    Filter { predicate: BoundExpr, input: Box<Plan> },
-    Project {
-        expressions: Vec<ProjectExpression>,
-        input: Box<Plan>,
-    },
-}
 ```
 
 A filter retains only `TRUE`. `FALSE` and `NULL` both remove the row, which is
-how SQL treats an unknown `WHERE` condition. Execution does not search the
-catalog or reinterpret SQL because binding has already settled those
-questions.
+how SQL treats an unknown `WHERE` condition. The whole-query binder accepted a
+`WHERE` expression with a Boolean or temporary null type; this match defines
+what those results do during execution. Execution does not search the catalog
+or reinterpret SQL because binding has already settled those questions.
 
 `src/plan.rs`: add `Plan::execute()`
 
@@ -761,132 +996,50 @@ impl Plan {
 }
 ```
 
-The executor now understands bound expressions, but no code yet assembles the
-new plan. The catalog can finally do that without referring to future types.
+The second checkpoint executes the plan that the binding prompt previously
+printed. Extend its result pipeline through `Plan::execute()` and print the
+returned rows.
 
-## 5.7 Connect the application
-
-We can bind an individual expression and execute a plan that contains one, but
-no function yet turns an entire parsed `Query` into that plan.
-`Catalog::bind()` will resolve the input table, bind the projection and filter
-in the same scope, require a valid `WHERE` type, and assemble the familiar
-`Scan → Filter → Project` tree. Once that path exists, both the fixed
-demonstration and the prompt can use it.
-
-### 5.7.1 Complete the binder
-
-`src/catalog.rs`: add with the imports
+`src/main.rs`: replace the result and `match` inside `run_binding_prompt()`
 
 ```rust
-use crate::parser::Query;
-use crate::plan::{Plan, ProjectExpression};
-```
-
-`src/catalog.rs`: add to `impl Catalog`
-
-```rust
-pub fn bind(&self, query: Query) -> Result<Plan, String> {
-    let table = self.tables.iter()
-        .find(|table| table.name == query.table)
-        .ok_or_else(|| format!("unknown table: {}", query.table))?;
-
-    let scope = Scope {
-        table_name: &table.name,
-        alias: query.table_alias.as_deref(),
-        columns: &table.columns,
-    };
-
-    let (projection, _) = bind_expression(query.projection, &scope)?;
-    let projection_name = match &projection {
-        BoundExpr::Column(name) => name.clone(),
-        _ => "expression".to_string(),
-    };
-    let (predicate, predicate_type) =
-        bind_expression(query.filter, &scope)?;
-    if predicate_type != DataType::Boolean
-        && predicate_type != DataType::Null
-    {
-        return Err("WHERE expression must be Boolean".to_string());
-    }
-
-    Ok(Plan::Project {
-        expressions: vec![ProjectExpression {
-            name: projection_name,
-            expression: projection,
-        }],
-        input: Box::new(Plan::Filter {
-            predicate,
-            input: Box::new(Plan::Scan { rows: table.rows.clone() }),
-        }),
-    })
+let result = parse(&sql)
+    .map_err(|error| error.to_string())
+    .and_then(|query| catalog.bind(query))
+    .and_then(|plan| plan.execute());
+match result {
+    Ok(rows) => for row in rows { println!("{row}"); },
+    Err(error) => eprintln!("error: {error}"),
 }
 ```
 
-The binder now produces the complete scan-filter-project plan. We can connect
-that path to the application.
+Run the prompt and enter the representative query again:
 
-### 5.7.2 Restore the fixed demonstration
-
-The AST-only shell has served its checkpoint. We can now restore the complete
-set of database modules and import the catalog.
-
-`src/main.rs`: replace the module declarations and imports
-
-```rust
-mod catalog;
-mod expression;
-mod lexer;
-mod parser;
-mod plan;
-mod row;
-
-use std::io::{self, Write};
-use catalog::{Catalog, Column, Table};
-use expression::DataType;
-use parser::parse;
-use row::{Row, Value};
+```bash
+cargo run --quiet
 ```
 
-The application also needs its employee rows again, now registered as a typed
-table in the catalog.
-
-`src/main.rs`: add after the imports
-
-```rust
-fn employee(id: i64, name: &str, salary: i64) -> Row {
-    Row::new(vec![
-        ("id", Value::Integer(id)),
-        ("name", Value::Text(name.to_string())),
-        ("salary", Value::Integer(salary)),
-    ])
-}
-
-fn employee_catalog() -> Catalog {
-    Catalog::new(vec![Table {
-        name: "employees".to_string(),
-        columns: vec![
-            Column { name: "id".to_string(),
-                data_type: DataType::Integer },
-            Column { name: "name".to_string(),
-                data_type: DataType::Text },
-            Column { name: "salary".to_string(),
-                data_type: DataType::Integer },
-        ],
-        rows: vec![
-            employee(1, "Ada", 70_000),
-            employee(2, "Linus", 50_000),
-            employee(3, "Grace", 72_000),
-        ],
-    }])
-}
+```text
+sql> SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+{name: "Ada"}
+{name: "Grace"}
 ```
 
-The column list is the schema for the rows below it. Nothing in this small
-catalog forces that schema and `employee()` to agree, so adding or changing a
-column requires updating both. A later storage representation will remove
-this manually maintained duplication.
+The same bound plan that was visible at the first checkpoint can now produce
+rows. The final checkpoint will give this path a shared application function,
+a fixed demonstration, error-preserving prompt behavior, and tests.
 
-The shared SQL entry point now parses, binds, and executes.
+## 5.8 Connect the application
+
+Parsing, binding, and execution now work together in the temporary prompt. We
+will extract that pipeline into one application function, restore the fixed
+demonstration, and then reconnect the final prompt.
+
+### 5.8.1 Complete the application path
+
+The two temporary prompts repeated parsing, binding, and eventually execution
+inside their loops. Move that pipeline into the shared SQL entry point that
+both final application paths will call.
 
 `src/main.rs`: add after `employee_catalog()`
 
@@ -899,9 +1052,17 @@ fn execute_sql(sql: &str, catalog: &Catalog)
 }
 ```
 
-We will reconnect the fixed demonstration before bringing back the prompt.
+The expression, plan, and row modules are no longer partial checkpoint code.
+Remove the temporary `#[allow(dead_code)]` attributes from their module
+declarations.
 
-`src/main.rs`: replace the temporary `main()` and remove `inspect_sql()`
+### 5.8.2 Restore the fixed demonstration
+
+The catalog and employee rows already exist from the first checkpoint. Replace
+the temporary execution prompt with a fixed demonstration that calls the new
+shared function.
+
+`src/main.rs`: replace `main()` and remove `run_binding_prompt()`
 
 ```rust
 fn main() {
@@ -922,7 +1083,7 @@ fn run_demo(catalog: &Catalog) {
 }
 ```
 
-### 5.7.3 Connect the prompt
+### 5.8.3 Connect the prompt
 
 With the fixed demonstration working, `main()` can choose between it and the
 prompt.
@@ -944,7 +1105,7 @@ fn main() {
 The final prompt has the same loop as before, but it carries the catalog and
 prints binding errors as ordinary query errors.
 
-`src/main.rs`: replace the temporary `run_prompt()`
+`src/main.rs`: add after `run_demo()`
 
 ```rust
 fn run_prompt(catalog: &Catalog) -> io::Result<()> {
@@ -974,7 +1135,7 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 evaluates expressions instead of copying a fixed list of columns. Remove the
 old method from `row.rs`.
 
-### 5.7.4 Verify that the code compiles
+### 5.8.4 Verify that the code compiles
 
 The application now connects the parser, catalog and binder, plan, and
 executor. Compile it before running queries so missing modules, stale imports,
@@ -985,13 +1146,13 @@ cargo fmt
 cargo check
 ```
 
-## 5.8 Run and verify
+## 5.9 Run and verify
 
 The complete path is now connected. We will verify it at three levels: the
 fixed demonstration, interactive failures at the prompt, and the automated
 test suite.
 
-### 5.8.1 Run the fixed demonstration
+### 5.9.1 Run the fixed demonstration
 
 Run the completed path:
 
@@ -1008,7 +1169,7 @@ Employees matching the bound expression:
 The source text now becomes an unresolved AST, then a checked bound plan, and
 only then rows. The executor itself never sees an alias or table name.
 
-### 5.8.2 Run the prompt and its errors
+### 5.9.2 Run the prompt and its errors
 
 Start the interactive path:
 
@@ -1035,7 +1196,7 @@ error: arithmetic requires integers: found Text
 The prompt remains ready after each failure. A bad query no longer becomes a
 process panic or silently reads an unrelated table.
 
-### 5.8.3 Verify the tests
+### 5.9.3 Verify the tests
 
 Run the complete suite:
 
@@ -1054,7 +1215,7 @@ cargo fmt --check
 cargo clippy -- -D warnings
 ```
 
-## 5.9 What we deliberately did not build
+## 5.10 What we deliberately did not build
 
 With the complete path verified, we can state the boundaries that remain.
 The new frontend remains intentionally bounded:
@@ -1072,7 +1233,7 @@ The new frontend remains intentionally bounded:
 These limits keep the chapter focused on the boundary between syntax and
 meaning. Appendix B records where the remaining expression forms belong.
 
-## 5.10 Try it
+## 5.11 Try it
 
 Run the prompt, predict the stage that will accept or reject each query, and
 then test it.
@@ -1100,7 +1261,7 @@ then test it.
 
 </details>
 
-## 5.11 One scope is no longer enough
+## 5.12 One scope is no longer enough
 
 The frontend can now preserve expression structure, and the binder can reject
 unknown names and incompatible types before execution. The last exercise
