@@ -28,12 +28,15 @@ FROM employees AS e
 WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
 ```
 
-Its AST preserves the alias, qualified columns, arithmetic, comparison,
-Boolean operator, and null test. Yet every name in that tree is still text.
-The parser cannot know whether `employees` exists, whether `e` names that
-table, or whether adding `5000` to `e.salary` makes sense.
+Chapters 1 through 3 used single, non-nested plan inputs: a projection
+contained column names, and a filter contained one column and one integer
+boundary. Chapter 4 replaced those fixed pieces with expression trees so the
+frontend could preserve nesting and precedence.
 
-This chapter adds **binding**, the stage that answers those questions:
+That created the next problem. The logical plan needs those trees, but it
+should not receive unchecked SQL names. A separate **binding** stage must
+translate the unresolved AST expressions into expressions that planning and
+execution may trust:
 
 ```text
 AST → binding → bound plan → rows
@@ -41,10 +44,24 @@ AST → binding → bound plan → rows
        catalog
 ```
 
-The catalog describes the tables and columns available to the query. The
-binder resolves names against that catalog and checks operator types before
-execution. The resulting bound expressions no longer contain unchecked table
-qualifiers.
+```text
+Query AST                      Logical plan
+
+projection: Expr      →        Project(BoundExpr)
+filter: Expr          →          Filter(BoundExpr)
+                                   Scan(table rows)
+```
+
+The binder performs three jobs during that translation:
+
+1. It resolves tables, aliases, and columns against the catalog.
+2. It checks that each operator receives compatible operand types.
+3. It converts each `Expr` into a `BoundExpr` and places those checked trees
+   in the logical plan.
+
+The catalog supplies the available tables, columns, and types. The binder uses
+that information; the executor receives the result and does not need to
+interpret unresolved SQL names.
 
 Ada and Grace satisfy the representative query. Linus does not. Just as
 importantly, the same path will reject missing tables, unknown columns,
