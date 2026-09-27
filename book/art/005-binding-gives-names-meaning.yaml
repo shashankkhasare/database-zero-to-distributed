@@ -2,25 +2,81 @@ lesson: "005"
 style: book/art/STYLE.md
 
 images:
-  - id: parsing-is-not-binding
+  - id: three-jobs-of-binding
     kind: generated-raster
-    output: book/images/005-parsing-is-not-binding.png
+    output: book/images/005-three-jobs-of-binding.png
     placement: after the chapter epigraph and before the opening prose
-    alt: The missing_table query passes a structural parser check, then fails when a binder compares its table name with a catalog containing only employees.
+    alt: A Query AST with unresolved table, alias, and column names enters a binder supplied by a catalog, becomes a typed bound expression, and is placed in a Project, Filter, and Scan logical plan.
     prompt: >-
-      Use case: scientific-educational. Asset type: opening illustration for a
-      technical database book chapter about binding names after parsing. On
-      the left, show a broad paper query card carrying only the prominent name
-      "missing_table". It passes cleanly through a simple teal frame labeled
-      exactly "PARSER" with a small check mark. On the right, the same card
-      reaches a second frame labeled exactly "BINDER" beside a compact catalog
-      drawer containing one card labeled exactly "employees". The binder
-      cannot match "missing_table" and marks that path with one restrained
-      rust-red cross. Make the difference between valid structure and missing
-      database object immediately readable. Follow book/art/STYLE.md exactly.
-      Wide landscape composition, large sparse labels, generous margins. No
-      other words, SQL prose, people, logos, watermark, photorealism, factory
-      machinery, glossy 3D rendering, or tiny text.
+      Use case: scientific-educational. Asset type: opening editorial
+      illustration for a technical database book chapter about SQL binding.
+      Teaching objective: show exactly what the previous chapter produced,
+      what remains unresolved, what the binder checks, and what this chapter
+      produces. Create one wide left-to-right illustration on warm textured
+      paper with the main path QUERY AST to BINDER to BOUND EXPR to LOGICAL
+      PLAN. Place CATALOG below BINDER with an upward arrow feeding the binder;
+      the catalog is supporting input, not a stage in the horizontal path.
+
+      Region 1, QUERY AST: place the exact heading "QUERY AST" above a query
+      card. At the top show the unresolved entries "employees AS e ?" and
+      "e.name ?". Below them show the parsed filter tree. Its solid root is
+      "AND". The left child is ">"; its left child is "+" with leaves
+      "e.salary ?" and "5000", and its right child is "70000". The right
+      child of AND is "IS NOT NULL" with leaf "e.name ?". Use solid charcoal
+      branches, operators, and numeric literals because parsing has already
+      established syntax and precedence. Use dotted ochre boxes only around
+      "employees AS e ?", "e.name ?", and "e.salary ?" because those database
+      names remain unresolved. Do not make the whole AST dotted.
+
+      Region 2, BINDER: place the exact heading "BINDER" above a broad teal
+      inspection frame. Show unresolved name cards entering it. Use straight,
+      separate, noncrossing connections with these exact mappings only:
+      "employees AS e" connects to "employees"; "e.name" connects to
+      "name: TEXT"; and "e.salary" connects to "salary: INTEGER". Never
+      connect e.name to salary or e.salary to name. The alias e belongs to the
+      binder's query scope after employees AS e resolves to employees; it is
+      not stored in the catalog. Also show compatible geometric type shapes
+      locking together. Below the binder place a compact drawer labeled
+      exactly "CATALOG" containing four large cards: "employees",
+      "id: INTEGER", "name: TEXT", and "salary: INTEGER". Connect the catalog
+      upward into the binder.
+
+      Region 3, BOUND EXPR: place the exact heading "BOUND EXPR" above the
+      same filter-tree shape in solid teal. Replace "e.salary ?" with
+      "salary" and "e.name ?" with "name". Add only four small readable type
+      badges: "INTEGER" beside the addition node and "BOOLEAN" beside the
+      greater-than node, null-test node, and AND root.
+
+      Region 4, LOGICAL PLAN: place the exact heading "LOGICAL PLAN" above
+      three stacked rectangular frames connected vertically and labeled
+      exactly "PROJECT", "FILTER", and "SCAN" from top to bottom. PROJECT
+      contains one checked leaf labeled "name". FILTER contains a small
+      simplified copy of the bound Boolean tree. SCAN contains three
+      horizontal rows suggesting employee data. Join adjacent plan frames with
+      neutral vertical connector lines that have no arrowheads. Alongside the
+      three frames, draw one prominent teal arrow whose tail begins beside
+      SCAN and whose arrowhead ends beside PROJECT, clearly showing rows
+      flowing upward through FILTER toward the plan root. Never draw a
+      downward-pointing arrow inside the logical plan. The logical plan is the
+      rightmost endpoint with nothing after it.
+
+      Permitted text only: "QUERY AST", "employees AS e", "e.name",
+      "e.salary", "AND", ">", "+", "IS NOT NULL", "5000", "70000", "?",
+      "BINDER", "CATALOG", "employees", "name: TEXT",
+      "id: INTEGER", "salary: INTEGER", "BOUND EXPR", "name", "salary",
+      "INTEGER", "BOOLEAN", "LOGICAL PLAN", "PROJECT", "FILTER", and
+      "SCAN". Render
+      every label exactly. Do not invent, duplicate, misspell, or abbreviate
+      text; use "INTEGER" and "BOOLEAN", never "INT" or "BOOL".
+
+      Original editorial illustration with hand-drawn ink contours,
+      restrained gouache and watercolor fills, subtle print texture, and the
+      warm ivory, charcoal, deep teal, muted turquoise, and ochre palette from
+      book/art/STYLE.md. Wide landscape composition, generous margins, large
+      readable labels, straight noncrossing connections, and one coherent
+      visual flow. No people, logos, watermark, photorealism, interface chrome,
+      glossy 3D rendering, factory machinery, digital-looking gradients,
+      decorative prose, tiny labels, crossed arrows, or unlisted text.
 
   - id: column-binding
     kind: generated-raster
