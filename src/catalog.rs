@@ -42,7 +42,7 @@ impl Catalog {
             _ => "expression".into(),
         };
         let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
-        if predicate_type != DataType::Boolean && predicate_type != DataType::Null {
+        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
             return Err("WHERE expression must be Boolean".into());
         }
         Ok(Plan::Project {

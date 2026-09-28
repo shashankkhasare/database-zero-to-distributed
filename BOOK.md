@@ -324,6 +324,19 @@ update its grammar, ownership, and checkpoint together. When the roadmap no
 longer intends to support a planned construct, remove it only with an explicit
 scope decision rather than allowing it to become an unowned promise.
 
+## Keep value and type rules accountable
+
+Appendix C is the reference for runtime values, data types, operator
+compatibility, result types, and `NULL` behavior. It records only behavior
+implemented and tested by a tagged checkpoint. Future types and operations may
+be listed with an owner, but their semantics remain unspecified until that
+owner is implemented.
+
+When a chapter adds a value type, conversion, comparison rule, collation, or
+operator behavior, update Appendix C and its executable tests in the same
+change. Chapters should still repeat the small rule table needed for their
+local explanation.
+
 ## Speak collaboratively
 
 Use **we** for the shared investigation and implementation:
