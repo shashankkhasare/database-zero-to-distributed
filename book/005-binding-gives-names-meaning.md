@@ -175,15 +175,15 @@ The AST checkpoint showed an unresolved tree: `e.name` still contains two
 strings whose meaning has not been checked. Binding needs to produce a second
 tree for the executable form that remains after those checks succeed.
 
-In this single-table engine, a bound column no longer needs its qualifier. The
-binder has already checked the qualifier, found the column in the selected
-table, and recovered its type. It can therefore discard the qualifier and
+When binding succeeds in this single-table engine, the binder will have
+checked the qualifier, found the column in the selected table, and recovered
+its type. The resulting bound column can therefore discard the qualifier and
 retain only the column name used to read the row.
 
-Keeping `Expr` and `BoundExpr` as separate Rust enums makes that completed
-validation step visible. Code that accepts `Expr` must still resolve its names
-and check its operators. Code reached through the binder can accept
-`BoundExpr` knowing those checks have already succeeded.
+Keeping `Expr` and `BoundExpr` as separate Rust enums will make that validation
+step visible. Code that accepts `Expr` must still resolve its names and check
+its operators. Once we build the binder, code that receives `BoundExpr` will
+know that those checks succeeded.
 
 `src/expression.rs`: add after `Expr`
 
@@ -227,11 +227,12 @@ collect in a scope.
 
 ## 5.4 Bind a whole query
 
-Binding the complete query follows the three steps shown in the opening
-illustration. It resolves the input table and column references, checks
-operand types while converting `Expr` into `BoundExpr`, and places the checked
-projection and filter in a logical plan. The recursive expression walk handles
-the middle of that path; the final subsection connects it to the whole query.
+We will bind the complete query in the three steps shown in the opening
+illustration: resolve the input table and column references, check operand
+types while converting `Expr` into `BoundExpr`, and place the checked
+projection and filter in a logical plan. The recursive expression walk will
+handle the middle of that path; the final subsection will connect it to the
+whole query.
 
 ### 5.4.1 Establish the scope
 
@@ -342,10 +343,11 @@ ordered.
 
 ### 5.4.3 Walk and check the expression tree
 
-`bind_expression()` handles one expression tree rather than a complete
-`Query`. For every AST node it returns a pair: the checked `BoundExpr` node and
-the `DataType` that node produces. Parent nodes use the returned type to check
-their operators before constructing their own bound nodes.
+We will implement `bind_expression()` for one expression tree rather than a
+complete `Query`. For every AST node, it will return a pair: the checked
+`BoundExpr` node and the `DataType` that node produces. Parent nodes will use
+the returned type to check their operators before constructing their own bound
+nodes.
 
 The complete walk consumes `Expr` and needs every expression type involved in
 that conversion. Add them to the catalog import first.
@@ -565,7 +567,7 @@ pub enum Plan {
 its result. A bare column retains its column name. Until aliases for selected
 expressions arrive, a computed value uses the placeholder `"expression"`.
 
-The catalog binder consumes the parsed query and produces this plan.
+`Catalog::bind()` will consume the parsed query and produce this plan.
 
 `src/catalog.rs`: add with the imports
 
