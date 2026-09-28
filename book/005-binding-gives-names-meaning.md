@@ -234,39 +234,7 @@ projection and filter in a logical plan. The recursive expression walk will
 handle the middle of that path; the final subsection will connect it to the
 whole query.
 
-### 5.4.1 Establish the scope
-
-This step begins after parsing has produced a `Query`. That value supplies the
-input table name, its optional alias, and the projection and filter expression
-trees. A column in either tree can be resolved only among the names visible
-from that input.
-
-The whole-query binder will use `query.table` to find the corresponding
-catalog table, then create one `Scope`. The scope borrows the verified table
-name and column definitions from that catalog entry and the optional alias
-from the parsed query. We will pass it through every recursive expression
-binding call.
-
-`src/catalog.rs`: add after `impl Catalog`
-
-```rust
-struct Scope<'a> {
-    table_name: &'a str,
-    alias: Option<&'a str>,
-    columns: &'a [Column],
-}
-```
-
-`table_name` and `alias` determine which qualifier is valid. `columns` is the
-selected table's catalog schema, not its row data; the binder searches it to
-verify a column name and recover its type. The whole-query binder will pass the
-same shared `&Scope` to the projection and filter.
-
-Binding changes the expression as it walks the tree, but it never changes the
-scope. If an alias exists, that alias is the accepted qualifier. Otherwise the
-table name itself may qualify a column.
-
-### 5.4.2 Define the type-checking rules
+### 5.4.1 Define the type-checking rules
 
 Before walking the expression tree, define the three checks that its operator
 arms will use. Keeping these rules in small functions lets the recursive walk
@@ -276,7 +244,7 @@ say what each operator requires without repeating the error handling.
 integer arithmetic will require `Integer`; `NOT`, `AND`, and `OR` will require
 `Boolean`.
 
-`src/catalog.rs`: add after `Scope`
+`src/catalog.rs`: add after `impl Catalog`
 
 ```rust
 fn require_type(actual: &DataType, expected: &DataType,
@@ -290,13 +258,15 @@ fn require_type(actual: &DataType, expected: &DataType,
 }
 ```
 
-A bare `NULL` receives the temporary type `DataType::Null`. The helper accepts
-it where another type is expected because evaluating the operation normally
-produces `Value::Null` rather than a type error.
+A bare `NULL` receives the temporary type `DataType::Null`. When the helper
+compares the actual and expected types, the code above also accepts
+`DataType::Null` as a valid operand. SQL operations normally propagate this
+unknown value and produce `Value::Null`, so binding should not reject it merely
+because it differs from the expected integer or Boolean type.
 
-Comparisons need two additional checks. Their operands must have matching
-types unless either one is `NULL`. Ordered comparisons also reject types such
-as Boolean, which have no ordering in this chapter's SQL dialect.
+The comparison operators `=`, `<>`, `<`, `<=`, `>`, and `>=` compare a left
+operand with a right operand. All of them require matching operand types unless
+either operand is `NULL`; the ordered operators will need one further check.
 
 `src/catalog.rs`: add after `require_type()`
 
@@ -314,6 +284,10 @@ fn require_matching_types(left: &DataType, right: &DataType)
 }
 ```
 
+An ordered comparison uses `<`, `<=`, `>`, or `>=` to ask whether one value
+comes before or after another. These operators also reject types such as
+Boolean, which have no ordering in this chapter's SQL dialect.
+
 `src/catalog.rs`: add after `require_matching_types()`
 
 ```rust
@@ -330,6 +304,66 @@ fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
 These helpers give the expression walk a compact vocabulary: require one
 specific type, require two compatible types, or require a type that can be
 ordered.
+
+### 5.4.2 Establish the scope
+
+This step begins after parsing has produced a `Query`. That value supplies the
+input table name, its optional alias, and the projection and filter expression
+trees. A column in either tree can be resolved only among the names visible
+from that input.
+
+The whole-query binder will use `query.table` to find the corresponding
+catalog table, then create one `Scope`. The scope borrows the verified table
+name and column definitions from that catalog entry and the optional alias
+from the parsed query. We will pass it through every recursive expression
+binding call.
+
+`src/catalog.rs`: add after `require_ordered_type()`
+
+```rust
+struct Scope<'a> {
+    table_name: &'a str,
+    alias: Option<&'a str>,
+    columns: &'a [Column],
+}
+```
+
+`table_name` and `alias` determine which qualifier is valid. If an alias
+exists, that alias is accepted; otherwise, the table name may qualify a
+column. `columns` is the selected table's catalog schema, not its row data; the
+binder searches it to verify a column name and recover its type.
+
+For the representative query:
+
+```sql
+SELECT e.name
+FROM employees AS e
+WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+```
+
+the parsed `Query` supplies `employees` and the alias `e`. After finding the
+`employees` table in the catalog, the whole-query binder will create a scope
+that conceptually contains:
+
+```text
+Scope {
+    table_name: "employees",
+    alias: Some("e"),
+    columns: [
+        id: Integer,
+        name: Text,
+        salary: Integer,
+    ],
+}
+```
+
+That scope makes `e.name` and `e.salary` available to both expression trees.
+It would reject another qualifier, such as `x.name`, and a column absent from
+the catalog schema, such as `e.department`.
+
+The whole-query binder will pass the same shared `&Scope` to the projection
+and filter. Binding changes the expression as it walks the tree, but it never
+changes the scope.
 
 ### 5.4.3 Walk and check the expression tree
 
