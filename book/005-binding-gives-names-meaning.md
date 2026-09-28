@@ -61,16 +61,34 @@ git switch --create chapter-005 lesson-004
 
 ## 5.1 Names are still unresolved
 
-Run the Chapter 4 AST prompt and enter:
+Run the Chapter 4 AST prompt:
+
+```bash
+cargo run --quiet
+```
+
+First enter the representative query:
+
+```sql
+SELECT e.name
+FROM employees AS e
+WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;
+```
+
+The printed `Query` preserves the complete expression structure, but its names
+are still strings. The table is stored as `"employees"`, the alias as `"e"`,
+and the projection contains a column with qualifier `"e"` and name `"name"`.
+Nothing in that tree proves that any of those names exist.
+
+Now enter a query whose table name is deliberately wrong:
 
 ```sql
 SELECT name FROM missing_table WHERE salary > 50000;
 ```
 
-The parser produces a `Query` because the tokens follow the grammar. Its
-`table` field contains `missing_table`, but nothing has compared that text
-with the database's available tables. The same is true of `name` and
-`salary`.
+It also produces a `Query` because its tokens follow the grammar. Its `table`
+field contains `missing_table`, but nothing has compared that text with the
+database's available tables. The same is true of `name` and `salary`.
 
 Lexing answered which tokens were present. Parsing answered how those tokens
 fit together. Binding must now connect the names in that structure to real
