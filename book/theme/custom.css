@@ -93,7 +93,7 @@ table {
 }
 
 .truth-table {
-  width: min(100%, 32rem);
+  width: min(100%, 42rem);
   table-layout: fixed;
 }
 
