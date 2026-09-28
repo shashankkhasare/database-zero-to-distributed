@@ -260,17 +260,7 @@ struct Scope<'a> {
 `table_name` and `alias` determine which qualifier is valid. `columns` is the
 selected table's catalog schema, not its row data; the binder searches it to
 verify a column name and recover its type. The whole-query binder will pass the
-same shared `&Scope` to the projection and filter:
-
-```text
-catalog table + query alias
-           ↓
-       one Scope
-        ↙     ↘
-projection   filter
-    ↓          ↓
-recursive calls reuse &scope
-```
+same shared `&Scope` to the projection and filter.
 
 Binding changes the expression as it walks the tree, but it never changes the
 scope. If an alias exists, that alias is the accepted qualifier. Otherwise the
@@ -1018,14 +1008,12 @@ checkpoint must next call that evaluator for every row it filters or projects.
 
 Section 5.6 gave `BoundExpr` an evaluator. `Plan::Filter` and `Plan::Project`
 can now use it to turn the checked plan from the first checkpoint into rows.
+A `BoundExpr` is a checked operation that can be evaluated against a row.
 
-```text
-BoundExpr + current row
-          ↓ evaluate
-        Value
-
-input rows → Filter → matching rows → Project → output rows
-```
+<figure class="book-illustration book-diagram">
+  <img src="images/005-bound-expressions-run-on-rows.png" alt="A query AST and catalog create a scope. Binding turns the filter and projection expressions into a bound predicate and bound projection. Filter retains two matching three-value rows, Project turns each into a one-value row, and the output contains those two projected rows.">
+  <figcaption>Binding prepares the expressions; Filter and Project use them while rows move through the plan.</figcaption>
+</figure>
 
 `Filter` evaluates its bound predicate for every input row and forwards only
 rows whose result is `TRUE`. `Project` evaluates its bound expressions for

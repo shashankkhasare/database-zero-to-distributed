@@ -97,3 +97,57 @@ images:
       composition, sparse large text, straight noncrossing paths, generous
       margins. No extra schema fields, code, people, logos, watermark,
       photorealism, glossy 3D rendering, or tiny labels.
+
+  - id: bound-expressions-run-on-rows
+    kind: generated-raster
+    output: book/images/005-bound-expressions-run-on-rows.png
+    placement: section 5.7 after introducing BoundExpr evaluation
+    alt: A query AST and catalog create a scope. Binding turns the filter and projection expressions into a bound predicate and bound projection. Filter retains two matching three-value rows, Project turns each into a one-value row, and the output contains those two projected rows.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact workflow diagram
+      for a technical database book. Create a wide landscape editorial
+      illustration showing a precise database binding and execution pipeline.
+      Accuracy of every connector is essential.
+
+      At the top, "QUERY AST" and "CATALOG" converge into "SCOPE". SCOPE
+      splits into two aligned vertical branches. Keep the FILTER branch
+      entirely on the left and the PROJECTION branch entirely on the right.
+      The left branch is "FILTER EXPR" through a shared horizontal "BIND"
+      gate to "BOUND PREDICATE", which points straight down into "FILTER".
+      The right branch is "PROJECTION EXPR" through the same BIND gate to
+      "BOUND PROJECTION", which points straight down into "PROJECT". Never
+      connect an unbound expression directly to a plan node. Never connect a
+      bound predicate to PROJECT or a bound projection to FILTER. Never
+      connect the two bound-expression cards to each other.
+
+      Along the bottom, "INPUT ROWS" flow horizontally into FILTER. Inside
+      FILTER, show one three-cell row and a checkmark to communicate that the
+      BOUND PREDICATE retains matching rows unchanged. Show a "TRUE" badge
+      above exactly two stacked matching three-cell rows flowing from FILTER
+      into PROJECT. Inside PROJECT, show those two three-cell rows, a
+      right-pointing arrow, and two newly constructed one-cell rows to
+      communicate evaluation of the BOUND PROJECTION. Those rows flow into
+      "OUTPUT ROWS", shown as a small result relation with exactly one column
+      and two data rows. Make OUTPUT ROWS the sole endpoint and center it in
+      the final row of the composition.
+
+      The only row path is sequential: INPUT ROWS to FILTER, matching row to
+      PROJECT, then constructed row to OUTPUT ROWS. There is no bypass and no
+      merge. Checked expressions enter their corresponding plan nodes from
+      above; rows move from left to right.
+
+      Permitted text only: "QUERY AST", "CATALOG", "SCOPE", "FILTER EXPR",
+      "PROJECTION EXPR", "BIND", "BOUND PREDICATE", "BOUND PROJECTION",
+      "FILTER", "PROJECT", "INPUT ROWS", "TRUE", and "OUTPUT ROWS". Render
+      every label exactly once. Do not invent, duplicate, misspell, or
+      abbreviate text.
+
+      Follow book/art/STYLE.md: original editorial illustration with
+      hand-drawn ink contours, restrained gouache and watercolor fills,
+      subtle print texture, warm ivory background, charcoal outlines, deep
+      teal and muted turquoise for checked structures, and ochre for unresolved
+      inputs. Wide landscape composition, generous margins, large readable
+      labels, straight noncrossing arrows, and clear visual hierarchy. No
+      people, code listings, logos, watermark, photorealism, interface chrome,
+      glossy 3D rendering, decorative prose, tiny labels, crossed arrows, or
+      unlisted text.
