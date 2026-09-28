@@ -217,6 +217,8 @@ enforcement boundary before adding `GRANT` and `REVOKE`.
 
 These chapters are book commitments, not optional appendices. Appendix B maps
 every grammar family to its owner and records actual checkpoint coverage.
+Appendix C records the value and operator semantics that those chapters have
+actually implemented.
 
 The final benchmark suite should exercise TPC-style analytical and
 transactional workloads. SQL-89 is not sufficient for that destination:
@@ -1372,6 +1374,10 @@ Complete the scalar expression grammar required by the planned workloads:
 
 Reuse the type and `NULL` semantics introduced earlier instead of creating a
 second expression system.
+
+Update Appendix C as each new type and operator rule becomes executable. Do
+not specify conversions, temporal arithmetic, or collation behavior ahead of
+the implementation that tests it.
 
 ---
 

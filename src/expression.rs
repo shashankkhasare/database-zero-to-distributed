@@ -238,4 +238,24 @@ mod tests {
             Value::Boolean(false)
         );
     }
+
+    #[test]
+    fn text_comparisons_use_case_sensitive_rust_ordering() {
+        assert_eq!(
+            evaluate(
+                Value::Text("Ada".into()),
+                BinaryOp::Equal,
+                Value::Text("ada".into()),
+            ),
+            Value::Boolean(false)
+        );
+        assert_eq!(
+            evaluate(
+                Value::Text("Ada".into()),
+                BinaryOp::Less,
+                Value::Text("Grace".into()),
+            ),
+            Value::Boolean(true)
+        );
+    }
 }

@@ -499,6 +499,7 @@ nested-loop join, and then expose why a different physical algorithm is useful.
 - [ ] During the Volume II migration, redirect existing Volume I chapter URLs to `volume-1/`
 - [ ] Share themes and reusable images across volume builds without duplicating the Rust codebase
 - [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
+- [ ] Keep Appendix C synchronized whenever a lesson changes values, types, conversions, or operator behavior
 - [ ] Complete Chapters 62–67 before claiming benchmark SQL coverage
 - [ ] Complete Chapter 69 before claiming authorization support or final integration
 

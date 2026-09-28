@@ -426,14 +426,17 @@ require an integer. The earlier `require_type()` helper performs that check.
         }
 ```
 
-Binary operators fall into four groups with distinct operand rules:
+Binary operators fall into four groups with distinct operand and result rules:
 
-| Operator group | Operand rule |
-| --- | --- |
-| `+`, `-`, `*`, `/` | integers on both sides |
-| `AND`, `OR` | Booleans on both sides |
-| `=`, `<>` | matching integer, text, or Boolean types; either side may be `NULL` |
-| `<`, `<=`, `>`, `>=` | matching integer or text types; either side may be `NULL` |
+| Operator group | Operand rule | Result type |
+| --- | --- | --- |
+| `+`, `-`, `*`, `/` | integers on both sides | integer |
+| `AND`, `OR` | Booleans on both sides | Boolean |
+| `=`, `<>` | matching integer, text, or Boolean types; either side may be `NULL` | Boolean |
+| `<`, `<=`, `>`, `>=` | matching integer or text types; either side may be `NULL` | Boolean |
+
+Text supports equality and ordering, but not arithmetic. Appendix C collects
+the complete implemented type rules in one reference table.
 
 Each binary node recursively binds both children before inspecting its
 operator. Arithmetic and Boolean operators require one specific type on both
@@ -1016,6 +1019,19 @@ checkpoint must next call that evaluator for every row it filters or projects.
 Section 5.6 gave `BoundExpr` an evaluator. `Plan::Filter` and `Plan::Project`
 can now use it to turn the checked plan from the first checkpoint into rows.
 
+```text
+BoundExpr + current row
+          ↓ evaluate
+        Value
+
+input rows → Filter → matching rows → Project → output rows
+```
+
+`Filter` evaluates its bound predicate for every input row and forwards only
+rows whose result is `TRUE`. `Project` evaluates its bound expressions for
+each forwarded row and constructs a new row. Those output rows become the
+input of the next plan node.
+
 Projection will produce a `Vec<(String, Value)>` whose column names are already
 owned. `Row::new()` accepts borrowed names and converts each one into a new
 `String`; this second constructor can instead move the completed vector into
@@ -1298,8 +1314,8 @@ cargo test
 ```
 
 The lesson source tests tokenization, precedence, aliases, missing names, type
-errors, three-valued logic, filtering unknown predicates, the representative
-query, and reuse of the catalog after an error.
+errors, text comparison, three-valued logic, filtering unknown predicates, the
+representative query, and reuse of the catalog after an error.
 
 Finish with the repository checks:
 
@@ -1317,6 +1333,8 @@ The new frontend remains intentionally bounded:
 - The catalog exists only in memory and is assembled by the application.
 - Names use exact spelling; quoted identifiers are absent.
 - Arithmetic uses integers only.
+- Text equality and ordering use Rust's case-sensitive string comparison;
+  SQL collations and locale-aware ordering are absent.
 - Division by zero is an execution error.
 - There are no functions, `BETWEEN`, `LIKE`, `IN`, `CASE`, `CAST`, dates, or
   intervals.
@@ -1324,7 +1342,8 @@ The new frontend remains intentionally bounded:
 - Bound columns use names rather than stable catalog identifiers.
 
 These limits keep the chapter focused on the boundary between syntax and
-meaning. Appendix B records where the remaining expression forms belong.
+meaning. Appendix B records where the remaining expression forms belong;
+Appendix C records the implemented value and operator rules.
 
 ## 5.11 Try it
 
