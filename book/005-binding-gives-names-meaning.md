@@ -257,17 +257,80 @@ Binding changes the expression as it walks the tree, but it never changes the
 scope. If an alias exists, that alias is the accepted qualifier. Otherwise the
 table name itself may qualify a column.
 
-### 5.4.2 Resolve column references
+### 5.4.2 Define the type-checking rules
+
+Before walking the expression tree, define the three checks that its operator
+arms will use. Keeping these rules in small functions lets the recursive walk
+say what each operator requires without repeating the error handling.
+
+`require_type()` checks an operand against one expected type. Unary `-` and
+integer arithmetic will require `Integer`; `NOT`, `AND`, and `OR` will require
+`Boolean`.
+
+`src/catalog.rs`: add after `Scope`
+
+```rust
+fn require_type(actual: &DataType, expected: &DataType,
+    message: &str) -> Result<(), String>
+{
+    if actual == expected || actual == &DataType::Null {
+        Ok(())
+    } else {
+        Err(format!("{message}: found {actual:?}"))
+    }
+}
+```
+
+A bare `NULL` receives the temporary type `DataType::Null`. The helper accepts
+it where another type is expected because evaluating the operation normally
+produces `Value::Null` rather than a type error.
+
+Comparisons need two additional checks. Their operands must have matching
+types unless either one is `NULL`. Ordered comparisons also reject types such
+as Boolean, which have no ordering in this chapter's SQL dialect.
+
+`src/catalog.rs`: add after `require_type()`
+
+```rust
+fn require_matching_types(left: &DataType, right: &DataType)
+    -> Result<(), String>
+{
+    if left == &DataType::Null || right == &DataType::Null
+        || left == right
+    {
+        Ok(())
+    } else {
+        Err(format!("cannot compare {left:?} with {right:?}"))
+    }
+}
+```
+
+`src/catalog.rs`: add after `require_matching_types()`
+
+```rust
+fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
+    match data_type {
+        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
+        _ => Err(format!(
+            "ordered comparison requires integers or text: found {data_type:?}"
+        )),
+    }
+}
+```
+
+These helpers give the expression walk a compact vocabulary: require one
+specific type, require two compatible types, or require a type that can be
+ordered.
+
+### 5.4.3 Walk and check the expression tree
 
 `bind_expression()` handles one expression tree rather than a complete
-`Query`. It returns two results for every AST node: a checked expression and
-the type that expression produces. Its column arm first checks an optional
-qualifier against the table name or alias, then looks up the column in the
-scope. Either lookup can stop binding with an error.
+`Query`. For every AST node it returns a pair: the checked `BoundExpr` node and
+the `DataType` that node produces. Parent nodes use the returned type to check
+their operators before constructing their own bound nodes.
 
-The complete walk consumes `Expr`, inspects its unary and binary operators,
-produces `BoundExpr`, and returns `DataType`. Add those expression types in one
-import edit.
+The complete walk consumes `Expr` and needs every expression type involved in
+that conversion. Add them to the catalog import first.
 
 `src/catalog.rs`: replace the `DataType` import
 
@@ -275,7 +338,7 @@ import edit.
 use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
 ```
 
-`src/catalog.rs`: begin `bind_expression()` after `Scope`
+`src/catalog.rs`: begin `bind_expression()` after `require_ordered_type()`
 
 ```rust
 fn bind_expression(expression: Expr, scope: &Scope<'_>)
@@ -300,19 +363,11 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
 
 Once the column exists, the binder no longer needs its qualifier. It produces
 `BoundExpr::Column(name)` and returns the column type recorded by the catalog.
-Literal and operator nodes do not require name lookup, but they do require
-type information.
+Literal and operator nodes do not require name lookup, but they still return
+their result types.
 
-### 5.4.3 Check operator types
-
-A literal's `Value` determines its type. Unary and binary nodes recursively
-bind their children, then check the returned types before constructing the
-parent node.
-
-A bare `NULL` receives the temporary type `DataType::Null`. The type helpers
-accept it where another operand type is expected because evaluation normally
-propagates the unknown value as `Value::Null` rather than treating it as a type
-error.
+A literal maps its stored `Value` directly to the corresponding `DataType`.
+No validation is needed because the parser has already constructed the value.
 
 `src/catalog.rs`: continue the `match` in `bind_expression()`
 
@@ -326,6 +381,15 @@ error.
             };
             Ok((BoundExpr::Literal(value), data_type))
         }
+```
+
+A unary node first binds its child. It then chooses the only valid operand
+type for its operator: `NOT` requires a Boolean, while unary `+` and `-`
+require an integer. The earlier `require_type()` helper performs that check.
+
+`src/catalog.rs`: continue the `match`
+
+```rust
         Expr::Unary { op, expression } => {
             let (expression, data_type) =
                 bind_expression(*expression, scope)?;
@@ -342,8 +406,7 @@ error.
         }
 ```
 
-Unary arithmetic requires an integer, while `NOT` requires a Boolean. Binary
-operators fall into four groups with distinct operand rules:
+Binary operators fall into four groups with distinct operand rules:
 
 | Operator group | Operand rule |
 | --- | --- |
@@ -351,6 +414,10 @@ operators fall into four groups with distinct operand rules:
 | `AND`, `OR` | Booleans on both sides |
 | `=`, `<>` | matching integer, text, or Boolean types; either side may be `NULL` |
 | `<`, `<=`, `>`, `>=` | matching integer or text types; either side may be `NULL` |
+
+Each binary node recursively binds both children before inspecting its
+operator. Arithmetic and Boolean operators require one specific type on both
+sides.
 
 `src/catalog.rs`: continue the `match`
 
@@ -374,6 +441,15 @@ operators fall into four groups with distinct operand rules:
                         "AND and OR require Boolean expressions")?;
                     DataType::Boolean
                 }
+```
+
+Equality needs compatible operands but does not require them to be ordered.
+The four ordering operators require both compatibility and an orderable type.
+Every comparison produces a Boolean result.
+
+`src/catalog.rs`: continue the operator `match`
+
+```rust
                 BinaryOp::Equal | BinaryOp::NotEqual => {
                     require_matching_types(&left_type, &right_type)?;
                     DataType::Boolean
@@ -411,60 +487,34 @@ also closes the `match` and the function.
 }
 ```
 
-`src/catalog.rs`: add the type helper after `bind_expression()`
-
-```rust
-fn require_type(actual: &DataType, expected: &DataType,
-    message: &str) -> Result<(), String>
-{
-    if actual == expected || actual == &DataType::Null {
-        Ok(())
-    } else {
-        Err(format!("{message}: found {actual:?}"))
-    }
-}
-```
-
-Comparisons share two more checks. Their operand types must match unless one
-side is the temporarily untyped `NULL`. Ordered comparisons then reject types,
-such as Boolean, that have no ordering in this chapter's SQL dialect.
-
-`src/catalog.rs`: add after `require_type()`
-
-```rust
-fn require_matching_types(left: &DataType, right: &DataType)
-    -> Result<(), String>
-{
-    if left == &DataType::Null || right == &DataType::Null
-        || left == right
-    {
-        Ok(())
-    } else {
-        Err(format!("cannot compare {left:?} with {right:?}"))
-    }
-}
-
-fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
-    match data_type {
-        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
-        _ => Err(format!(
-            "ordered comparison requires integers or text: found {data_type:?}"
-        )),
-    }
-}
-```
-
 Equality therefore accepts matching integer, text, or Boolean operands.
 Ordered comparisons accept matching integers or text. `name + 1` fails during
 binding because `name` is text, so execution does not discover that mistake
 halfway through a scan.
 
+Trace one part of the representative filter from its leaves upward:
+
+```text
+e.salary + 5000 > 70000
+
+e.salary       → resolve column → Integer
+5000           → bind literal   → Integer
+Integer + Integer               → Integer
+70000          → bind literal   → Integer
+Integer > Integer               → Boolean
+```
+
+Each child returns a checked expression and its result type. Only then can its
+parent validate the operator and construct the next `BoundExpr` node. The
+walk therefore checks the same tree shape that the parser produced, working
+from the leaves toward the root.
+
 ### 5.4.4 Assemble the bound plan
 
-`bind_expression()` handles one tree. A complete `Query` has two of them—the
-projection and the filter—plus an input table that must be resolved first. The
-whole-query binder will find that table, construct the scope, bind both trees,
-check the filter's result type, and assemble a logical plan.
+`bind_expression()` handles one tree. A complete `Query` has two of them: the
+projection and the filter. It also has an input table that must be resolved
+first. The whole-query binder will find that table, construct the scope, bind
+both trees, check the filter's result type, and assemble a logical plan.
 
 That plan needs to carry bound expressions before it can be constructed.
 Replace the Chapter 4 plan shape now, but leave execution for the second
@@ -527,9 +577,7 @@ pub fn bind(&self, query: Query) -> Result<Plan, String> {
     };
     let (predicate, predicate_type) =
         bind_expression(query.filter, &scope)?;
-    if predicate_type != DataType::Boolean
-        && predicate_type != DataType::Null
-    {
+    if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
         return Err("WHERE expression must be Boolean".to_string());
     }
 
@@ -545,6 +593,11 @@ pub fn bind(&self, query: Query) -> Result<Plan, String> {
     })
 }
 ```
+
+`WHERE` normally requires a Boolean expression. A bare `NULL` has the
+temporary type `DataType::Null`, so it is also accepted; during execution its
+unknown result removes every row. The `matches!` condition rejects every
+other result type, including integer and text expressions.
 
 The `Scope` introduced at the start of this section is now concrete. Its table
 name and columns come from the catalog entry found through `query.table`; its
@@ -717,10 +770,14 @@ work visible.
 
 ## 5.6 Evaluate the bound expression
 
-Binding has removed unresolved names and rejected invalid operand types. That
-lets evaluation focus on one question: what value does this checked expression
-produce for the current row? We will import `Row` alongside `Value` and give
-the bound tree an evaluation method.
+Binding asks whether an expression is meaningful. Evaluation asks what value
+that checked expression produces for the current row.
+
+Binding has already removed unresolved names and rejected invalid operand
+types. Evaluation can therefore work from the leaves upward: obtain column and
+literal values first, then apply each parent operator to the values produced by
+its children. We will import `Row` alongside `Value` and give the bound tree an
+evaluation method.
 
 ### 5.6.1 Evaluate the bound tree
 
@@ -780,9 +837,15 @@ fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
 }
 ```
 
-Columns and literals produce values directly. Unary nodes evaluate their one
-child before applying their operator. Binary nodes need an additional rule:
-SQL can produce an unknown result represented by `NULL`.
+Each arm mirrors one bound node. Columns read a value from the current row,
+and literals clone their stored value. Unary and binary nodes recursively
+evaluate their children before applying an operator. `IsNull` is different:
+it asks whether its child produced `Value::Null` and always returns a Boolean.
+
+The missing-column error should be unreachable for a catalog row because the
+binder has already verified the column. Keeping the error makes a mismatch
+between catalog metadata and row data visible rather than silently producing
+an incorrect result.
 
 ### 5.6.2 Define three-valued Boolean logic
 
@@ -854,7 +917,7 @@ With the Boolean helpers in place, binary evaluation can handle nulls before
 dispatching ordinary arithmetic, comparison, and Boolean operations. Division
 by zero remains an execution error.
 
-`src/expression.rs`: add after `evaluate_unary()`
+`src/expression.rs`: add after `or()`
 
 ```rust
 fn evaluate_binary(left: Value, op: &BinaryOp, right: Value)
@@ -895,6 +958,11 @@ fn evaluate_binary(left: Value, op: &BinaryOp, right: Value)
     }
 }
 ```
+
+The first branch handles every operation involving `NULL`. Most such
+operations return `NULL`; only `AND` and `OR` need their truth-table helpers.
+Once both operands are known, the main match performs the operation selected
+by `BinaryOp`. The final arm guards against a broken binder invariant.
 
 `src/expression.rs`: add the comparison helper
 
@@ -959,6 +1027,11 @@ how SQL treats an unknown `WHERE` condition. The whole-query binder accepted a
 `WHERE` expression with a Boolean or temporary null type; this match defines
 what those results do during execution. Execution does not search the catalog
 or reinterpret SQL because binding has already settled those questions.
+
+The three plan arms preserve the recursive execution order established in
+Chapter 2. `Scan` returns its rows. `Filter` executes its input and evaluates
+one predicate for each row. `Project` executes its input, evaluates every
+selected expression, and moves the resulting names and values into a new row.
 
 `src/plan.rs`: add `Plan::execute()`
 
