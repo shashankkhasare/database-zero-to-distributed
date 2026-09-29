@@ -21,6 +21,6 @@ curriculum is maintained in
 
 ## Appendices
 
-A. [Enough Rust to Build a Database](appendix-a-enough-rust.md)
-B. [The SQL Grammar We Support](appendix-b-sql-grammar.md)
-C. [Values, Types, and Operators](appendix-c-values-types-operators.md)
+- [Appendix A: Enough Rust to Build a Database](appendix-a-enough-rust.md)
+- [Appendix B: The SQL Grammar We Support](appendix-b-sql-grammar.md)
+- [Appendix C: Values, Types, and Operators](appendix-c-values-types-operators.md)
