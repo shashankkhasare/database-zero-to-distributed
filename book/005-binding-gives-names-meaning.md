@@ -48,7 +48,7 @@ single-table queries instead of one fixed comparison.
 We will stop at three checkpoints. Section 5.5 prints the checked plan after
 all three binding jobs are complete. Section 5.7 executes that plan to produce
 rows. Section 5.9 reconnects the complete application and verifies its fixed
-demonstration, interactive prompt, and tests.
+demonstration and interactive prompt.
 
 The completed query returns Ada and Grace but not Linus. Invalid tables,
 columns, qualifiers, and operand types fail before any rows are scanned.
@@ -1189,7 +1189,7 @@ sql> SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000 AND e.name 
 
 The same bound plan that was visible at the first checkpoint can now produce
 rows. The final checkpoint will give this path a shared application function,
-a fixed demonstration, error-preserving prompt behavior, and tests.
+a fixed demonstration, and error-preserving prompt behavior.
 
 ## 5.8 Connect the application
 
@@ -1197,8 +1197,7 @@ Parsing, binding, and execution now work together in the temporary prompt. We
 will move that pipeline into one shared function, restore the fixed
 demonstration, and reconnect the final prompt. The reader has already seen this
 application shape, so replace the temporary checkpoint file with the complete
-application portion of `main.rs`. The repository checkpoint also contains
-tests, but repeating their source here would not add to the execution model.
+application portion of `main.rs`.
 
 `src/main.rs`: replace the file
 
@@ -1310,15 +1309,13 @@ executor. Compile it before running queries so missing modules, stale imports,
 or mismatched plan fields fail at this checkpoint.
 
 ```bash
-cargo fmt
 cargo check
 ```
 
 ## 5.9 Run and verify
 
 The complete path is now connected. Verify its successful result with the
-fixed demonstration, its failures through the prompt, and its wider behavior
-through the automated test suite.
+fixed demonstration and its failures through the prompt.
 
 Run the completed path:
 
@@ -1360,21 +1357,6 @@ error: arithmetic requires integers: found Text
 The prompt remains ready after each failure. A bad query no longer becomes a
 process panic or silently reads an unrelated table.
 
-The repository checkpoint contains the automated coverage for the behavior
-developed in this chapter. Run it rather than copying those tests into the
-manuscript:
-
-```bash
-cargo test
-```
-
-Finish with the repository checks:
-
-```bash
-cargo fmt --check
-cargo clippy -- -D warnings
-```
-
 ## 5.10 What we deliberately did not build
 
 With the complete path verified, we can state the boundaries that remain.
@@ -1402,7 +1384,7 @@ records the implemented value and operator rules.
 ## 5.11 Try it
 
 Run the prompt, predict the stage that will accept or reject each query, and
-then test it.
+then try it.
 
 1. Change `employees` to `Employees` without changing the catalog.
 2. Use `employees.name` without a table alias, then add `AS e` while keeping
