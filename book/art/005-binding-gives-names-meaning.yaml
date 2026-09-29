@@ -82,18 +82,20 @@ images:
     kind: generated-raster
     output: book/images/005-column-binding.png
     placement: section 5.4 after column and type binding
-    alt: The unresolved AST column e.salary and an employees catalog entry enter the binder, which produces a bound salary column with integer type.
+    alt: The unresolved expression e.salary and an employees catalog entry enter a binder that validates alias e, finds salary, recovers its integer type, and produces a bound salary expression.
     prompt: >-
       Use case: scientific-educational. Asset type: binding transformation
       diagram for a technical database book. Show a large card headed exactly
-      "AST" on the left containing exactly "e.salary". Show a large card
-      headed exactly "BINDER" in the center. Show a large card headed exactly
-      "BOUND EXPR" on the right containing exactly two lines: "salary" and
-      "INTEGER". Place a smaller card headed exactly "CATALOG" below the
-      binder containing exactly three lines: "employees", "alias e", and
-      "salary: INTEGER". Draw one straight arrow from AST into BINDER, one
+      "EXPR" on the left containing exactly "e.salary". Show a large card
+      headed exactly "BINDER" in the center containing exactly three lines:
+      "validate alias e", "find column salary", and "recover type INTEGER".
+      Show a large card headed exactly "BOUND EXPR" on the right containing
+      exactly two lines: "salary" and "INTEGER". Place a smaller card headed
+      exactly "CATALOG" below the binder containing exactly three lines:
+      "employees", "alias e", and "salary: INTEGER". Draw one straight arrow
+      from EXPR into BINDER, one
       upward arrow from CATALOG into BINDER, and one straight arrow from
-      BINDER to BOUND EXPR. Make the AST and catalog unmistakably separate
+      BINDER to BOUND EXPR. Make the expression and catalog unmistakably separate
       inputs to binding, and the bound expression unmistakably its output.
       Make it obvious that binding removes qualifier e only after checking it
       and carries the INTEGER type forward. Follow book/art/STYLE.md exactly.

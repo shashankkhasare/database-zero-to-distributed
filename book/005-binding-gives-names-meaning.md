@@ -684,8 +684,8 @@ after all of its children have resolved names and passed their type checks.
 The resulting plan contains two checked trees but has no execution method yet.
 
 <figure class="book-illustration book-diagram">
-  <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary and an employees catalog entry enter the binder, which produces a bound salary column with integer type.">
-  <figcaption>The AST and catalog enter the binder, which validates the qualifier and column and produces a typed bound expression.</figcaption>
+  <img src="images/005-column-binding.png" alt="The unresolved expression e.salary and an employees catalog entry enter a binder that validates alias e, finds salary, recovers its integer type, and produces a bound salary expression.">
+  <figcaption>The unresolved expression and catalog enter the binder, which validates the qualifier and column and produces a typed bound expression.</figcaption>
 </figure>
 
 ## 5.5 Inspect the bound plan
@@ -839,10 +839,11 @@ Binding asks whether an expression is meaningful. Evaluation asks what value
 that checked expression produces for the current row.
 
 Binding has already removed unresolved names and rejected invalid operand
-types. Evaluation can therefore work from the leaves upward: obtain column and
-literal values first, then apply each parent operator to the values produced by
-its children. As with binding, we will define the operation-specific functions
-first and assemble the recursive dispatcher last.
+types. Evaluation can therefore work from the leaves upward for each current
+row: a column leaf reads its value from that row, a literal supplies its stored
+value, and each parent operator combines the values produced by its children.
+As with binding, we will define the operation-specific functions first and
+assemble the recursive dispatcher last.
 
 ### 5.6.1 Evaluate unary operations
 
@@ -1117,7 +1118,7 @@ what those results do during execution. Execution does not search the catalog
 or reinterpret SQL because binding has already settled those questions.
 
 The three plan arms preserve the recursive execution order established in
-Chapter 2. `Scan` returns its rows. `Filter` executes its input and evaluates
+Chapter 1. `Scan` returns its rows. `Filter` executes its input and evaluates
 one predicate for each row. `Project` executes its input, evaluates every
 selected expression, and moves the resulting names and values into a new row.
 
@@ -1193,82 +1194,86 @@ a fixed demonstration, error-preserving prompt behavior, and tests.
 ## 5.8 Connect the application
 
 Parsing, binding, and execution now work together in the temporary prompt. We
-will extract that pipeline into one application function, restore the fixed
-demonstration, and then reconnect the final prompt.
+will move that pipeline into one shared function, restore the fixed
+demonstration, and reconnect the final prompt. The reader has already seen this
+application shape, so replace the temporary checkpoint file with the complete
+application portion of `main.rs`. The repository checkpoint also contains
+tests, but repeating their source here would not add to the execution model.
 
-### 5.8.1 Complete the application path
-
-The temporary `run_binding_prompt()` began by printing plans and, after
-Section 5.7, executed them inline. Move that pipeline into the shared SQL entry
-point that both final application paths will call.
-
-`src/main.rs`: add after `employee_catalog()`
+`src/main.rs`: replace the file
 
 ```rust
-fn execute_sql(sql: &str, catalog: &Catalog)
-    -> Result<Vec<Row>, String>
-{
+mod catalog;
+mod expression;
+mod lexer;
+mod parser;
+mod plan;
+mod row;
+
+use std::io::{self, Write};
+
+use catalog::{Catalog, Column, Table};
+use expression::DataType;
+use parser::parse;
+use row::{Row, Value};
+
+fn main() {
+    let catalog = employee_catalog();
+    if std::env::args().nth(1).as_deref() == Some("--prompt") {
+        run_prompt(&catalog).expect("failed to read SQL from the terminal");
+    } else {
+        run_demo(&catalog);
+    }
+}
+
+fn employee(id: i64, name: &str, salary: i64) -> Row {
+    Row::new(vec![
+        ("id", Value::Integer(id)),
+        ("name", Value::Text(name.into())),
+        ("salary", Value::Integer(salary)),
+    ])
+}
+
+fn employee_catalog() -> Catalog {
+    Catalog::new(vec![Table {
+        name: "employees".into(),
+        columns: vec![
+            Column {
+                name: "id".into(),
+                data_type: DataType::Integer,
+            },
+            Column {
+                name: "name".into(),
+                data_type: DataType::Text,
+            },
+            Column {
+                name: "salary".into(),
+                data_type: DataType::Integer,
+            },
+        ],
+        rows: vec![
+            employee(1, "Ada", 70_000),
+            employee(2, "Linus", 50_000),
+            employee(3, "Grace", 72_000),
+        ],
+    }])
+}
+
+fn execute_sql(sql: &str, catalog: &Catalog) -> Result<Vec<Row>, String> {
     let query = parse(sql).map_err(|error| error.to_string())?;
     catalog.bind(query)?.execute()
 }
-```
-
-The expression, plan, and row modules are no longer partial checkpoint code.
-Remove the temporary `#[allow(dead_code)]` attributes from their module
-declarations.
-
-### 5.8.2 Restore the fixed demonstration
-
-The catalog and employee rows already exist from the first checkpoint. Replace
-the temporary execution prompt with a fixed demonstration that calls the new
-shared function.
-
-`src/main.rs`: replace `main()` and remove `run_binding_prompt()`
-
-```rust
-fn main() {
-    let catalog = employee_catalog();
-    run_demo(&catalog);
-}
 
 fn run_demo(catalog: &Catalog) {
-    let sql = "SELECT e.name FROM employees AS e \
-        WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;";
-    let rows = execute_sql(sql, catalog)
-        .expect("the lesson query should execute");
-
+    let sql =
+        "SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;";
+    let rows = execute_sql(sql, catalog).expect("the lesson query should execute");
     println!("Employees matching the bound expression:");
     for row in rows {
         println!("{row}");
     }
 }
-```
 
-### 5.8.3 Connect the prompt
-
-With the fixed demonstration working, `main()` can choose between it and the
-prompt.
-
-`src/main.rs`: replace `main()`
-
-```rust
-fn main() {
-    let catalog = employee_catalog();
-    if std::env::args().nth(1).as_deref() == Some("--prompt") {
-        run_prompt(&catalog)
-            .expect("failed to read SQL from the terminal");
-    } else {
-        run_demo(&catalog);
-    }
-}
-```
-
-The final prompt has the same loop as before, but it carries the catalog and
-prints binding errors as ordinary query errors.
-
-`src/main.rs`: add after `run_demo()`
-
-```rust
 fn run_prompt(catalog: &Catalog) -> io::Result<()> {
     loop {
         print!("sql> ");
@@ -1286,7 +1291,11 @@ fn run_prompt(catalog: &Catalog) -> io::Result<()> {
 
 fn print_query_result(sql: &str, catalog: &Catalog) {
     match execute_sql(sql, catalog) {
-        Ok(rows) => for row in rows { println!("{row}"); },
+        Ok(rows) => {
+            for row in rows {
+                println!("{row}");
+            }
+        }
         Err(error) => eprintln!("error: {error}"),
     }
 }
@@ -1295,8 +1304,6 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 `Row::project()` is now unused because projection lives in the plan and
 evaluates expressions instead of copying a fixed list of columns. Remove the
 old method from `row.rs`.
-
-### 5.8.4 Verify that the code compiles
 
 The application now connects the parser, catalog and binder, plan, and
 executor. Compile it before running queries so missing modules, stale imports,
@@ -1309,11 +1316,9 @@ cargo check
 
 ## 5.9 Run and verify
 
-The complete path is now connected. We will verify it at three levels: the
-fixed demonstration, interactive failures at the prompt, and the automated
-test suite.
-
-### 5.9.1 Run the fixed demonstration
+The complete path is now connected. Verify its successful result with the
+fixed demonstration, its failures through the prompt, and its wider behavior
+through the automated test suite.
 
 Run the completed path:
 
@@ -1329,8 +1334,6 @@ Employees matching the bound expression:
 
 The source text now becomes an unresolved AST, then a checked bound plan, and
 only then rows. The executor itself never sees an alias or table name.
-
-### 5.9.2 Run the prompt and its errors
 
 Start the interactive path:
 
@@ -1357,17 +1360,13 @@ error: arithmetic requires integers: found Text
 The prompt remains ready after each failure. A bad query no longer becomes a
 process panic or silently reads an unrelated table.
 
-### 5.9.3 Verify the tests
-
-Run the complete suite:
+The repository checkpoint contains the automated coverage for the behavior
+developed in this chapter. Run it rather than copying those tests into the
+manuscript:
 
 ```bash
 cargo test
 ```
-
-The lesson source tests tokenization, precedence, aliases, missing names, type
-errors, text comparison, three-valued logic, filtering unknown predicates, the
-representative query, and reuse of the catalog after an error.
 
 Finish with the repository checks:
 
@@ -1405,26 +1404,34 @@ records the implemented value and operator rules.
 Run the prompt, predict the stage that will accept or reject each query, and
 then test it.
 
-1. Replace `employees` with `missing_table`.
-2. Replace `e.name` with `x.name`.
-3. Replace `e.salary` with `e.missing`.
-4. Try `name + 1 > 0`.
-5. Compare `salary + 2 * 3` with `(salary + 2) * 3`.
-6. Try `NULL = NULL`, then `NULL IS NULL` in the filter.
-7. Remove the alias and use unqualified column names.
+1. Change `employees` to `Employees` without changing the catalog.
+2. Use `employees.name` without a table alias, then add `AS e` while keeping
+   the same qualifier.
+3. Select `salary + 5000` and use `WHERE TRUE`. Inspect the output column
+   name.
+4. Use `WHERE salary` without a comparison.
+5. Try `WHERE TRUE OR NULL`, then `WHERE FALSE AND NULL`.
+6. Use bare `NULL` as the complete `WHERE` expression.
+7. Select `10 / 0` with `WHERE TRUE`. Predict whether parsing, binding, or
+   execution reports the error.
 
 <details>
 <summary>Check your reasoning</summary>
 
-1. Parsing succeeds, but binding reports `unknown table: missing_table`.
-2. Binding reports `unknown table or alias: x`.
-3. Binding reports `unknown column: missing`.
-4. Binding rejects arithmetic on the text column `name`.
-5. Multiplication happens first in the first expression. Parentheses make
-   addition happen first in the second.
-6. `NULL = NULL` is unknown, so the filter removes every row. `NULL IS NULL`
-   is true, so it retains every row.
-7. Unqualified names bind because there is only one input table.
+1. Parsing succeeds, but exact-name catalog lookup reports
+   `unknown table: Employees` during binding.
+2. `employees.name` binds when no alias exists. After `AS e`, the accepted
+   qualifier is `e`, so `employees.name` reports an unknown table or alias.
+3. The arithmetic expression binds and evaluates for every row. Until output
+   aliases are added, the projected column is named `expression`.
+4. Binding rejects the integer result because `WHERE` requires Boolean or
+   `NULL`.
+5. `TRUE OR NULL` is true, so every row survives. `FALSE AND NULL` is false,
+   so no rows survive.
+6. Binding accepts the temporary `Null` type, and execution removes every row
+   because an unknown predicate is not true.
+7. Parsing and binding succeed because both operands are integers. Evaluation
+   reports `division by zero` while executing the projection.
 
 </details>
 
