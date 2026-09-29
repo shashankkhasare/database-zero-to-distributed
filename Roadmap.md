@@ -187,10 +187,11 @@ database behavior behind it.
 - Lesson 005 binds tables, aliases, and columns against a catalog, checks
   expression types, and evaluates bound expressions with SQL three-valued
   logic.
-- Lesson 006 adds SQL-89-style joins expressed with multiple `FROM` inputs and
-  a `WHERE` predicate. After the underlying join is understood, it adds
-  explicit `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` forms and makes
-  their different row-preservation rules visible.
+- Lesson 006 adds multiple selected expressions with output aliases, then
+  SQL-89-style joins expressed with multiple `FROM` inputs and a `WHERE`
+  predicate. After the underlying join is understood, it adds explicit
+  `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` forms and makes their
+  different row-preservation rules visible.
 - Lesson 007 adds aggregate functions, `GROUP BY`, and `HAVING`.
 - Lesson 008 adds `ORDER BY`, null ordering, `DISTINCT`, and `ALL`. It also adds
   `LIMIT` and `OFFSET` as explicit modern extensions rather than presenting
@@ -294,6 +295,12 @@ operators with incompatible types.
 ---
 
 ## 006 — Joins
+
+Introduce:
+
+- multiple selected expressions and output aliases
+- multiple `FROM` inputs and qualified column resolution
+- SQL-89-style joins through a `WHERE` predicate
 
 Start with:
 
