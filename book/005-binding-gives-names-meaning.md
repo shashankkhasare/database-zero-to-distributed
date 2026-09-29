@@ -236,9 +236,11 @@ whole query.
 
 ### 5.4.1 Define the type-checking rules
 
-Before walking the expression tree, define the three checks that its operator
-arms will use. Keeping these rules in small functions lets the recursive walk
-say what each operator requires without repeating the error handling.
+Binding an expression will need two kinds of context: rules for valid operand
+types and a scope for resolving column names. We will define the type rules
+first because they do not depend on a particular query or table. Keeping them
+in small functions lets the recursive walk state what each operator requires
+without repeating the error handling.
 
 `require_type()` checks an operand against one expected type. Unary `-` and
 integer arithmetic will require `Integer`; `NOT`, `AND`, and `OR` will require
@@ -307,10 +309,9 @@ ordered.
 
 ### 5.4.2 Establish the scope
 
-This step begins after parsing has produced a `Query`. That value supplies the
-input table name, its optional alias, and the projection and filter expression
-trees. A column in either tree can be resolved only among the names visible
-from that input.
+The type rules are independent of a query, but resolving a column name is not.
+After parsing produces a `Query`, its input table and optional alias determine
+which names are visible to the projection and filter expression trees.
 
 The whole-query binder will use `query.table` to find the corresponding
 catalog table, then create one `Scope`. The scope borrows the verified table
@@ -330,8 +331,8 @@ struct Scope<'a> {
 
 `table_name` and `alias` determine which qualifier is valid. If an alias
 exists, that alias is accepted; otherwise, the table name may qualify a
-column. `columns` is the selected table's catalog schema, not its row data; the
-binder searches it to verify a column name and recover its type.
+column. `columns` contains the selected table's catalog columns. The binder
+searches this slice to verify a column name and recover its type.
 
 For the representative query:
 
@@ -367,11 +368,11 @@ changes the scope.
 
 ### 5.4.3 Walk and check the expression tree
 
-We will implement `bind_expression()` for one expression tree rather than a
-complete `Query`. For every AST node, it will return a pair: the checked
-`BoundExpr` node and the `DataType` that node produces. Parent nodes will use
-the returned type to check their operators before constructing their own bound
-nodes.
+The whole-query binder will call `bind_expression()` twice: once with the
+projection `Expr` and once with the filter `Expr`. Each call handles one AST
+tree and returns a pair containing its checked `BoundExpr` and result
+`DataType`. Parent nodes use the child types to validate their operators before
+constructing their own bound nodes.
 
 The complete walk consumes `Expr` and needs every expression type involved in
 that conversion. Add them to the catalog import first.
@@ -382,7 +383,7 @@ that conversion. Add them to the catalog import first.
 use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
 ```
 
-`src/catalog.rs`: begin `bind_expression()` after `require_ordered_type()`
+`src/catalog.rs`: begin `bind_expression()` after `Scope`
 
 ```rust
 fn bind_expression(expression: Expr, scope: &Scope<'_>)
@@ -405,13 +406,14 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>)
         }
 ```
 
-Once the column exists, the binder no longer needs its qualifier. It produces
+After the qualifier and column name have been validated against the `Scope`,
+the binder no longer needs the qualifier. It produces
 `BoundExpr::Column(name)` and returns the column type recorded by the catalog.
-Literal and operator nodes do not require name lookup, but they still return
-their result types.
 
-A literal maps its stored `Value` directly to the corresponding `DataType`.
-No validation is needed because the parser has already constructed the value.
+Unlike a column, literal and operator nodes do not require name lookup, but
+they still return their result types. A literal maps its stored `Value`
+directly to the corresponding `DataType`; no validation is needed because the
+parser has already constructed the value.
 
 `src/catalog.rs`: continue the `match` in `bind_expression()`
 
@@ -454,13 +456,14 @@ Binary operators fall into four groups with distinct operand and result rules:
 
 | Operator group | Operand rule | Result type |
 | --- | --- | --- |
-| `+`, `-`, `*`, `/` | integers on both sides | integer |
-| `AND`, `OR` | Booleans on both sides | Boolean |
-| `=`, `<>` | matching integer, text, or Boolean types; either side may be `NULL` | Boolean |
-| `<`, `<=`, `>`, `>=` | matching integer or text types; either side may be `NULL` | Boolean |
+| `+`, `-`, `*`, `/` | Integer on both sides | Integer |
+| `AND`, `OR` | Boolean on both sides | Boolean |
+| `=`, `<>` | matching Integer, Text, or Boolean types; either side may be `NULL` | Boolean |
+| `<`, `<=`, `>`, `>=` | matching Integer or Text types; either side may be `NULL` | Boolean |
 
-Text supports equality and ordering, but not arithmetic. Appendix C collects
-the complete implemented type rules in one reference table.
+Text supports equality and ordering, but not arithmetic.
+[Appendix C](appendix-c-values-types-operators.md) collects the complete
+implemented type rules in one reference table.
 
 Each binary node recursively binds both children before inspecting its
 operator. Arithmetic and Boolean operators require one specific type on both
@@ -517,8 +520,12 @@ Every comparison produces a Boolean result.
         }
 ```
 
-A null test accepts any operand and always produces a Boolean result. This arm
-also closes the `match` and the function.
+`IS NULL` and `IS NOT NULL` accept every operand type because either test can
+ask whether any value is `NULL`. The recursive call still binds the child, so
+column lookup and any nested operator checks occur normally. There is no
+expected child type to compare, which is why the returned child type is
+ignored. The null test itself always produces a Boolean result. This arm also
+closes the `match` and the function.
 
 `src/catalog.rs`: finish `bind_expression()`
 
@@ -590,9 +597,13 @@ pub enum Plan {
 }
 ```
 
-`ProjectExpression` stores both a checked expression and the name printed for
-its result. A bare column retains its column name. Until aliases for selected
-expressions arrive, a computed value uses the placeholder `"expression"`.
+`ProjectExpression` pairs a checked expression with the column name used in
+the output row. A bare column can reuse its column name. A computed expression
+has no SQL alias in the grammar yet, but `Row` still requires every value to
+have a `String` name, so the binder uses `"expression"` temporarily. Making
+this field optional would only postpone the same naming decision until the
+row is constructed. A later chapter can replace the placeholder when selected
+expression aliases are introduced.
 
 `Catalog::bind()` will consume the parsed query and produce this plan.
 
@@ -1352,6 +1363,8 @@ With the complete path verified, we can state the boundaries that remain.
 The new frontend remains intentionally bounded:
 
 - A query has one input table and one selected expression.
+- The selected expression cannot have an output alias. A bare column reuses
+  its column name, while a computed expression is named `expression`.
 - The catalog exists only in memory and is assembled by the application.
 - Names use exact spelling; quoted identifiers are absent.
 - Arithmetic uses integers only.
@@ -1364,8 +1377,9 @@ The new frontend remains intentionally bounded:
 - Bound columns use names rather than stable catalog identifiers.
 
 These limits keep the chapter focused on the boundary between syntax and
-meaning. Appendix B records where the remaining expression forms belong;
-Appendix C records the implemented value and operator rules.
+meaning. [Appendix B](appendix-b-sql-grammar.md) records where the remaining
+expression forms belong; [Appendix C](appendix-c-values-types-operators.md)
+records the implemented value and operator rules.
 
 ## 5.11 Try it
 
@@ -1395,13 +1409,14 @@ then test it.
 
 </details>
 
-## 5.12 One scope is no longer enough
+## 5.12 One input and one output are no longer enough
 
 The frontend can now preserve expression structure, and the binder can reject
 unknown names and incompatible types before execution. The last exercise
 worked because every query still had exactly one input table. An unqualified
 column such as `name` could belong to only that table, and a bound column could
-be stored by name alone.
+be stored by name alone. The query also selected only one expression, so the
+project node never had to name two output columns.
 
 Consider what changes when the database has two tables:
 
@@ -1410,21 +1425,24 @@ employees(id, name, department_id)
 departments(id, name)
 ```
 
-A useful query needs values from both:
+A useful query needs values from both tables:
 
 ```sql
-SELECT name
+SELECT e.name AS employee_name, d.name AS department_name
 FROM employees AS e, departments AS d
 WHERE e.department_id = d.id;
 ```
 
-This query creates two related problems. The binder must track both table
-aliases and decide which input owns each column. The selected `name` is
-ambiguous because both tables contain one. After binding resolves qualified
-references, the executor must also combine an employee row with the matching
-department row.
+This query exposes three connected problems. The binder must track both table
+aliases and decide which input owns each column. The parser and project node
+must accept more than one selected expression. Because both selected columns
+are named `name`, selected-expression aliases must also give the output
+columns distinct names. These output aliases are different from `e` and `d`,
+which qualify input columns.
 
-That row-combining operation is a **join**. In the next chapter we will first
-make the simplest join work, then ask what its straightforward execution
+After binding resolves the qualified references, the executor must combine an
+employee row with the matching department row. That row-combining operation is
+a **join**. The next chapter will extend the select list and output naming,
+build the simplest join, and then ask what its straightforward execution
 strategy costs.
 
