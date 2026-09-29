@@ -82,21 +82,24 @@ images:
     kind: generated-raster
     output: book/images/005-column-binding.png
     placement: section 5.4 after column and type binding
-    alt: The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.
+    alt: The unresolved AST column e.salary and an employees catalog entry enter the binder, which produces a bound salary column with integer type.
     prompt: >-
       Use case: scientific-educational. Asset type: binding transformation
-      diagram for a technical database book. Arrange three large cards from
-      left to right with clean arrows. The left AST card contains exactly
-      "e.salary" and is headed "AST". The center catalog card is headed
-      "CATALOG" and contains exactly three large lines: "employees", "e",
-      and "salary: INTEGER". Use subtle matching threads to show qualifier e
-      and column salary being checked. The right card is headed exactly
-      "BOUND" and contains exactly "salary" and "INTEGER". Make it obvious
-      that binding removes the qualifier after checking it and carries the
-      column type forward. Follow book/art/STYLE.md exactly. Wide landscape
-      composition, sparse large text, straight noncrossing paths, generous
-      margins. No extra schema fields, code, people, logos, watermark,
-      photorealism, glossy 3D rendering, or tiny labels.
+      diagram for a technical database book. Show a large card headed exactly
+      "AST" on the left containing exactly "e.salary". Show a large card
+      headed exactly "BINDER" in the center. Show a large card headed exactly
+      "BOUND EXPR" on the right containing exactly two lines: "salary" and
+      "INTEGER". Place a smaller card headed exactly "CATALOG" below the
+      binder containing exactly three lines: "employees", "alias e", and
+      "salary: INTEGER". Draw one straight arrow from AST into BINDER, one
+      upward arrow from CATALOG into BINDER, and one straight arrow from
+      BINDER to BOUND EXPR. Make the AST and catalog unmistakably separate
+      inputs to binding, and the bound expression unmistakably its output.
+      Make it obvious that binding removes qualifier e only after checking it
+      and carries the INTEGER type forward. Follow book/art/STYLE.md exactly.
+      Wide landscape composition, sparse large text, straight noncrossing
+      paths, generous margins. No extra schema fields, code, people, logos,
+      watermark, photorealism, glossy 3D rendering, or tiny labels.
 
   - id: bound-expressions-run-on-rows
     kind: generated-raster

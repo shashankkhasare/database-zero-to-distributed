@@ -334,6 +334,11 @@ exists, that alias is accepted; otherwise, the table name may qualify a
 column. `columns` contains the selected table's catalog columns. The binder
 searches this slice to verify a column name and recover its type.
 
+This teaching dialect compares table, alias, and column names using their
+exact spelling. Standard SQL normally folds unquoted identifiers to a
+canonical case, but identifier normalization and quoted identifiers remain
+outside the current chapter.
+
 For the representative query:
 
 ```sql
@@ -679,8 +684,8 @@ after all of its children have resolved names and passed their type checks.
 The resulting plan contains two checked trees but has no execution method yet.
 
 <figure class="book-illustration book-diagram">
-  <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary is checked against an employees catalog entry where alias e maps salary to INTEGER, producing a bound salary column with integer type.">
-  <figcaption>Binding checks the qualifier and column, recovers the type, and produces a simpler expression for execution.</figcaption>
+  <img src="images/005-column-binding.png" alt="The unresolved AST column e.salary and an employees catalog entry enter the binder, which produces a bound salary column with integer type.">
+  <figcaption>The AST and catalog enter the binder, which validates the qualifier and column and produces a typed bound expression.</figcaption>
 </figure>
 
 ## 5.5 Inspect the bound plan
@@ -750,8 +755,10 @@ fn employee_catalog() -> Catalog {
 
 The column list is the schema for the rows below it. Nothing in this small
 catalog forces that schema and `employee()` to agree, so adding or changing a
-column requires updating both. A later storage representation will remove
-this manually maintained duplication.
+column requires updating both. Later, when rows are created from a table's
+schema, the database can prevent this mismatch instead of relying on the
+application to keep the column definitions and row values synchronized. The
+roadmap deliberately leaves that exact chapter boundary open.
 
 The prompt stops after binding and prints the plan rather than executing it.
 
@@ -834,10 +841,13 @@ that checked expression produces for the current row.
 Binding has already removed unresolved names and rejected invalid operand
 types. Evaluation can therefore work from the leaves upward: obtain column and
 literal values first, then apply each parent operator to the values produced by
-its children. We will import `Row` alongside `Value` and give the bound tree an
-evaluation method.
+its children. As with binding, we will define the operation-specific functions
+first and assemble the recursive dispatcher last.
 
-### 5.6.1 Evaluate the bound tree
+### 5.6.1 Evaluate unary operations
+
+Evaluation will read columns from a `Row`, so import `Row` alongside `Value`
+before adding the operation-specific functions.
 
 `src/expression.rs`: replace the first import
 
@@ -845,40 +855,10 @@ evaluation method.
 use crate::row::{Row, Value};
 ```
 
-`src/expression.rs`: add after `BoundExpr`
-
-```rust
-impl BoundExpr {
-    pub fn evaluate(&self, row: &Row) -> Result<Value, String> {
-        match self {
-            BoundExpr::Column(name) => row.get(name).cloned()
-                .ok_or_else(|| format!(
-                    "bound column is missing at execution: {name}")),
-            BoundExpr::Literal(value) => Ok(value.clone()),
-            BoundExpr::Unary { op, expression } => {
-                evaluate_unary(op, expression.evaluate(row)?)
-            }
-            BoundExpr::Binary { left, op, right } => {
-                evaluate_binary(left.evaluate(row)?, op,
-                    right.evaluate(row)?)
-            }
-            BoundExpr::IsNull { expression, negated } => {
-                let is_null = expression.evaluate(row)? == Value::Null;
-                Ok(Value::Boolean(if *negated {
-                    !is_null
-                } else {
-                    is_null
-                }))
-            }
-        }
-    }
-}
-```
-
 Unary evaluation is small because binding has already checked the operand
-type.
+type. `NULL` propagates through all three unary operators.
 
-`src/expression.rs`: add after `impl BoundExpr`
+`src/expression.rs`: add after `BoundExpr`
 
 ```rust
 fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
@@ -894,16 +874,6 @@ fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
     }
 }
 ```
-
-Each arm mirrors one bound node. Columns read a value from the current row,
-and literals clone their stored value. Unary and binary nodes recursively
-evaluate their children before applying an operator. `IsNull` is different:
-it asks whether its child produced `Value::Null` and always returns a Boolean.
-
-The missing-column error should be unreachable for a catalog row because the
-binder has already verified the column. Keeping the error makes a mismatch
-between catalog metadata and row data visible rather than silently producing
-an incorrect result.
 
 ### 5.6.2 Define three-valued Boolean logic
 
@@ -1045,6 +1015,55 @@ fn compare<T: PartialEq + PartialOrd>(left: T,
 Binding guarantees that `compare()` receives a comparison operator. Its error
 arm remains because the Rust type `BinaryOp` also contains non-comparison
 variants and cannot express that narrower guarantee by itself.
+
+### 5.6.4 Assemble the bound-tree evaluator
+
+The supporting functions now cover unary, Boolean, arithmetic, and comparison
+operations. `BoundExpr::evaluate()` can dispatch each node to the appropriate
+behavior and recursively evaluate child expressions.
+
+`src/expression.rs`: add after `compare()`
+
+```rust
+impl BoundExpr {
+    pub fn evaluate(&self, row: &Row) -> Result<Value, String> {
+        match self {
+            BoundExpr::Column(name) => row.get(name).cloned()
+                .ok_or_else(|| format!(
+                    "bound column is missing at execution: {name}")),
+            BoundExpr::Literal(value) => Ok(value.clone()),
+            BoundExpr::Unary { op, expression } => {
+                evaluate_unary(op, expression.evaluate(row)?)
+            }
+            BoundExpr::Binary { left, op, right } => {
+                evaluate_binary(left.evaluate(row)?, op,
+                    right.evaluate(row)?)
+            }
+            BoundExpr::IsNull { expression, negated } => {
+                let is_null = expression.evaluate(row)? == Value::Null;
+                Ok(Value::Boolean(if *negated {
+                    !is_null
+                } else {
+                    is_null
+                }))
+            }
+        }
+    }
+}
+```
+
+Columns read a value from the current row, and literals clone their stored
+value. Unary and binary nodes recursively evaluate their children before
+applying an operator. `IsNull` asks whether its child produced `Value::Null`
+and always returns a Boolean.
+
+The missing-column error should be unreachable for rows constructed through
+the catalog schema because binding has already verified the column. Today,
+however, the catalog schema and row values are assembled separately. The
+error exposes a mismatch between them rather than silently producing an
+incorrect result. Schema-aware row construction can make that mismatch
+unrepresentable later; retaining this check would still provide a useful
+defense against a broken internal invariant.
 
 A bound expression can now evaluate one row. The checked plan from the first
 checkpoint must next call that evaluator for every row it filters or projects.
