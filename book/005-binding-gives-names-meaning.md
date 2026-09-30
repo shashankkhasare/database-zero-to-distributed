@@ -480,8 +480,8 @@ Binary operators fall into four groups with distinct operand and result rules:
 | `<`, `<=`, `>`, `>=` | matching Integer or Text types; either side may be `NULL` | Boolean |
 
 Text supports equality and ordering, but not arithmetic.
-[Appendix C](appendix-c-values-types-operators.md) collects the complete
-implemented type rules in one reference table.
+[Appendix C](appendix-c-values-types-operators.md) records the implemented
+value and operator rules in one reference table.
 
 Each binary node recursively binds both children before inspecting its
 operator. Arithmetic and Boolean operators require one specific type on both
@@ -818,7 +818,18 @@ Project {
         },
     ],
     input: Filter {
-        predicate: Binary { ... },
+        predicate: Binary {
+            left: Binary {
+                left: Binary { ... },
+                op: Greater,
+                right: Literal(Integer(70000)),
+            },
+            op: And,
+            right: IsNull {
+                expression: Column("name"),
+                negated: true,
+            },
+        },
         input: Scan { rows: [...] },
     },
 }
@@ -1086,7 +1097,6 @@ checkpoint must next call that evaluator for every row it filters or projects.
 
 Section 5.6 gave `BoundExpr` an evaluator. `Plan::Filter` and `Plan::Project`
 can now use it to turn the checked plan from the first checkpoint into rows.
-A `BoundExpr` is a checked operation that can be evaluated against a row.
 
 <figure class="book-illustration book-diagram">
   <img src="images/005-bound-expressions-run-on-rows.png" alt="A query AST and catalog create a scope. Binding turns the filter and projection expressions into a bound predicate and bound projection. Filter retains two matching three-value rows, Project turns each into a one-value row, and the output contains those two projected rows.">
