@@ -632,41 +632,46 @@ use crate::parser::Query;
 use crate::plan::{Plan, ProjectExpression};
 ```
 
-`src/catalog.rs`: add to `impl Catalog`
+The original `impl Catalog` ended after `new()`. Reopen it at the current
+position so `bind()` is an associated method rather than a free function.
+
+`src/catalog.rs`: add after `bind_expression()`
 
 ```rust
-pub fn bind(&self, query: Query) -> Result<Plan, String> {
-    let table = self.tables.iter()
-        .find(|table| table.name == query.table)
-        .ok_or_else(|| format!("unknown table: {}", query.table))?;
+impl Catalog {
+    pub fn bind(&self, query: Query) -> Result<Plan, String> {
+        let table = self.tables.iter()
+            .find(|table| table.name == query.table)
+            .ok_or_else(|| format!("unknown table: {}", query.table))?;
 
-    let scope = Scope {
-        table_name: &table.name,
-        alias: query.table_alias.as_deref(),
-        columns: &table.columns,
-    };
+        let scope = Scope {
+            table_name: &table.name,
+            alias: query.table_alias.as_deref(),
+            columns: &table.columns,
+        };
 
-    let (projection, _) = bind_expression(query.projection, &scope)?;
-    let projection_name = match &projection {
-        BoundExpr::Column(name) => name.clone(),
-        _ => "expression".to_string(),
-    };
-    let (predicate, predicate_type) =
-        bind_expression(query.filter, &scope)?;
-    if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
-        return Err("WHERE expression must be Boolean".to_string());
+        let (projection, _) = bind_expression(query.projection, &scope)?;
+        let projection_name = match &projection {
+            BoundExpr::Column(name) => name.clone(),
+            _ => "expression".to_string(),
+        };
+        let (predicate, predicate_type) =
+            bind_expression(query.filter, &scope)?;
+        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
+            return Err("WHERE expression must be Boolean".to_string());
+        }
+
+        Ok(Plan::Project {
+            expressions: vec![ProjectExpression {
+                name: projection_name,
+                expression: projection,
+            }],
+            input: Box::new(Plan::Filter {
+                predicate,
+                input: Box::new(Plan::Scan { rows: table.rows.clone() }),
+            }),
+        })
     }
-
-    Ok(Plan::Project {
-        expressions: vec![ProjectExpression {
-            name: projection_name,
-            expression: projection,
-        }],
-        input: Box::new(Plan::Filter {
-            predicate,
-            input: Box::new(Plan::Scan { rows: table.rows.clone() }),
-        }),
-    })
 }
 ```
 
@@ -1323,9 +1328,13 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 }
 ```
 
-`Row::project()` is now unused because projection lives in the plan and
-evaluates expressions instead of copying a fixed list of columns. Remove the
-old method from `row.rs`.
+Projection now lives in `Plan::Project`, which evaluates bound expressions and
+constructs each result with `Row::from_owned()`. The older method that copies a
+fixed list of named columns therefore has no caller.
+
+`src/row.rs`: remove `Row::project()` and its
+`project_keeps_only_requested_columns()` test. That is the only test in the
+module, so remove the now-empty `mod tests` block as well.
 
 The application now connects the parser, catalog and binder, plan, and
 executor. Compile it before running queries so missing modules, stale imports,
