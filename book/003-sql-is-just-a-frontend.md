@@ -1053,14 +1053,6 @@ Read `run_prompt()` from the inside out. `read_line()` waits for one query.
 frontend error. The surrounding `loop` then prints `sql>` again. An empty line
 does no work, while end-of-file returns from the prompt.
 
-#### Verify existing behavior
-
-Check that adding the prompt did not change the earlier operator behavior:
-
-```bash
-cargo test
-```
-
 #### Try the interactive prompt
 
 Run the interactive path:
