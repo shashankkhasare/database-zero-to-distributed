@@ -33,6 +33,12 @@ The tree preserves precedence and nesting, but names such as `employees`, `e`,
 `salary + 5000` is type-correct or whether the complete `WHERE` expression
 produces a Boolean.
 
+The expression grammar deliberately accepts general combinations such as
+`1 + 'cat'` and `salary + 1`. We could complicate the grammar to reject some
+incompatible literals, but it still could not determine the type of `salary`
+without consulting the catalog. Operand compatibility therefore belongs to
+binding and type checking rather than parsing.
+
 This chapter inserts a **binding** stage between parsing and planning. The
 binder performs three jobs:
 
@@ -309,9 +315,16 @@ ordered.
 
 ### 5.4.2 Establish the scope
 
-The type rules are independent of a query, but resolving a column name is not.
-After parsing produces a `Query`, its input table and optional alias determine
-which names are visible to the projection and filter expression trees.
+A database may contain hundreds of tables, but a query can refer only to the
+inputs named in its `FROM` clause. A scope records that smaller set of visible
+tables, aliases, and columns. The binder must establish it before walking the
+expressions so that every column reference is checked against the names
+available to this query. Our current query has one input table; later queries
+will place several tables in the same scope.
+
+The type rules are independent of a query, but its scope is not. After parsing
+produces a `Query`, its input table and optional alias determine which names
+are visible to the projection and filter expression trees.
 
 The whole-query binder will use `query.table` to find the corresponding
 catalog table, then create one `Scope`. The scope borrows the verified table
