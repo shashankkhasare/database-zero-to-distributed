@@ -24,40 +24,6 @@ impl Catalog {
     pub fn new(tables: Vec<Table>) -> Self {
         Self { tables }
     }
-
-    pub fn bind(&self, query: Query) -> Result<Plan, String> {
-        let table = self
-            .tables
-            .iter()
-            .find(|table| table.name == query.table)
-            .ok_or_else(|| format!("unknown table: {}", query.table))?;
-        let scope = Scope {
-            table_name: &table.name,
-            alias: query.table_alias.as_deref(),
-            columns: &table.columns,
-        };
-        let (projection, _) = bind_expression(query.projection, &scope)?;
-        let projection_name = match &projection {
-            BoundExpr::Column(name) => name.clone(),
-            _ => "expression".into(),
-        };
-        let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
-        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
-            return Err("WHERE expression must be Boolean".into());
-        }
-        Ok(Plan::Project {
-            expressions: vec![ProjectExpression {
-                name: projection_name,
-                expression: projection,
-            }],
-            input: Box::new(Plan::Filter {
-                predicate,
-                input: Box::new(Plan::Scan {
-                    rows: table.rows.clone(),
-                }),
-            }),
-        })
-    }
 }
 
 struct Scope<'a> {
@@ -197,6 +163,42 @@ fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
         _ => Err(format!(
             "ordered comparison requires integers or text: found {data_type:?}"
         )),
+    }
+}
+
+impl Catalog {
+    pub fn bind(&self, query: Query) -> Result<Plan, String> {
+        let table = self
+            .tables
+            .iter()
+            .find(|table| table.name == query.table)
+            .ok_or_else(|| format!("unknown table: {}", query.table))?;
+        let scope = Scope {
+            table_name: &table.name,
+            alias: query.table_alias.as_deref(),
+            columns: &table.columns,
+        };
+        let (projection, _) = bind_expression(query.projection, &scope)?;
+        let projection_name = match &projection {
+            BoundExpr::Column(name) => name.clone(),
+            _ => "expression".into(),
+        };
+        let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
+        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
+            return Err("WHERE expression must be Boolean".into());
+        }
+        Ok(Plan::Project {
+            expressions: vec![ProjectExpression {
+                name: projection_name,
+                expression: projection,
+            }],
+            input: Box::new(Plan::Filter {
+                predicate,
+                input: Box::new(Plan::Scan {
+                    rows: table.rows.clone(),
+                }),
+            }),
+        })
     }
 }
 
