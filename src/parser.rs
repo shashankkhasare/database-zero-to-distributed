@@ -6,10 +6,21 @@ use crate::row::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
-    pub projection: Expr,
-    pub table: String,
-    pub table_alias: Option<String>,
+    pub projections: Vec<SelectExpression>,
+    pub tables: Vec<TableReference>,
     pub filter: Expr,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct SelectExpression {
+    pub expression: Expr,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TableReference {
+    pub name: String,
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -34,21 +45,49 @@ struct Parser {
 impl Parser {
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
-        let projection = self.parse_expression()?;
-        self.expect(Token::From, "expected FROM after selected expression")?;
-        let table = self.identifier("expected a table name after FROM")?;
-        let table_alias = self.parse_alias()?;
-        self.expect(Token::Where, "expected WHERE after table name")?;
+        let projections = self.parse_select_list()?;
+        self.expect(Token::From, "expected FROM after select list")?;
+        let tables = self.parse_table_list()?;
+        self.expect(Token::Where, "expected WHERE after table list")?;
         let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
         if self.current != self.tokens.len() {
             return Err(ParseError("unexpected token after ;".into()));
         }
         Ok(Query {
-            projection,
-            table,
-            table_alias,
+            projections,
+            tables,
             filter,
+        })
+    }
+
+    fn parse_select_list(&mut self) -> Result<Vec<SelectExpression>, ParseError> {
+        let mut expressions = vec![self.parse_select_expression()?];
+        while self.consume(&Token::Comma) {
+            expressions.push(self.parse_select_expression()?);
+        }
+        Ok(expressions)
+    }
+
+    fn parse_select_expression(&mut self) -> Result<SelectExpression, ParseError> {
+        Ok(SelectExpression {
+            expression: self.parse_expression()?,
+            alias: self.parse_alias()?,
+        })
+    }
+
+    fn parse_table_list(&mut self) -> Result<Vec<TableReference>, ParseError> {
+        let mut tables = vec![self.parse_table_reference()?];
+        while self.consume(&Token::Comma) {
+            tables.push(self.parse_table_reference()?);
+        }
+        Ok(tables)
+    }
+
+    fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
+        Ok(TableReference {
+            name: self.identifier("expected a table name")?,
+            alias: self.parse_alias()?,
         })
     }
 
@@ -279,7 +318,7 @@ mod tests {
             op: BinaryOp::Add,
             right,
             ..
-        } = query.projection
+        } = query.projections[0].expression.clone()
         else {
             panic!("expected addition")
         };
@@ -295,8 +334,8 @@ mod tests {
     #[test]
     fn parses_aliases_qualified_columns_and_null_predicates() {
         let query = parse("SELECT e.name FROM employees AS e WHERE e.name IS NOT NULL;").unwrap();
-        assert_eq!(query.table, "employees");
-        assert_eq!(query.table_alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[0].name, "employees");
+        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
         assert!(matches!(query.filter, Expr::IsNull { negated: true, .. }));
     }
 
@@ -304,7 +343,7 @@ mod tests {
     fn parses_boolean_literals() {
         let query = parse("SELECT TRUE FROM employees WHERE FALSE;").unwrap();
         assert_eq!(
-            query.projection,
+            query.projections[0].expression.clone(),
             Expr::Literal(crate::row::Value::Boolean(true))
         );
         assert_eq!(
@@ -331,5 +370,25 @@ mod tests {
                 .to_string(),
             "unexpected token after ;"
         );
+    }
+
+    #[test]
+    fn parses_multiple_projections_and_tables() {
+        let query = parse(
+            "SELECT e.name AS employee_name, d.name department_name \
+             FROM employees AS e, departments d \
+             WHERE e.department_id = d.id;",
+        )
+        .unwrap();
+
+        assert_eq!(query.projections.len(), 2);
+        assert_eq!(query.projections[0].alias.as_deref(), Some("employee_name"));
+        assert_eq!(
+            query.projections[1].alias.as_deref(),
+            Some("department_name")
+        );
+        assert_eq!(query.tables.len(), 2);
+        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[1].alias.as_deref(), Some("d"));
     }
 }

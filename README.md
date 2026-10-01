@@ -488,10 +488,10 @@ current root continues to serve Volume I while it is the only published volume.
 
 | Volume | Chapters | Focus |
 | --- | ---: | --- |
-| I — Read Rows | 1–34 | Query frontend, execution, optimization, parallelism, and distributed query work |
-| II — Store and Write Rows Correctly | 35–48 | Storage, indexes, recovery, concurrency, and transactions |
-| III — Distribute Data and Correctness | 49–62 | Replication, consensus, sharding, and distributed transactions |
-| IV — Complete the Language and Bring Everything Together | 63–75 | Advanced SQL, integration, benchmarks, and failure experiments |
+| I — Read Rows | 1–35 | Query frontend, execution, optimization, parallelism, and distributed query work |
+| II — Store and Write Rows Correctly | 36–49 | Storage, indexes, recovery, concurrency, and transactions |
+| III — Distribute Data and Correctness | 50–63 | Replication, consensus, sharding, and distributed transactions |
+| IV — Complete the Language and Bring Everything Together | 64–76 | Advanced SQL, integration, benchmarks, and failure experiments |
 
 See [`BOOK.md`](BOOK.md) for the writing and chapter contract. See
 [`TODO.md`](TODO.md) for current implementation, book, and video progress.

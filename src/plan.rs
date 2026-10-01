@@ -12,6 +12,10 @@ pub enum Plan {
     Scan {
         rows: Vec<Row>,
     },
+    Join {
+        left: Box<Plan>,
+        right: Box<Plan>,
+    },
     Filter {
         predicate: BoundExpr,
         input: Box<Plan>,
@@ -26,6 +30,19 @@ impl Plan {
     pub fn execute(&self) -> Result<Vec<Row>, String> {
         match self {
             Plan::Scan { rows } => Ok(rows.clone()),
+            Plan::Join { left, right } => {
+                let left_rows = left.execute()?;
+                let right_rows = right.execute()?;
+                let mut output = Vec::new();
+
+                for left_row in &left_rows {
+                    for right_row in &right_rows {
+                        output.push(left_row.combine(right_row));
+                    }
+                }
+
+                Ok(output)
+            }
             Plan::Filter { predicate, input } => {
                 let mut output = Vec::new();
                 for row in input.execute()? {
@@ -74,5 +91,35 @@ mod tests {
             }),
         };
         assert!(plan.execute().unwrap().is_empty());
+    }
+
+    #[test]
+    fn join_pairs_every_left_row_with_every_right_row() {
+        let plan = Plan::Join {
+            left: Box::new(Plan::Scan {
+                rows: vec![
+                    Row::new(vec![("employee", Value::Text("Ada".into()))]),
+                    Row::new(vec![("employee", Value::Text("Grace".into()))]),
+                ],
+            }),
+            right: Box::new(Plan::Scan {
+                rows: vec![
+                    Row::new(vec![("department", Value::Text("Engineering".into()))]),
+                    Row::new(vec![("department", Value::Text("Research".into()))]),
+                ],
+            }),
+        };
+
+        let rows = plan.execute().unwrap();
+
+        assert_eq!(rows.len(), 4);
+        assert_eq!(
+            rows[0].value_at(0, "employee").cloned(),
+            Ok(Value::Text("Ada".into()))
+        );
+        assert_eq!(
+            rows[0].value_at(1, "department").cloned(),
+            Ok(Value::Text("Engineering".into()))
+        );
     }
 }

@@ -26,28 +26,64 @@ impl Catalog {
     }
 }
 
-struct Scope<'a> {
-    table_name: &'a str,
-    alias: Option<&'a str>,
+struct ScopeTable<'a> {
+    qualifier: String,
     columns: &'a [Column],
+    offset: usize,
+}
+
+struct Scope<'a> {
+    tables: Vec<ScopeTable<'a>>,
+}
+
+fn bind_column(
+    qualifier: Option<String>,
+    name: String,
+    scope: &Scope<'_>,
+) -> Result<(BoundExpr, DataType), String> {
+    if let Some(qualifier) = qualifier {
+        let table = scope
+            .tables
+            .iter()
+            .find(|table| table.qualifier == qualifier)
+            .ok_or_else(|| format!("unknown table or alias: {qualifier}"))?;
+        let (index, column) = table
+            .columns
+            .iter()
+            .enumerate()
+            .find(|(_, column)| column.name == name)
+            .ok_or_else(|| format!("unknown column: {name}"))?;
+        return Ok((
+            BoundExpr::Column {
+                index: table.offset + index,
+                name,
+            },
+            column.data_type.clone(),
+        ));
+    }
+
+    let mut matched = None;
+    for table in &scope.tables {
+        if let Some((index, column)) = table
+            .columns
+            .iter()
+            .enumerate()
+            .find(|(_, column)| column.name == name)
+        {
+            if matched.is_some() {
+                return Err(format!("ambiguous column: {name}"));
+            }
+            matched = Some((table.offset + index, column));
+        }
+    }
+
+    let (index, column) = matched.ok_or_else(|| format!("unknown column: {name}"))?;
+    Ok((BoundExpr::Column { index, name }, column.data_type.clone()))
 }
 
 fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, DataType), String> {
     match expression {
-        Expr::Column { qualifier, name } => {
-            if let Some(qualifier) = qualifier {
-                let expected = scope.alias.unwrap_or(scope.table_name);
-                if qualifier != expected {
-                    return Err(format!("unknown table or alias: {qualifier}"));
-                }
-            }
-            let column = scope
-                .columns
-                .iter()
-                .find(|column| column.name == name)
-                .ok_or_else(|| format!("unknown column: {name}"))?;
-            Ok((BoundExpr::Column(name), column.data_type.clone()))
-        }
+        Expr::Column { qualifier, name } => bind_column(qualifier, name, scope),
         Expr::Literal(value) => {
             let data_type = match &value {
                 crate::row::Value::Integer(_) => DataType::Integer,
@@ -168,35 +204,77 @@ fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
 
 impl Catalog {
     pub fn bind(&self, query: Query) -> Result<Plan, String> {
-        let table = self
-            .tables
-            .iter()
-            .find(|table| table.name == query.table)
-            .ok_or_else(|| format!("unknown table: {}", query.table))?;
+        let mut input_tables = Vec::new();
+        let mut scope_tables = Vec::new();
+        let mut offset = 0;
+
+        for table_reference in query.tables {
+            let table = self
+                .tables
+                .iter()
+                .find(|table| table.name == table_reference.name)
+                .ok_or_else(|| format!("unknown table: {}", table_reference.name))?;
+            let qualifier = table_reference.alias.unwrap_or(table_reference.name);
+            if scope_tables
+                .iter()
+                .any(|table: &ScopeTable<'_>| table.qualifier == qualifier)
+            {
+                return Err(format!("duplicate table or alias: {qualifier}"));
+            }
+            scope_tables.push(ScopeTable {
+                qualifier,
+                columns: &table.columns,
+                offset,
+            });
+            offset += table.columns.len();
+            input_tables.push(table);
+        }
+
         let scope = Scope {
-            table_name: &table.name,
-            alias: query.table_alias.as_deref(),
-            columns: &table.columns,
+            tables: scope_tables,
         };
-        let (projection, _) = bind_expression(query.projection, &scope)?;
-        let projection_name = match &projection {
-            BoundExpr::Column(name) => name.clone(),
-            _ => "expression".into(),
-        };
+        let mut expressions = Vec::new();
+        for selected in query.projections {
+            let (expression, _) = bind_expression(selected.expression, &scope)?;
+            let name = selected.alias.unwrap_or_else(|| match &expression {
+                BoundExpr::Column { name, .. } => name.clone(),
+                _ => "expression".into(),
+            });
+            if expressions
+                .iter()
+                .any(|existing: &ProjectExpression| existing.name == name)
+            {
+                return Err(format!("duplicate output column: {name}"));
+            }
+            expressions.push(ProjectExpression { name, expression });
+        }
+
         let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
         if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
             return Err("WHERE expression must be Boolean".into());
         }
-        Ok(Plan::Project {
-            expressions: vec![ProjectExpression {
-                name: projection_name,
-                expression: projection,
-            }],
-            input: Box::new(Plan::Filter {
-                predicate,
-                input: Box::new(Plan::Scan {
+
+        let mut inputs = input_tables.into_iter();
+        let first = inputs
+            .next()
+            .ok_or_else(|| "query requires at least one input table".to_string())?;
+        let mut input = Plan::Scan {
+            rows: first.rows.clone(),
+        };
+        for table in inputs {
+            input = Plan::Join {
+                left: Box::new(input),
+                right: Box::new(Plan::Scan {
                     rows: table.rows.clone(),
                 }),
+            };
+        }
+
+        Ok(Plan::Project {
+            expressions,
+            input: Box::new(Plan::Filter {
+                predicate,
+                input: Box::new(input),
             }),
         })
     }
