@@ -75,6 +75,44 @@ column still fails before execution.
 - Accept one semicolon-terminated statement at a time; do not build a general
   multi-statement script parser.
 
+## Chapter 6 representation decision
+
+Binding will replace a column's SQL name with a **column slot**, its zero-based
+position in the row produced by the join. The checked node will retain the
+original column name beside that slot for readable plans and execution errors:
+
+```text
+e.name
+   ↓ bind in a scope where employees starts at slot 0
+BoundExpr::Column { index: 1, name: "name" }
+```
+
+Each table in the scope records the starting offset of its columns. Binding a
+qualified name finds its table and adds the column's position within that table
+to the table offset. Binding an unqualified name searches every visible table;
+zero matches means unknown and more than one means ambiguous.
+
+`Join` will concatenate each left row with each right row. The resulting value
+order therefore matches the offsets calculated during binding:
+
+```text
+employees row                 departments row
+[id, name, department_id]  +  [id, name]
+                ↓ concatenate
+[id, name, department_id, id, name]
+  0    1          2         3    4
+```
+
+The duplicate `id` and `name` labels do not affect evaluation because bound
+expressions read slots 0 through 4. `Row` will expose positional lookup and a
+concatenation operation while retaining labels for display. Positional lookup
+will also compare the stored label with the bound name so a catalog/row ordering
+mismatch becomes an execution error instead of silently reading another value.
+
+This is deliberately a plan-local identity, not a durable catalog identifier.
+It avoids encoding aliases into hidden strings and avoids introducing a
+multi-relation runtime row abstraction before another feature needs one.
+
 ---
 
 # Planned milestone: 007, Join Syntax and Row Preservation
