@@ -1,0 +1,96 @@
+lesson: "006"
+style: book/art/STYLE.md
+
+images:
+  - id: one-expression-becomes-an-output-list
+    kind: generated-raster
+    output: book/images/006-one-expression-becomes-an-output-list.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: A narrow one-column result from one selected expression expands into a two-column result whose employee name and computed salary have explicit output names.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening editorial
+      illustration for a technical database book chapter about selecting
+      multiple SQL expressions. Show one clear left-to-right transformation
+      from the previous one-expression projection to a named output list.
+
+      On the left, place the heading "ONE EXPRESSION" above a compact
+      "PROJECT" card containing one expression card labeled "name". Beneath
+      it, show a one-column result relation headed "name" with exactly two
+      rows: "Ada" and "Grace".
+
+      In the center, draw one prominent right-pointing teal arrow. Above the
+      arrow place a small comma symbol to suggest that SELECT now accepts a
+      comma-separated list. Do not imply another input table or a join.
+
+      On the right, place the heading "NAMED OUTPUT LIST" above a wider
+      "PROJECT" card containing exactly two aligned expression cards. Label
+      the first "name AS employee_name" and the second
+      "salary + 1000 AS raised_salary". Beneath it, show a two-column result
+      relation with headings "employee_name" and "raised_salary" and exactly
+      two data rows: "Ada" with "71000", and "Grace" with "73000". Make the
+      wider row shape visually prominent. Use the same small employee-row
+      motif behind both sides to communicate that the input remains one table
+      and only the projection becomes wider.
+
+      Permitted text only: "ONE EXPRESSION", "NAMED OUTPUT LIST", "PROJECT",
+      "name", "name AS employee_name", "salary + 1000 AS raised_salary",
+      "employee_name", "raised_salary", "Ada", "Grace", "71000", "73000",
+      and ",". Render every label exactly. Do not invent, duplicate,
+      misspell, or abbreviate text.
+
+      Follow book/art/STYLE.md: original editorial illustration with
+      hand-drawn ink contours, restrained gouache and watercolor fills,
+      subtle print texture, warm ivory background, charcoal outlines, deep
+      teal and muted turquoise for the expanded projection, and a small ochre
+      accent on the comma and transformation arrow. Wide landscape
+      composition, generous margins, large readable labels, and one coherent
+      visual flow. No people, second table, join, logos, watermark,
+      photorealism, interface chrome, glossy 3D rendering, decorative prose,
+      tiny labels, crossed arrows, or unlisted text.
+
+  - id: selected-expressions-become-output-fields
+    kind: generated-raster
+    output: book/images/006-selected-expressions-become-output-fields.png
+    placement: section 6.4 after the two ProjectExpression values are introduced
+    alt: Two selected SQL expressions with aliases become two checked ProjectExpression entries, which Project evaluates to construct the employee_name and raised_salary fields of each output row.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact transformation
+      diagram for a technical database book. Show how two selected SQL
+      expressions become two named fields in one projected row. Create three
+      aligned regions connected from left to right.
+
+      Region 1 is headed exactly "SELECT LIST". It contains two stacked cards:
+      "name AS employee_name" and
+      "salary + 1000 AS raised_salary".
+
+      Region 2 is headed exactly "PROJECT EXPRESSIONS". It contains two
+      stacked checked cards aligned with the corresponding cards in Region 1.
+      The upper card contains exactly two lines: "name: employee_name" and
+      "checked: name". The lower card contains exactly two lines:
+      "name: raised_salary" and "checked: salary + 1000". Draw two separate,
+      straight, noncrossing arrows from the SELECT LIST cards to their matching
+      PROJECT EXPRESSIONS cards.
+
+      Region 3 is headed exactly "OUTPUT ROW". It contains one two-column row
+      with headings "employee_name" and "raised_salary" and values "Ada" and
+      "71000". Draw arrows from both checked cards into their corresponding
+      output fields. Make it clear that each ProjectExpression keeps an output
+      name beside the checked expression that computes its value.
+
+      Permitted text only: "SELECT LIST", "PROJECT EXPRESSIONS", "OUTPUT ROW",
+      "name AS employee_name", "salary + 1000 AS raised_salary",
+      "name: employee_name", "checked: name", "name: raised_salary",
+      "checked: salary + 1000", "employee_name", "raised_salary", "Ada", and
+      "71000". Render every label exactly once. Do not invent, duplicate,
+      misspell, or abbreviate text.
+
+      Follow book/art/STYLE.md: original editorial illustration with
+      hand-drawn ink contours, restrained gouache and watercolor fills,
+      subtle print texture, warm ivory background, charcoal outlines, ochre
+      for parsed SQL, and deep teal or muted turquoise for checked expressions
+      and output fields. Wide landscape composition, sparse large text,
+      straight noncrossing arrows, generous margins, and strong alignment
+      between corresponding cards. No people, catalog, input tables, joins,
+      code syntax beyond the permitted labels, logos, watermark,
+      photorealism, interface chrome, glossy 3D rendering, decorative prose,
+      tiny labels, crossed arrows, or unlisted text.
