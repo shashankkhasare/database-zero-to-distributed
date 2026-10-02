@@ -6,10 +6,16 @@ use crate::row::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
-    pub projection: Expr,
+    pub projections: Vec<SelectExpression>,
     pub table: String,
     pub table_alias: Option<String>,
     pub filter: Expr,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct SelectExpression {
+    pub expression: Expr,
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -34,8 +40,8 @@ struct Parser {
 impl Parser {
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
-        let projection = self.parse_expression()?;
-        self.expect(Token::From, "expected FROM after selected expression")?;
+        let projections = self.parse_select_list()?;
+        self.expect(Token::From, "expected FROM after select list")?;
         let table = self.identifier("expected a table name after FROM")?;
         let table_alias = self.parse_alias()?;
         self.expect(Token::Where, "expected WHERE after table name")?;
@@ -45,10 +51,25 @@ impl Parser {
             return Err(ParseError("unexpected token after ;".into()));
         }
         Ok(Query {
-            projection,
+            projections,
             table,
             table_alias,
             filter,
+        })
+    }
+
+    fn parse_select_list(&mut self) -> Result<Vec<SelectExpression>, ParseError> {
+        let mut expressions = vec![self.parse_select_expression()?];
+        while self.consume(&Token::Comma) {
+            expressions.push(self.parse_select_expression()?);
+        }
+        Ok(expressions)
+    }
+
+    fn parse_select_expression(&mut self) -> Result<SelectExpression, ParseError> {
+        Ok(SelectExpression {
+            expression: self.parse_expression()?,
+            alias: self.parse_alias()?,
         })
     }
 
@@ -279,7 +300,7 @@ mod tests {
             op: BinaryOp::Add,
             right,
             ..
-        } = query.projection
+        } = query.projections[0].expression.clone()
         else {
             panic!("expected addition")
         };
@@ -304,7 +325,7 @@ mod tests {
     fn parses_boolean_literals() {
         let query = parse("SELECT TRUE FROM employees WHERE FALSE;").unwrap();
         assert_eq!(
-            query.projection,
+            query.projections[0].expression.clone(),
             Expr::Literal(crate::row::Value::Boolean(true))
         );
         assert_eq!(
@@ -331,5 +352,19 @@ mod tests {
                 .to_string(),
             "unexpected token after ;"
         );
+    }
+
+    #[test]
+    fn parses_multiple_selected_expressions_and_output_aliases() {
+        let query = parse(
+            "SELECT e.name AS employee_name, e.salary + 1000 raised_salary \
+             FROM employees AS e WHERE e.salary > 50000;",
+        )
+        .unwrap();
+
+        assert_eq!(query.projections.len(), 2);
+        assert_eq!(query.projections[0].alias.as_deref(), Some("employee_name"));
+        assert_eq!(query.projections[1].alias.as_deref(), Some("raised_salary"));
+        assert_eq!(query.table, "employees");
     }
 }

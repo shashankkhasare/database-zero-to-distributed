@@ -451,7 +451,7 @@ lesson-003
 A viewer should eventually be able to run:
 
 ```bash
-git checkout lesson-018
+git checkout lesson-019
 ```
 
 and see exactly the implementation shown in that lesson.
@@ -488,10 +488,10 @@ current root continues to serve Volume I while it is the only published volume.
 
 | Volume | Chapters | Focus |
 | --- | ---: | --- |
-| I — Read Rows | 1–34 | Query frontend, execution, optimization, parallelism, and distributed query work |
-| II — Store and Write Rows Correctly | 35–48 | Storage, indexes, recovery, concurrency, and transactions |
-| III — Distribute Data and Correctness | 49–62 | Replication, consensus, sharding, and distributed transactions |
-| IV — Complete the Language and Bring Everything Together | 63–75 | Advanced SQL, integration, benchmarks, and failure experiments |
+| I — Read Rows | 1–36 | Query frontend, execution, optimization, parallelism, and distributed query work |
+| II — Store and Write Rows Correctly | 37–50 | Storage, indexes, recovery, concurrency, and transactions |
+| III — Distribute Data and Correctness | 51–64 | Replication, consensus, sharding, and distributed transactions |
+| IV — Complete the Language and Bring Everything Together | 65–77 | Advanced SQL, integration, benchmarks, and failure experiments |
 
 See [`BOOK.md`](BOOK.md) for the writing and chapter contract. See
 [`TODO.md`](TODO.md) for current implementation, book, and video progress.
