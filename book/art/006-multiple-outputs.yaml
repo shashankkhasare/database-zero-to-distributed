@@ -51,7 +51,7 @@ images:
   - id: selected-expressions-become-output-fields
     kind: generated-raster
     output: book/images/006-selected-expressions-become-output-fields.png
-    placement: section 6.4 after the two ProjectExpression values are introduced
+    placement: section 6.5 after the expression-item binding path is explained
     alt: Two selected SQL expressions with aliases become two checked ProjectExpression entries, which Project evaluates to construct the employee_name and raised_salary fields of each output row.
     prompt: >-
       Use case: scientific-educational. Asset type: compact transformation
@@ -94,3 +94,56 @@ images:
       code syntax beyond the permitted labels, logos, watermark,
       photorealism, interface chrome, glossy 3D rendering, decorative prose,
       tiny labels, crossed arrows, or unlisted text.
+
+  - id: wildcard-expands-from-catalog
+    kind: generated-raster
+    output: book/images/006-wildcard-expands-from-catalog.png
+    placement: section 6.5 after wildcard expansion is explained
+    alt: The qualified wildcard e star and the employees catalog schema enter binding, which expands them into checked id, name, and salary project expressions and a three-field output row.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact transformation
+      diagram for a technical database book. Explain that one SQL wildcard
+      becomes several projected output fields only after binding consults the
+      catalog. Use two compact input panels on the left and one larger result
+      panel on the right.
+
+      Stage 1 is headed exactly "SELECT ITEM" and contains one large card
+      labeled exactly "e.*". Stage 2 is headed exactly "CATALOG" and contains
+      a compact schema card with exactly four lines: "employees", "id",
+      "name", and "salary". Visually group these two inputs and use one simple
+      right-pointing arrow from the group into the binding panel. Do not draw
+      an arrow for every column.
+
+      The right panel is headed exactly "BINDING" and contains three
+      horizontally aligned checked cards labeled exactly "id", "name", and
+      "salary". Make the
+      one-to-many expansion visually unmistakable: the single wildcard and the
+      catalog schema jointly produce these three cards. Do not connect the
+      checked cards to one another.
+
+      Directly below those checked cards, center a box headed exactly "OUTPUT
+      ROW" containing one three-column row. Its headings are exactly "id",
+      "name", and "salary"; its values are exactly "1", "Ada", and "70000".
+      Use one centered downward arrow from the three-card binding result to the
+      output row. Align the three checked cards directly above their matching
+      fields so their correspondence is clear without individual arrows.
+      Preserve the left-to-right order id, name, salary everywhere. The entire
+      diagram should contain only two arrows: one into binding and one into the
+      output row.
+
+      Permitted text only: "SELECT ITEM", "e.*", "CATALOG", "employees",
+      "id", "name", "salary", "BINDING", "OUTPUT ROW", "1", "Ada", and
+      "70000". Repeated column names are permitted only where the specification
+      requires them. Render every label exactly; do not invent, misspell,
+      abbreviate, or merge labels.
+
+      Follow book/art/STYLE.md: original editorial illustration with hand-drawn
+      ink contours, restrained gouache and watercolor fills, subtle print
+      texture, warm ivory background, charcoal outlines, ochre for parsed SQL,
+      pale blue for catalog information, and deep teal or muted turquoise for
+      checked expressions and output fields. Wide landscape composition,
+      sparse large text, generous margins, straight noncrossing arrows, and
+      strong alignment between the three expanded columns. No people, second
+      table, joins, logos, watermark, photorealism, interface chrome, glossy 3D
+      rendering, decorative prose, tiny labels, crossed arrows, or unlisted
+      text.
