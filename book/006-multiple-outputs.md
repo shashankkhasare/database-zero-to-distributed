@@ -399,9 +399,30 @@ The binder reuses this scope for every selected item. It validates `e.name`
 and `e.salary + 1000` against the scope, then uses the same catalog columns to
 expand `e.*`.
 
+Import the new select-item type before changing the binder.
+
+`src/catalog.rs`: replace the parser import
+
+```rust
+use crate::parser::{Query, SelectItem};
+```
+
 Recall the Chapter 5 qualifier rule: if an alias exists, it is accepted;
-otherwise the table name is accepted. Move that check out of the column arm so
-wildcard expansion can reuse it.
+otherwise the table name is accepted. The `Expr::Column` arm currently checks
+that rule inline:
+
+```rust
+if let Some(qualifier) = qualifier {
+    let expected = scope.alias.unwrap_or(scope.table_name);
+    if qualifier != expected {
+        return Err(format!(
+            "unknown table or alias: {qualifier}"));
+    }
+}
+```
+
+Column references and qualified wildcards now need the same check. Move it
+into a function that both paths can call.
 
 `src/catalog.rs`: add after `Scope`
 
@@ -419,7 +440,7 @@ fn require_qualifier(qualifier: Option<&str>, scope: &Scope<'_>)
 }
 ```
 
-`src/catalog.rs`: replace the qualifier check in the `Expr::Column` arm
+`src/catalog.rs`: replace the inline qualifier check in the `Expr::Column` arm
 
 ```rust
 require_qualifier(qualifier.as_deref(), scope)?;
@@ -443,39 +464,67 @@ fn push_output(expressions: &mut Vec<ProjectExpression>,
 }
 ```
 
-Import `SelectItem`, then replace the single projection binding inside
-`Catalog::bind()` with a loop over `query.projections`.
+The whole-query binder can now process the complete select list. Replace the
+`impl Catalog` block that contains `bind()` with the version below. Table
+lookup, scope construction, filter checking, and plan assembly remain the
+same. The projection code in the middle now loops over `query.projections`
+and expands wildcards from `scope.columns`.
 
-`src/catalog.rs`: replace the parser import
-
-```rust
-use crate::parser::{Query, SelectItem};
-```
-
-`src/catalog.rs`: replace the old projection-binding block
+`src/catalog.rs`: replace the `impl Catalog` block that contains `bind()`
 
 ```rust
-let mut expressions = Vec::new();
-for selected in query.projections {
-    match selected {
-        SelectItem::Expression { expression, alias } => {
-            let (expression, _) = bind_expression(expression, &scope)?;
-            let name = alias.unwrap_or_else(|| match &expression {
-                BoundExpr::Column(name) => name.clone(),
-                _ => "expression".into(),
-            });
-            push_output(&mut expressions, name, expression)?;
-        }
-        SelectItem::Wildcard { qualifier } => {
-            require_qualifier(qualifier.as_deref(), &scope)?;
-            for column in scope.columns {
-                push_output(
-                    &mut expressions,
-                    column.name.clone(),
-                    BoundExpr::Column(column.name.clone()),
-                )?;
+impl Catalog {
+    pub fn bind(&self, query: Query) -> Result<Plan, String> {
+        let table = self.tables.iter()
+            .find(|table| table.name == query.table)
+            .ok_or_else(|| format!("unknown table: {}", query.table))?;
+
+        let scope = Scope {
+            table_name: &table.name,
+            alias: query.table_alias.as_deref(),
+            columns: &table.columns,
+        };
+
+        let mut expressions = Vec::new();
+        for selected in query.projections {
+            match selected {
+                SelectItem::Expression { expression, alias } => {
+                    let (expression, _) =
+                        bind_expression(expression, &scope)?;
+                    let name = alias.unwrap_or_else(|| match &expression {
+                        BoundExpr::Column(name) => name.clone(),
+                        _ => "expression".into(),
+                    });
+                    push_output(&mut expressions, name, expression)?;
+                }
+                SelectItem::Wildcard { qualifier } => {
+                    require_qualifier(qualifier.as_deref(), &scope)?;
+                    for column in scope.columns {
+                        push_output(
+                            &mut expressions,
+                            column.name.clone(),
+                            BoundExpr::Column(column.name.clone()),
+                        )?;
+                    }
+                }
             }
         }
+
+        let (predicate, predicate_type) =
+            bind_expression(query.filter, &scope)?;
+        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
+            return Err("WHERE expression must be Boolean".to_string());
+        }
+
+        Ok(Plan::Project {
+            expressions,
+            input: Box::new(Plan::Filter {
+                predicate,
+                input: Box::new(Plan::Scan {
+                    rows: table.rows.clone(),
+                }),
+            }),
+        })
     }
 }
 ```
@@ -504,22 +553,6 @@ choose between two fields with the same name. For example, `SELECT name, name`
 fails during binding with `duplicate output column: name`; `SELECT *, name`
 fails for the same reason after `*` has already introduced `name`.
 
-Finally, give the existing project node the vector we just assembled.
-
-`src/catalog.rs`: replace the `Plan::Project` expression field
-
-```rust
-Ok(Plan::Project {
-    expressions,
-    input: Box::new(Plan::Filter {
-        predicate,
-        input: Box::new(Plan::Scan {
-            rows: table.rows.clone(),
-        }),
-    }),
-})
-```
-
 The resulting plan keeps its existing shape:
 
 ```text
@@ -540,11 +573,10 @@ now it can fill the same vector from the complete select list.
 
 ## 6.6 Reconnect the application
 
-The AST checkpoint has served its purpose. Restore the complete application and
-update the fixed demonstration to use both outputs. The prompt is unchanged
-from Chapter 3: its inner loop collects lines through the semicolon, and its
-outer loop accepts successive statements. The catalog and shared
-parse-bind-execute path are unchanged from Chapter 5.
+The AST checkpoint has served its purpose. Restore the complete application
+and update the fixed demonstration to use both outputs. The catalog, prompt,
+and shared parse-bind-execute path remain unchanged; only the demonstration
+query and its projected rows change.
 
 `src/main.rs`: replace the file
 
@@ -741,26 +773,39 @@ receives an ordinary list of checked expressions.
 
 An unknown qualifier stops during binding:
 
+```sql
+SELECT x.* FROM employees AS e WHERE TRUE;
+```
+
 ```text
-sql> SELECT x.* FROM employees AS e WHERE TRUE;
 error: unknown table or alias: x
 ```
 
 Output-name errors also occur before any rows are scanned:
 
+```sql
+SELECT name, name FROM employees WHERE TRUE;
+```
+
 ```text
-sql> SELECT name, name FROM employees WHERE TRUE;
 error: duplicate output column: name
 ```
 
 An alias resolves the conflict:
 
+```sql
+SELECT name, name AS copied_name FROM employees WHERE id = 1;
+```
+
 ```text
-sql> SELECT name, name AS copied_name FROM employees WHERE id = 1;
 {name: "Ada", copied_name: "Ada"}
 ```
 
 ## 6.8 What we deliberately did not build
+
+This chapter changes projection only. The catalog, expression, type, and
+planning limits from Chapter 5 still apply. The expanded select list remains
+bounded in these ways:
 
 - A query still has exactly one input table.
 - Every query still requires `WHERE`.
@@ -787,8 +832,6 @@ Run the prompt, predict the output names or error, and then try each query.
 5. Select `name AS result, salary AS result`.
 6. Select `name AS employee_name, salary, salary + 1000 AS raised_salary`.
 7. Select `*` and predict the output order from `employee_catalog()`.
-8. Select `e.*` using the alias `e`, then replace it with `x.*`.
-9. Try `SELECT *, name FROM employees WHERE TRUE;`.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -803,10 +846,6 @@ Run the prompt, predict the output names or error, and then try each query.
 6. The result contains three fields in select-list order: `employee_name`,
    `salary`, and `raised_salary`.
 7. The wildcard expands to `id`, `name`, and `salary` in catalog order.
-8. `e.*` expands successfully. `x.*` fails with
-   `unknown table or alias: x`.
-9. Binding reports `duplicate output column: name` because the wildcard has
-   already introduced that output.
 
 </details>
 
