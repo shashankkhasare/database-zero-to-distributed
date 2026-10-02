@@ -78,13 +78,13 @@ while `VIDEO.md` defines the shared video-production workflow.
 The roadmap's four volumes are publication boundaries around one continuous
 implementation:
 
-1. **Read Rows** (Chapters 1–35) builds the query engine and distributes query
+1. **Read Rows** (Chapters 1–36) builds the query engine and distributes query
    work.
-2. **Store and Write Rows Correctly** (Chapters 36–49) builds durable storage
+2. **Store and Write Rows Correctly** (Chapters 37–50) builds durable storage
    and transactions.
-3. **Distribute Data and Correctness** (Chapters 50–63) adds replication,
+3. **Distribute Data and Correctness** (Chapters 51–64) adds replication,
    sharding, consensus, and distributed transactions.
-4. **Complete the Language and Bring Everything Together** (Chapters 64–76)
+4. **Complete the Language and Bring Everything Together** (Chapters 65–77)
    completes advanced SQL, integrates the system, benchmarks it, and subjects
    it to failures.
 

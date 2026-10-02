@@ -12,15 +12,67 @@ not design distant lessons prematurely.
 
 ---
 
-# Current milestone: 006, The First Join
+# Completed milestone: 006, Multiple Outputs
 
-Lesson 006 begins from Chapter 5's one-table binding scope. It will introduce a
-multiline prompt, multiple selected expressions and input tables, make
-ambiguous columns visible, and execute the first logical join with a simple
-nested loop. The chapter will expose the algorithm's cost without introducing
-physical-plan alternatives yet.
+Lesson 006 begins from Chapter 5's single selected expression. It will let a
+query project several expressions, give those outputs deliberate names, and
+accept the longer query across several prompt lines. The binding scope remains
+limited to one table so the chapter has one central change: projection becomes
+a named list.
 
 ## Chapter 6 contract
+
+Use one query to expose the complete change:
+
+```sql
+SELECT e.name AS employee_name,
+       e.salary + 1000 AS raised_salary
+FROM employees AS e
+WHERE e.salary > 50000;
+```
+
+The visible result contains two named values for Ada and Grace. A bare column
+may retain its column name, while a computed expression can receive an output
+alias. Duplicate output names fail before execution because `Row` uses names
+to describe its result values.
+
+## Chapter 6 teaching sequence
+
+- [x] Begin with the prompt's one-line restriction and collect one SQL statement
+      through its terminating semicolon, using `...> ` for continuation lines
+- [x] Extend the grammar and AST from one selected expression to a
+      comma-separated select list with optional output aliases
+- [x] Run a parser checkpoint that preserves every selected expression and
+      output alias while retaining one table reference
+- [x] Bind every selected expression in the existing one-table scope
+- [x] Use an explicit alias as the output name, retain a bare column's name,
+      and reject duplicate output names
+- [x] Let the existing `Project` node evaluate the complete expression list
+- [x] Run the representative query and show its two-column result rows
+- [x] Add concept-focused parser, binding, multiline-input, and end-to-end tests
+      without placing test code in the chapter narrative
+- [x] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
+      the verified `lesson-006` tag
+
+## Chapter 6 boundaries
+
+- Keep one table reference and the existing one-table `Scope`.
+- Do not add `Join`, positional bound columns, or ambiguous-column checks.
+- Accept one semicolon-terminated statement at a time; do not build a general
+  multi-statement script parser.
+- Do not add selected-expression aliases beyond optional `AS` and the direct
+  alias form already used for table aliases.
+
+---
+
+# Current milestone: 007, The First Join
+
+Lesson 007 begins from Chapter 6's one-table query with multiple outputs. It
+will introduce multiple input tables, make ambiguous columns visible, and
+execute the first logical join with a simple nested loop. The chapter will
+expose the algorithm's cost without introducing physical-plan alternatives.
+
+## Chapter 7 contract
 
 Use one query to expose the complete change:
 
@@ -34,12 +86,8 @@ The visible result contains employee and department names from two input
 tables. An unqualified `name` fails as ambiguous, while an unknown qualifier or
 column still fails before execution.
 
-## Chapter 6 teaching sequence
+## Chapter 7 teaching sequence
 
-- [ ] Begin with the prompt's one-line restriction and collect one SQL statement
-      through its terminating semicolon, using `...> ` for continuation lines
-- [ ] Extend the grammar and AST from one selected expression to a comma-separated
-      select list with optional output aliases
 - [ ] Extend `FROM` from one table reference to a comma-separated input list
 - [ ] Run a parser checkpoint that preserves every selected expression, output
       alias, table name, and input alias
@@ -49,9 +97,6 @@ column still fails before execution.
       ambiguous unqualified columns
 - [ ] Replace bare-name bound columns with the smallest explicit identity that
       distinguishes columns belonging to different inputs
-- [ ] Give every projected expression an output name, using its explicit alias
-      when present and rejecting duplicate output names if they would make the
-      result unclear
 - [ ] Add a logical `Join` node whose two children are input plans
 - [ ] Execute `Join` with two visible nested loops, combine each row pair, and
       leave the `WHERE` predicate in the existing `Filter` node
@@ -59,15 +104,14 @@ column still fails before execution.
 - [ ] Run the representative query and explain why three employees and three
       departments require nine candidate row pairs before filtering
 - [ ] Add concept-focused parser, binding, plan, execution, ambiguity, alias,
-      multiline-input, and end-to-end tests without placing test code in the
-      chapter narrative
+      and end-to-end tests without placing test code in the chapter narrative
 - [ ] Update Appendix B, Appendix C if type behavior changes, `TERMS.md`, the
-      contents page, chapter art sources, and the verified `lesson-006` tag
+      contents page, chapter art sources, and the verified `lesson-007` tag
 
-## Chapter 6 boundaries
+## Chapter 7 boundaries
 
 - Use comma-separated inputs plus `WHERE`; explicit `JOIN ... ON` belongs to
-  Chapter 7.
+  Chapter 8.
 - Keep `Join` logical. Do not add `NestedLoopJoin`, `HashJoin`, or a physical
   plan yet.
 - Do not optimize the nested loop or introduce join ordering.
@@ -75,7 +119,7 @@ column still fails before execution.
 - Accept one semicolon-terminated statement at a time; do not build a general
   multi-statement script parser.
 
-## Chapter 6 representation decision
+## Chapter 7 representation decision
 
 Binding will replace a column's SQL name with a **column slot**, its zero-based
 position in the row produced by the join. The checked node will retain the
@@ -115,21 +159,21 @@ multi-relation runtime row abstraction before another feature needs one.
 
 ---
 
-# Planned milestone: 007, Join Syntax and Row Preservation
+# Planned milestone: 008, Join Syntax and Row Preservation
 
-Chapter 7 will keep the multi-table binding and straightforward execution from
-Chapter 6 while adding explicit join syntax and the rule that outer joins retain
+Chapter 8 will keep the multi-table binding and straightforward execution from
+Chapter 7 while adding explicit join syntax and the rule that outer joins retain
 otherwise unmatched rows.
 
-## Chapter 7 contract
+## Chapter 8 contract
 
 Use related inner- and outer-join queries over a small data set containing at
 least one unmatched row. The output must make the difference between matched
 rows and null-extended preserved rows visible.
 
-## Chapter 7 teaching sequence
+## Chapter 8 teaching sequence
 
-- [ ] Relate Chapter 6's comma-plus-`WHERE` inner join to `INNER JOIN ... ON`
+- [ ] Relate Chapter 7's comma-plus-`WHERE` inner join to `INNER JOIN ... ON`
 - [ ] Extend the grammar and AST with `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN`
       clauses and their `ON` expressions
 - [ ] Bind an `ON` expression in the scope containing both join inputs and
@@ -145,12 +189,12 @@ rows and null-extended preserved rows visible.
 - [ ] Add concept-focused parser, binding, row-preservation, null-extension,
       and end-to-end tests without placing test code in the chapter narrative
 - [ ] Update Appendix B, Appendix C, `TERMS.md`, the contents page, chapter art
-      sources, and the verified `lesson-007` tag
+      sources, and the verified `lesson-008` tag
 
-## Chapter 7 boundaries
+## Chapter 8 boundaries
 
 - Keep nested loops as the only execution method.
-- Defer physical `NestedLoopJoin` and `HashJoin` alternatives to Chapter 13.
+- Defer physical `NestedLoopJoin` and `HashJoin` alternatives to Chapter 14.
 - Defer join reordering and cost-based choices to the optimizer chapters.
 - Do not add natural joins, `USING`, lateral inputs, or semi/anti joins.
 
@@ -257,110 +301,111 @@ demo, prompt error recovery, the mdBook build, and the book-link verifier at
 - [x] 003 — SQL Is Just a Frontend
 - [x] 004 — Expressions Are Trees
 - [x] 005 — Binding Gives Names Meaning
-- [ ] 006 — The First Join
-- [ ] 007 — Join Syntax and Row Preservation
-- [ ] 008 — GROUP BY and Aggregation
-- [ ] 009 — Sort, DISTINCT and LIMIT
-- [ ] 010 — Subqueries Are Plans Inside Plans
+- [x] 006 — Multiple Outputs
+- [ ] 007 — The First Join
+- [ ] 008 — Join Syntax and Row Preservation
+- [ ] 009 — GROUP BY and Aggregation
+- [ ] 010 — Sort, DISTINCT and LIMIT
+- [ ] 011 — Subqueries Are Plans Inside Plans
 
 ## Season 2 — How Query Engines Execute
 
-- [ ] 011 — Materialize Everything
-- [ ] 012 — Stop Materializing Everything
-- [ ] 013 — Logical Plan vs Physical Plan
+- [ ] 012 — Materialize Everything
+- [ ] 013 — Stop Materializing Everything
+- [ ] 014 — Logical Plan vs Physical Plan
 
 ## Season 3 — Query Optimization
 
-- [ ] 014 — The First Query Optimizer
-- [ ] 015 — Statistics
-- [ ] 016 — Cost
-- [ ] 017 — Join Ordering
+- [ ] 015 — The First Query Optimizer
+- [ ] 016 — Statistics
+- [ ] 017 — Cost
+- [ ] 018 — Join Ordering
 
 ## Season 4 — Parallel Execution
 
-- [ ] 018 — Split the Table Into Partitions
-- [ ] 019 — The Plan Becomes a DAG
-- [ ] 020 — Build a Scheduler
+- [ ] 019 — Split the Table Into Partitions
+- [ ] 020 — The Plan Becomes a DAG
+- [ ] 021 — Build a Scheduler
 
 ## Season 5 — Distributed Query Execution
 
-- [ ] 021 — Our First Multi-Node Query
-- [ ] 022 — Why Distributed Joins Break
-- [ ] 023 — Invent Exchange
-- [ ] 024 — Build a Shuffle
-- [ ] 025 — Distributed Aggregation
-- [ ] 026 — Distributed Hash Join
-- [ ] 027 — Broadcast Join
-- [ ] 028 — Distributed Physical Planning
-- [ ] 029 — When Synchronous Networking Stops Scaling
-- [ ] 030 — Failures Are Normal
-- [ ] 031 — Lost Shuffle Data
-- [ ] 032 — Data Skew
-- [ ] 033 — Memory Is Finite
-- [ ] 034 — Spill to Disk
-- [ ] 035 — What Did We Build?
+- [ ] 022 — Our First Multi-Node Query
+- [ ] 023 — Why Distributed Joins Break
+- [ ] 024 — Invent Exchange
+- [ ] 025 — Build a Shuffle
+- [ ] 026 — Distributed Aggregation
+- [ ] 027 — Distributed Hash Join
+- [ ] 028 — Broadcast Join
+- [ ] 029 — Distributed Physical Planning
+- [ ] 030 — When Synchronous Networking Stops Scaling
+- [ ] 031 — Failures Are Normal
+- [ ] 032 — Lost Shuffle Data
+- [ ] 033 — Data Skew
+- [ ] 034 — Memory Is Finite
+- [ ] 035 — Spill to Disk
+- [ ] 036 — What Did We Build?
 
 ## Season 6 — Build a Storage Engine
 
-- [ ] 036 — A Database Starts With Bytes
-- [ ] 037 — Slotted Pages
-- [ ] 038 — Heap Files
-- [ ] 039 — The Buffer Pool
-- [ ] 040 — Build a B+ Tree
-- [ ] 041 — Connect Query Execution to Storage
+- [ ] 037 — A Database Starts With Bytes
+- [ ] 038 — Slotted Pages
+- [ ] 039 — Heap Files
+- [ ] 040 — The Buffer Pool
+- [ ] 041 — Build a B+ Tree
+- [ ] 042 — Connect Query Execution to Storage
 
 ## Season 7 — Transactions and ACID
 
-- [ ] 042 — Break the Database
-- [ ] 043 — Write-Ahead Logging
-- [ ] 044 — Crash Recovery
-- [ ] 045 — Concurrency Control With Locks
-- [ ] 046 — Deadlocks
-- [ ] 047 — MVCC
-- [ ] 048 — Isolation Levels
-- [ ] 049 — ACID, Finally
+- [ ] 043 — Break the Database
+- [ ] 044 — Write-Ahead Logging
+- [ ] 045 — Crash Recovery
+- [ ] 046 — Concurrency Control With Locks
+- [ ] 047 — Deadlocks
+- [ ] 048 — MVCC
+- [ ] 049 — Isolation Levels
+- [ ] 050 — ACID, Finally
 
 ## Season 8 — Distributed Storage
 
-- [ ] 050 — Replication
-- [ ] 051 — Replication Lag
-- [ ] 052 — The Primary Dies
-- [ ] 053 — Build Raft
-- [ ] 054 — Strongly Consistent Replicated Storage
+- [ ] 051 — Replication
+- [ ] 052 — Replication Lag
+- [ ] 053 — The Primary Dies
+- [ ] 054 — Build Raft
+- [ ] 055 — Strongly Consistent Replicated Storage
 
 ## Season 9 — Sharding
 
-- [ ] 055 — One Node Cannot Hold Everything
-- [ ] 056 — Range Sharding
-- [ ] 057 — Routing
-- [ ] 058 — Rebalancing
+- [ ] 056 — One Node Cannot Hold Everything
+- [ ] 057 — Range Sharding
+- [ ] 058 — Routing
+- [ ] 059 — Rebalancing
 
 ## Season 10 — Distributed Transactions
 
-- [ ] 059 — One Transaction, Two Shards
-- [ ] 060 — Two-Phase Commit
-- [ ] 061 — Coordinator Failure
-- [ ] 062 — Distributed MVCC
-- [ ] 063 — Serializable Distributed Transactions
+- [ ] 060 — One Transaction, Two Shards
+- [ ] 061 — Two-Phase Commit
+- [ ] 062 — Coordinator Failure
+- [ ] 063 — Distributed MVCC
+- [ ] 064 — Serializable Distributed Transactions
 
 ## Season 11 — Advanced SQL and Compatibility
 
-- [ ] 064 — Set Operations
-- [ ] 065 — Common Table Expressions and Recursion
-- [ ] 066 — Rich Values and Expressions
-- [ ] 067 — Advanced Grouping
-- [ ] 068 — Window Functions and Frames
-- [ ] 069 — SQL Compatibility Checkpoint
-- [ ] 070 — Identities and Authorization
+- [ ] 065 — Set Operations
+- [ ] 066 — Common Table Expressions and Recursion
+- [ ] 067 — Rich Values and Expressions
+- [ ] 068 — Advanced Grouping
+- [ ] 069 — Window Functions and Frames
+- [ ] 070 — SQL Compatibility Checkpoint
+- [ ] 071 — Identities and Authorization
 
 ## Season 12 — Bring Everything Together
 
-- [ ] 071 — Distributed SQL Over Distributed Storage
-- [ ] 072 — One SQL Query, End to End
-- [ ] 073 — One Transaction, End to End
-- [ ] 074 — Benchmark It
-- [ ] 075 — Break Everything
-- [ ] 076 — Where Real Databases Go Further
+- [ ] 072 — Distributed SQL Over Distributed Storage
+- [ ] 073 — One SQL Query, End to End
+- [ ] 074 — One Transaction, End to End
+- [ ] 075 — Benchmark It
+- [ ] 076 — Break Everything
+- [ ] 077 — Where Real Databases Go Further
 
 ---
 
@@ -372,8 +417,8 @@ demo, prompt error recovery, the mdBook build, and the book-link verifier at
 - [ ] Share themes and reusable images across volume builds without duplicating the Rust codebase
 - [ ] Keep Appendix B's checkpoint table synchronized whenever a lesson expands executable SQL
 - [ ] Keep Appendix C synchronized whenever a lesson changes values, types, conversions, or operator behavior
-- [ ] Complete Chapters 63–68 before claiming benchmark SQL coverage
-- [ ] Complete Chapter 70 before claiming authorization support or final integration
+- [ ] Complete Chapters 64–69 before claiming benchmark SQL coverage
+- [ ] Complete Chapter 71 before claiming authorization support or final integration
 
 - [x] Define cross-chapter continuity rules and maintain an editorial terminology ledger
 - [x] Define and version an original database illustration style
