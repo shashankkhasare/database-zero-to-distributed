@@ -80,10 +80,12 @@ alias             = "AS"? identifier ;
 repeat zero or more times, so every additional item begins with a comma.
 `SELECT FROM ...` remains invalid, while one item remains valid.
 
-An expression item needs the expression to compute and its optional output
-alias. A wildcard instead preserves an optional qualifier until binding can
-check it and consult the table schema. Represent those two shapes explicitly,
-then replace the singular projection with a vector.
+The grammar gives a `select_item` two distinct shapes. An expression item stores
+the `Expr` to compute and its optional output alias. A wildcard is not an
+expression to evaluate; it stores only an optional qualifier until binding
+validates that qualifier and expands the matching catalog columns. Represent
+the distinction with `SelectItem`, then let `Query` hold a vector of those
+items instead of one projection expression.
 
 `src/parser.rs`: replace `Query` and add `SelectItem`
 
@@ -125,7 +127,7 @@ SelectItem::Expression {
 These are still unresolved AST expressions. The aliases name their eventual
 outputs; they do not participate in resolving `e.name` or `e.salary`.
 
-The two wildcard spellings become:
+The two wildcard forms become:
 
 ```text
 *    → SelectItem::Wildcard { qualifier: None }
@@ -135,9 +137,9 @@ e.*  → SelectItem::Wildcard { qualifier: Some("e") }
 The parser records the request but does not expand it. Only the binder knows
 which catalog table `e` names and which columns that table contains.
 
-These alternatives complete the planned `select_list` shapes in Appendix B.
-`DISTINCT` and `ALL` are not select-list items; they modify the result of the
-whole `SELECT` and remain with duplicate handling in Chapter 10.
+Together, expression items and wildcard forms complete the planned
+`select_list` alternatives in
+[Appendix B](appendix-b-sql-grammar.md).
 
 ## 6.2 Recognize the comma
 
@@ -341,10 +343,6 @@ fn append_sql_line(sql: &mut String, line: &str) -> bool {
     line.trim_end().ends_with(';')
 }
 ```
-
-This is the multiline statement collector introduced in Chapter 3. Its inner
-loop reads through the terminating semicolon, and its outer loop keeps the AST
-inspector ready for another statement.
 
 Run it and enter the representative query:
 
