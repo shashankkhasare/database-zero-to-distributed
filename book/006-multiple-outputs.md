@@ -179,6 +179,31 @@ Projection can now compute and name several values, but every column still
 comes from the same table. That makes an unqualified name such as `name`
 unambiguous.
 
-Chapter 7 adds a second table. The binder will then need to search more than
-one input, reject ambiguous names, and produce a plan node that combines rows
-before the existing filter and projection can evaluate them.
+Consider what changes when the database has two tables:
+
+```text
+employees(id, name, department_id)
+departments(id, name)
+```
+
+A useful query needs values from both:
+
+```sql
+SELECT e.name AS employee_name, d.name AS department_name
+FROM employees AS e, departments AS d
+WHERE e.department_id = d.id;
+```
+
+The projection list and its output aliases are no longer a problem. The
+remaining difficulty is on the input side. The binder must track both table
+aliases, decide which table owns each column, and reject an unqualified `name`
+because both inputs define one.
+
+After those names are resolved, execution must combine an employee row with a
+department row before the existing filter can test their identifiers and the
+project node can produce the two named outputs. That row-combining operation is
+a **join**.
+
+Chapter 7 expands the binding scope from one table to several, adds the first
+logical `Join` node, and makes its straightforward nested-loop execution
+visible.
