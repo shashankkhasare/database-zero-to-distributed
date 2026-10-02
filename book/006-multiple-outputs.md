@@ -380,18 +380,24 @@ the one-table scope built in Chapter 5.
 
 ## 6.5 Bind and expand every output
 
-Table lookup and scope construction do not change. Every selected item belongs
-to the same query and therefore reuses the same `Scope`:
+Table lookup and scope construction do not change. For the representative
+query, the binder creates the same one-table scope introduced in Chapter 5:
 
 ```text
-employees catalog entry + alias e
-                 ↓
-       Scope { qualifier: e,
-               columns: id, name, salary }
-          ├── e.name
-          ├── e.salary + 1000
-          └── e.* → id, name, salary
+Scope {
+    table_name: "employees",
+    alias: Some("e"),
+    columns: [
+        id: Integer,
+        name: Text,
+        salary: Integer,
+    ],
+}
 ```
+
+The binder reuses this scope for every selected item. It validates `e.name`
+and `e.salary + 1000` against the scope, then uses the same catalog columns to
+expand `e.*`.
 
 Recall the Chapter 5 qualifier rule: if an alias exists, it is accepted;
 otherwise the table name is accepted. Move that check out of the column arm so
