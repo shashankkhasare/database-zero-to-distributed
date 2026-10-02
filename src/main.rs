@@ -71,17 +71,41 @@ fn run_demo(catalog: &Catalog) {
 
 fn run_prompt(catalog: &Catalog) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             print_query_result(&sql, catalog);
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 
 fn print_query_result(sql: &str, catalog: &Catalog) {
@@ -97,7 +121,7 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 
 #[cfg(test)]
 mod tests {
-    use super::{employee_catalog, execute_sql};
+    use super::{append_sql_line, employee_catalog, execute_sql};
     use crate::row::{Row, Value};
 
     #[test]
@@ -130,5 +154,15 @@ mod tests {
                 .len(),
             1
         );
+    }
+
+    #[test]
+    fn prompt_collects_lines_until_the_statement_ends() {
+        let mut sql = String::new();
+
+        assert!(!append_sql_line(&mut sql, "SELECT e.name\n"));
+        assert!(!append_sql_line(&mut sql, "FROM employees AS e\n"));
+        assert!(append_sql_line(&mut sql, "WHERE e.salary > 50000;\n"));
+        assert_eq!(execute_sql(&sql, &employee_catalog()).unwrap().len(), 2);
     }
 }

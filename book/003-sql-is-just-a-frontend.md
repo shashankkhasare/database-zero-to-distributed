@@ -86,9 +86,11 @@ sql>
 ```
 
 This is a **read-evaluate-print loop**, usually shortened to **REPL**. It reads
-one line, evaluates that line, prints either rows or an error, and then loops
-back for another query. An end-of-file signal, usually Control-D on Linux and
-macOS or Control-Z followed by Enter on Windows, leaves the prompt.
+one statement, evaluates that statement, prints either rows or an error, and
+then loops back for another query. SQL uses `;` to mark the end of the statement,
+so a query may span several input lines. An end-of-file signal, usually
+Control-D on Linux and macOS or Control-Z followed by Enter on Windows, leaves
+the prompt.
 
 The prompt will make the frontend's growth visible. Its first version will
 print tokens. The next version will print the AST. Once plan conversion is
@@ -99,9 +101,9 @@ something concrete to inspect before we add the next one.
 characters → tokens → Query AST → logical plan → rows
 ```
 
-The loop has only two jobs: read a line and print the response. It passes the
-line to another function that does the database work. The loop itself will
-not need to change as the frontend grows.
+The loop has only two jobs: collect one semicolon-terminated statement and print
+the response. It passes the complete string to another function that does the
+database work. The loop itself will not need to change as the frontend grows.
 
 Begin with a prompt that echoes each nonempty line. We will replace only
 `inspect_sql()` as the frontend gains meaning.
@@ -120,21 +122,52 @@ fn inspect_sql(sql: &str) {
 }
 ```
 
-The input loop reads until end-of-file and ignores empty lines.
+One small function appends a line and reports whether that line ends the
+statement. `trim_end()` permits spaces after the semicolon.
 
 `src/main.rs`: add after `inspect_sql()`
 
 ```rust
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
+}
+```
+
+The input loop uses `sql> ` for the first line and `...> ` while it waits for
+the terminating semicolon. An outer loop accepts later statements.
+
+`src/main.rs`: add after `append_sql_line()`
+
+```rust
 fn run_prompt() -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             inspect_sql(&sql);
         }
@@ -142,8 +175,10 @@ fn run_prompt() -> io::Result<()> {
 }
 ```
 
-Run `cargo run --quiet` and enter any line. The prompt prints that line and
-waits for another. It cannot understand SQL yet, but the input loop works.
+Run `cargo run --quiet` and enter the opening query in its multiline form. The
+prompt displays `...> ` until the line containing `;`, prints the accumulated
+text, and waits for another statement. It cannot understand SQL yet, but the
+input loop works.
 
 ## 3.2 SQL begins as characters
 
@@ -729,27 +764,20 @@ fn inspect_sql(sql: &str) {
 
 Running the employee query now prints a `Query` containing `name`,
 `employees`, `salary`, and `50000`. The characters have become tokens, and the
-tokens have become structured data. A missing semicolon now reaches the
-parser and produces `expected ; after query`, while the loop remains ready for
-the next attempt.
+tokens have become structured data. The prompt uses the required semicolon as
+its statement boundary, so omitting it leaves the prompt at `...> ` waiting for
+the rest of the query.
 
 The order of these calls mirrors the four grammar rules. After consuming the
 semicolon, the parser also checks that no token remains. Without that final
 check, it could accept one valid query followed by arbitrary text and silently
 ignore the unwanted part.
 
-To see the syntax error, enter the query without its final semicolon:
-
-```text
-sql> SELECT name FROM employees WHERE salary > 50000
-error: expected ; after query
-```
-
-The parser stops after reporting this error. It does not attempt recovery
-because our program accepts only one statement. A later multi-statement
-interface may need to find the next safe
-boundary after an error. Today, stopping at the first precise failure keeps
-both the implementation and its behavior easy to inspect.
+The parser still requires `Token::Semicolon` independently of the prompt. That
+keeps `parse()` correct for callers that provide SQL directly. It stops after
+the first syntax error rather than attempting recovery. A later
+multi-statement interface may need to find the next safe boundary after an
+error; today, one precise failure keeps the behavior easy to inspect.
 
 ## 3.7 Build the logical plan
 
@@ -962,6 +990,7 @@ Before running this checkpoint, remove the prompt code left by Section 3.6.1:
 
 - remove `use std::io::{self, Write};`
 - remove the complete `inspect_sql()` function
+- remove the complete `append_sql_line()` function
 - remove the complete no-argument `run_prompt()` function
 
 Section 3.8.2 will add the final prompt after the demonstration works.
@@ -1010,22 +1039,40 @@ without it, the fixed demonstration runs.
 `expect()` stops the program because the prompt cannot continue using that
 terminal.
 
-The final prompt sends each line to a small printing function. Each line must
-contain one complete query; multi-line queries are outside this lesson.
+The final prompt preserves the statement-collection behavior from Section 3.1,
+but sends the completed SQL to `execute_sql()` instead of `inspect_sql()`.
 
 `src/main.rs`: add after `run_demo()`
 
 ```rust
 fn run_prompt(employees: &[Row]) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             print_query_result(&sql, employees);
         }
@@ -1034,6 +1081,15 @@ fn run_prompt(employees: &[Row]) -> io::Result<()> {
 ```
 
 `src/main.rs`: add after `run_prompt()`
+
+```rust
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
+}
+```
+
+`src/main.rs`: add after `append_sql_line()`
 
 ```rust
 fn print_query_result(sql: &str, employees: &[Row]) {
@@ -1048,10 +1104,12 @@ fn print_query_result(sql: &str, employees: &[Row]) {
 }
 ```
 
-Read `run_prompt()` from the inside out. `read_line()` waits for one query.
-`execute_sql()` evaluates it. The `match` prints either the returned rows or a
-frontend error. The surrounding `loop` then prints `sql>` again. An empty line
-does no work, while end-of-file returns from the prompt.
+Read `run_prompt()` from the inside out. The inner loop collects lines through
+the semicolon. `execute_sql()` then evaluates the complete statement. The
+`match` prints either the returned rows or a frontend error, and the outer loop
+starts another statement. An empty first line does no work. End-of-file exits;
+if it arrives during a statement, the prompt reports that the query is
+incomplete.
 
 #### Try the interactive prompt
 
@@ -1061,9 +1119,9 @@ Run the interactive path:
 cargo run --quiet -- --prompt
 ```
 
-Enter the original query, then change the boundary to `70000`. The first line
-returns Ada and Grace. The second returns only Grace. Then enter this malformed
-query:
+Enter the original query across four lines, then change the boundary to
+`70000`. The first statement returns Ada and Grace. The second returns only
+Grace. Then enter this malformed query:
 
 ```sql
 SELECT name FROM employees WHERE salary > @;

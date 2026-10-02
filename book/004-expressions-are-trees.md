@@ -493,7 +493,9 @@ from the outer query through each precedence level and build the corresponding
 
 ## 4.5 Parse columns, literals, and precedence
 
-Before we begin, replace `src/main.rs` with this temporary AST inspector:
+Before we begin, replace `src/main.rs` with this temporary AST inspector. It
+retains Chapter 3's rule that the prompt collects lines through the terminating
+semicolon:
 
 ```rust
 mod expression;
@@ -518,17 +520,41 @@ fn inspect_sql(sql: &str) {
 
 fn run_prompt() -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             inspect_sql(&sql);
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 ```
 
