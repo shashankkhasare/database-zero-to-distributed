@@ -271,6 +271,14 @@ expression it records an output alias; immediately after the table identifier
 it records a table alias. The grammar determines which meaning the returned
 text has.
 
+Two existing parser tests still inspect the removed `query.projection` field.
+Remove `multiplication_binds_more_tightly_than_addition()` and
+`parses_boolean_literals()` from `src/parser.rs` before compiling this
+checkpoint. Then remove `BinaryOp` from the test module's expression import,
+because none of its remaining tests uses that operator type. Their parser
+behavior remains valid; the completed lesson source contains updated versions
+that inspect an expression item in `query.projections`.
+
 Changing `Query` makes Chapter 5's binder temporarily stale because it still
 reads `query.projection`. Before reconnecting it, inspect exactly what the
 frontend now produces.
@@ -283,6 +291,7 @@ lexer and parser from the binder that we have not updated yet.
 `src/main.rs`: temporarily replace the file
 
 ```rust
+#[allow(dead_code)] // Binding and execution reconnect later in this chapter.
 mod expression;
 mod lexer;
 mod parser;
