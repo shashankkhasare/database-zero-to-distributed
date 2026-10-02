@@ -229,7 +229,8 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
 - [x] Begin with Chapter 2's unanswered need for a convenient plan language
 - [x] Follow one query through `SQL -> tokens -> AST -> logical plan -> rows`
-- [x] Provide an interactive SQL prompt without sacrificing the deterministic demo
+- [x] Provide an interactive SQL prompt that collects one semicolon-terminated
+      statement across lines without sacrificing the deterministic demo
 - [x] Explain the distinct jobs of a lexer, parser, AST, and logical plan
 - [x] Define the exact grammar supported by the lesson
 - [x] Accept `SELECT <column> FROM <table> WHERE <column> > <integer>;`
@@ -283,9 +284,9 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Approve the Chapter 3 teaching sequence through a complete reader build-along
 - [x] Decide that Chapter 3 does not require a standalone episode
 - [ ] Cover SQL, tokens, ASTs, binding, and plans in a later milestone video such as “How SQL Becomes Rows”
-- [x] Record verified source commit `b57026e01c0a9824a11a523895cbab99deb98133` and tag the completed state as `lesson-003`
+- [x] Record verified source commit `663fd3ce5486fa0cd4014118fc710b6a35fa258e` and tag the completed state as `lesson-003`
 
-Lesson 003 was verified with 16 passing tests, the deterministic Ada-and-Grace
+Lesson 003 was verified with 17 passing tests, the deterministic Ada-and-Grace
 demo, and all 10 generated book pages. It closes without a standalone video
 under the milestone-based companion-video strategy.
 
@@ -350,7 +351,7 @@ general optimizer, physical-plan split, or storage catalog.
 - [x] Chapter snippets are copy-pasteable from the `lesson-003` checkpoint
 - [x] Create and verify the standalone `lesson-004` AST checkpoint
 
-Lesson 004 was verified with 8 passing tests, a deterministic AST prompt,
+Lesson 004 was verified with 11 passing tests, a deterministic AST prompt,
 Clippy with warnings denied, the mdBook build, and the book-link verifier.
 
 ---

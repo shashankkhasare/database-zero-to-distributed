@@ -251,6 +251,10 @@ Logical Plan
 
 Support a deliberately tiny SQL subset.
 
+The interactive prompt collects one statement through its terminating
+semicolon so the formatted SQL shown in later chapters can be pasted without
+being collapsed onto one line.
+
 Do not attempt full ANSI SQL.
 
 ---
