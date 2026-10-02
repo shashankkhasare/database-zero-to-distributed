@@ -778,20 +778,40 @@ schema, the database can prevent this mismatch instead of relying on the
 application to keep the column definitions and row values synchronized. The
 roadmap deliberately leaves that exact chapter boundary open.
 
-The prompt stops after binding and prints the plan rather than executing it.
+The prompt retains Chapter 3's multiline statement collection. It stops after
+binding and prints the plan rather than executing it.
 
 `src/main.rs`: add after `employee_catalog()`
 
 ```rust
 fn run_binding_prompt(catalog: &Catalog) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             let result = parse(&sql)
                 .map_err(|error| error.to_string())
@@ -802,6 +822,11 @@ fn run_binding_prompt(catalog: &Catalog) -> io::Result<()> {
             }
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 ```
 
@@ -1303,17 +1328,41 @@ fn run_demo(catalog: &Catalog) {
 
 fn run_prompt(catalog: &Catalog) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             print_query_result(&sql, catalog);
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 
 fn print_query_result(sql: &str, catalog: &Catalog) {
@@ -1473,7 +1522,7 @@ project node must give each resulting value a useful name. A bare column can
 retain its column name, while a computed expression needs an output alias such
 as `raised_salary` instead of the temporary name `expression`.
 
-The next chapter widens projection from one expression to a named list. It also
-lets the prompt collect the longer query across several lines, while keeping
-the existing single-table scope unchanged.
+The next chapter widens projection from one expression to a named list while
+keeping the existing single-table scope unchanged. The prompt already accepts
+the longer query across several lines.
 

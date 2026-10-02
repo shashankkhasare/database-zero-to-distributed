@@ -14,11 +14,10 @@ not design distant lessons prematurely.
 
 # Completed milestone: 006, Multiple Outputs
 
-Lesson 006 begins from Chapter 5's single selected expression. It will let a
-query project several expressions, give those outputs deliberate names, and
-accept the longer query across several prompt lines. The binding scope remains
-limited to one table so the chapter has one central change: projection becomes
-a named list.
+Lesson 006 begins from Chapter 5's single selected expression. It lets a query
+project several expressions and give those outputs deliberate names. The
+binding scope remains limited to one table so the chapter has one central
+change: projection becomes a named list.
 
 ## Chapter 6 contract
 
@@ -38,8 +37,6 @@ to describe its result values.
 
 ## Chapter 6 teaching sequence
 
-- [x] Begin with the prompt's one-line restriction and collect one SQL statement
-      through its terminating semicolon, using `...> ` for continuation lines
 - [x] Extend the grammar and AST from one selected expression to a
       comma-separated select list with optional output aliases
 - [x] Run a parser checkpoint that preserves every selected expression and
@@ -49,7 +46,7 @@ to describe its result values.
       and reject duplicate output names
 - [x] Let the existing `Project` node evaluate the complete expression list
 - [x] Run the representative query and show its two-column result rows
-- [x] Add concept-focused parser, binding, multiline-input, and end-to-end tests
+- [x] Add concept-focused parser, binding, and end-to-end tests
       without placing test code in the chapter narrative
 - [x] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
       the verified `lesson-006` tag
@@ -58,8 +55,6 @@ to describe its result values.
 
 - Keep one table reference and the existing one-table `Scope`.
 - Do not add `Join`, positional bound columns, or ambiguous-column checks.
-- Accept one semicolon-terminated statement at a time; do not build a general
-  multi-statement script parser.
 - Do not add selected-expression aliases beyond optional `AS` and the direct
   alias form already used for table aliases.
 
@@ -251,7 +246,7 @@ It accepts one deliberately narrow query shape, converts it through tokens and
 an AST into the existing logical plan, and executes that plan. It does not add
 binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 
-Lesson 003 was verified with 16 passing tests, the deterministic Ada-and-Grace
+Lesson 003 was verified with 17 passing tests, the deterministic Ada-and-Grace
 demo, and all 10 generated book pages. It closes without a standalone video
 at `lesson-003` under the milestone-based companion-video strategy.
 
@@ -264,7 +259,7 @@ frontend so nested arithmetic, comparisons, Boolean logic, null tests,
 qualified columns, and precedence survive in an expression AST. It deliberately
 stops before resolving names or checking types.
 
-Lesson 004 was verified with 8 passing tests, a deterministic AST prompt,
+Lesson 004 was verified with 11 passing tests, a deterministic AST prompt,
 Clippy with warnings denied, the mdBook build, and the book-link verifier at
 `lesson-004`.
 
@@ -279,9 +274,9 @@ parse-bind-execute application path.
 
 Its representative query returns Ada and Grace. Missing tables, columns,
 qualifiers, and incompatible operand types fail before execution. Lesson 005
-was verified with 18 passing tests, Clippy with warnings denied, the fixed
-demo, prompt error recovery, the mdBook build, and the book-link verifier at
-`lesson-005`.
+was verified with 19 passing tests, Clippy with warnings denied, the fixed
+demo, multiline prompt behavior and error recovery, the mdBook build, and the
+book-link verifier at `lesson-005`.
 
 ---
 

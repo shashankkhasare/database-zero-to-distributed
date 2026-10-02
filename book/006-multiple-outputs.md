@@ -3,14 +3,14 @@
 <!--
 Chapter contract
 
-Continue from Chapter 5's one selected expression. Add multiline prompt input,
-a list of selected expressions, and explicit output aliases while retaining one
-input table and the existing one-table binding scope.
+Continue from Chapter 5's one selected expression. Add a list of selected
+expressions and explicit output aliases while retaining one input table and the
+existing one-table binding scope.
 
 Visible outcome
 
 A query projects an employee name and a computed salary into two deliberately
-named output columns. Longer SQL can be entered across several prompt lines.
+named output columns.
 -->
 
 > A result row can contain more than one answer.
@@ -35,10 +35,9 @@ This chapter changes projection from one expression into a named list. It does
 not change the input side of the query: binding still uses one table and the
 logical plan remains `Project -> Filter -> Scan`.
 
-The longer query exposes a practical problem. The prompt currently sends each
-line to the parser immediately, so pressing Enter after the `SELECT` line
-produces an incomplete query. We will first let the prompt collect lines through
-the terminating semicolon. Then we will carry a list through the frontend:
+The prompt has accepted multiline SQL since Chapter 3, so the query can already
+be entered in this readable form. This chapter carries its select list through
+the frontend:
 
 ```text
 comma-separated SQL
@@ -60,101 +59,7 @@ Before changing the program, begin from the completed Chapter 5 checkpoint:
 git switch --create chapter-006 lesson-005
 ```
 
-## 6.1 Collect one complete SQL statement
-
-Start the Chapter 5 prompt:
-
-```bash
-cargo run --quiet -- --prompt
-```
-
-Enter the representative query one line at a time. The first line is sent to
-the parser immediately:
-
-```text
-sql> SELECT e.name AS employee_name,
-error: at character 31: unexpected character ','
-```
-
-The lexer does not know the comma yet, but even after we add it, this line alone
-will still be an incomplete query. The prompt is the component that decided one
-newline meant one complete query.
-
-Our grammar already gives a complete statement an explicit terminator: `;`.
-The prompt can accumulate lines until the latest one ends with that character.
-A small function owns that rule and reports whether the statement is complete.
-
-`src/main.rs`: add before `print_query_result()`
-
-```rust
-fn append_sql_line(sql: &mut String, line: &str) -> bool {
-    sql.push_str(line);
-    line.trim_end().ends_with(';')
-}
-```
-
-`push_str()` retains each newline, which is safe because the lexer already
-skips whitespace. `trim_end()` allows spaces after the semicolon. This remains
-deliberately smaller than a general statement reader: a semicolon inside a
-string or several statements on one line are not handled specially.
-
-The prompt now needs an inner loop for the lines of one statement and an outer
-loop for successive statements. The first line uses `sql> `; later lines use
-`...> ` to show that the prompt is waiting for completion.
-
-`src/main.rs`: replace `run_prompt()`
-
-```rust
-fn run_prompt(catalog: &Catalog) -> io::Result<()> {
-    loop {
-        let mut sql = String::new();
-
-        loop {
-            if sql.is_empty() {
-                print!("sql> ");
-            } else {
-                print!("...> ");
-            }
-            io::stdout().flush()?;
-
-            let mut line = String::new();
-            if io::stdin().read_line(&mut line)? == 0 {
-                println!();
-                if !sql.trim().is_empty() {
-                    eprintln!("error: incomplete query at end of input");
-                }
-                return Ok(());
-            }
-            if sql.is_empty() && line.trim().is_empty() {
-                break;
-            }
-            if append_sql_line(&mut sql, &line) {
-                break;
-            }
-        }
-
-        if !sql.trim().is_empty() {
-            print_query_result(&sql, catalog);
-        }
-    }
-}
-```
-
-End-of-file still exits the prompt. If it arrives after some SQL but before a
-semicolon, the prompt reports an incomplete query rather than silently dropping
-the accumulated text. A blank first line simply starts the outer loop again.
-
-Compile this usability checkpoint before changing the query representation:
-
-```bash
-cargo check
-```
-
-The prompt can now collect the representative query, although the Chapter 5
-parser still cannot understand its comma or output aliases. We will change
-that representation next.
-
-## 6.2 Represent a select list
+## 6.1 Represent a select list
 
 The query grammar currently accepts one expression after `SELECT`. Replace that
 single position with a comma-separated list:
@@ -212,7 +117,7 @@ SelectExpression {
 These are still unresolved AST expressions. The aliases name their eventual
 outputs; they do not participate in resolving `e.name` or `e.salary`.
 
-## 6.3 Recognize the comma
+## 6.2 Recognize the comma
 
 The new grammar contains only one token that the lexer does not already know:
 the comma separating selected expressions. Add its representation beside the
@@ -240,7 +145,7 @@ Then recognize its one-character spelling in the punctuation helper.
 lexer change. The parser can now distinguish the boundary between one selected
 expression and the next.
 
-## 6.4 Parse every selected expression
+## 6.3 Parse every selected expression
 
 We will implement the two new grammar productions directly:
 
@@ -314,7 +219,7 @@ Changing `Query` makes Chapter 5's binder temporarily stale because it still
 reads `query.projection`. Before reconnecting it, inspect exactly what the
 frontend now produces.
 
-## 6.5 Inspect the expanded AST
+## 6.4 Inspect the expanded AST
 
 Temporarily use the program as an AST inspector. This isolates the completed
 lexer and parser from the binder that we have not updated yet.
@@ -381,7 +286,7 @@ The parser has preserved the list and its names, but it has not checked either
 expression. We now need to send both entries through the one-table scope built
 in Chapter 5.
 
-## 6.6 Bind and name every output
+## 6.5 Bind and name every output
 
 Table lookup and scope construction do not change. Both selected expressions
 belong to the same query and therefore reuse the same `Scope`:
@@ -463,12 +368,12 @@ now it can fill the same vector from the complete select list.
   <figcaption>Each selected expression carries its output name and checked computation into one field of the projected row.</figcaption>
 </figure>
 
-## 6.7 Reconnect the application
+## 6.6 Reconnect the application
 
 The AST checkpoint has served its purpose. Restore the complete application,
-including the multiline prompt from Section 6.1, and update the fixed
-demonstration to use both outputs. The catalog and shared parse-bind-execute
-path are unchanged from Chapter 5.
+including the inherited prompt, and update the fixed demonstration to use both
+outputs. The catalog and shared parse-bind-execute path are unchanged from
+Chapter 5.
 
 `src/main.rs`: replace the file
 
@@ -603,7 +508,7 @@ Compile the reconnected application:
 cargo check
 ```
 
-## 6.8 Run the wider projection
+## 6.7 Run the wider projection
 
 Run the fixed demonstration:
 
@@ -637,10 +542,9 @@ sql> SELECT e.name AS employee_name,
 {employee_name: "Grace", raised_salary: 73000}
 ```
 
-The prompt stays on `...> ` until it receives the semicolon. Parsing then
-produces two `SelectExpression` nodes, binding produces two checked
-`ProjectExpression` nodes, and the existing executor constructs the wider
-rows.
+After the inherited prompt receives the semicolon, parsing produces two
+`SelectExpression` nodes, binding produces two checked `ProjectExpression`
+nodes, and the existing executor constructs the wider rows.
 
 Output-name errors also occur before any rows are scanned:
 
@@ -656,7 +560,7 @@ sql> SELECT name, name AS copied_name FROM employees WHERE id = 1;
 {name: "Ada", copied_name: "Ada"}
 ```
 
-## 6.9 What we deliberately did not build
+## 6.8 What we deliberately did not build
 
 - A query still has exactly one input table.
 - Every query still requires `WHERE`.
@@ -664,14 +568,11 @@ sql> SELECT name, name AS copied_name FROM employees WHERE id = 1;
   `expression`.
 - Duplicate output names are rejected instead of introducing a richer result
   schema representation.
-- The prompt accepts one semicolon-terminated statement at a time. It does not
-  recognize semicolons inside strings or execute several statements from one
-  accumulated buffer.
 
 These limits keep the chapter focused on widening projection. The next chapter
 changes the other side of the query by allowing more than one input table.
 
-## 6.10 Try it
+## 6.9 Try it
 
 Run the prompt, predict the output names or error, and then try each query.
 
@@ -680,8 +581,7 @@ Run the prompt, predict the output names or error, and then try each query.
 3. Remove `AS` from both aliases in the representative query.
 4. Select `salary + 1000, salary - 1000` without aliases.
 5. Select `name AS result, salary AS result`.
-6. Put each clause on a separate prompt line, but omit the final semicolon and
-   send end-of-file.
+6. Select `name AS employee_name, salary, salary + 1000 AS raised_salary`.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -693,12 +593,12 @@ Run the prompt, predict the output names or error, and then try each query.
 4. Both computations receive the fallback name `expression`, so binding
    rejects the duplicate output name.
 5. Binding reports `duplicate output column: result`.
-6. The prompt reports `error: incomplete query at end of input` and does not
-   send the unfinished text to the parser.
+6. The result contains three fields in select-list order: `employee_name`,
+   `salary`, and `raised_salary`.
 
 </details>
 
-## 6.11 One output list, one input scope
+## 6.10 One output list, one input scope
 
 Projection can now compute and name several values, but every column still
 comes from the same table. That makes an unqualified name such as `name`
