@@ -712,6 +712,11 @@ WHERE e.salary > 50000;
 {employee_name: "Grace", raised_salary: 73000}
 ```
 
+After the inherited prompt receives the semicolon, parsing produces two
+expression-shaped `SelectItem` nodes, binding produces two checked
+`ProjectExpression` nodes, and the existing executor constructs the wider
+rows.
+
 A qualified wildcard can also appear beside another select item. This query
 expands every `employees` column, then appends the computed salary:
 
@@ -725,21 +730,10 @@ WHERE e.id = 1;
 {id: 1, name: "Ada", salary: 70000, raised_salary: 71000}
 ```
 
-After the inherited prompt receives the semicolon, parsing produces two
-expression-shaped `SelectItem` nodes, binding produces two checked
-`ProjectExpression` nodes, and the existing executor constructs the wider
-rows.
-
-Now ask the catalog to supply the complete output list:
-
-```text
-sql> SELECT e.* FROM employees AS e WHERE e.id = 1;
-{id: 1, name: "Ada", salary: 70000}
-```
-
-Parsing records one qualified wildcard. Binding validates `e`, expands the
-employee columns in catalog order, and gives `Project` three checked column
-expressions. The executor still receives an ordinary projection list.
+Parsing records one qualified wildcard followed by one expression item.
+Binding validates `e`, expands the employee columns in catalog order, and
+then appends the checked computation named `raised_salary`. `Project` still
+receives an ordinary list of checked expressions.
 
 An unknown qualifier stops during binding:
 
