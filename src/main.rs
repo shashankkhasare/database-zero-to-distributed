@@ -51,19 +51,41 @@ fn run_demo(employees: &[Row]) {
 
 fn run_prompt(employees: &[Row]) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
-
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
 
         if !sql.trim().is_empty() {
             print_query_result(&sql, employees);
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 
 fn print_query_result(sql: &str, employees: &[Row]) {
@@ -79,7 +101,7 @@ fn print_query_result(sql: &str, employees: &[Row]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{employee_rows, execute_sql};
+    use super::{append_sql_line, employee_rows, execute_sql};
     use crate::row::{Row, Value};
 
     #[test]
@@ -119,5 +141,15 @@ mod tests {
                 Row::new(vec![("name", Value::Text("Grace".to_string()))]),
             ]
         );
+    }
+
+    #[test]
+    fn prompt_collects_lines_until_the_statement_ends() {
+        let mut sql = String::new();
+
+        assert!(!append_sql_line(&mut sql, "SELECT name\n"));
+        assert!(!append_sql_line(&mut sql, "FROM employees\n"));
+        assert!(append_sql_line(&mut sql, "WHERE salary > 50000;\n"));
+        assert_eq!(execute_sql(&sql, &employee_rows()).unwrap().len(), 2);
     }
 }
