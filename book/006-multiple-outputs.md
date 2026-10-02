@@ -17,7 +17,7 @@ table's columns in catalog order.
 
 <figure class="book-illustration">
   <img src="images/006-one-expression-becomes-an-output-list.png" alt="A narrow one-column result from one selected expression expands into a two-column result whose employee name and computed salary have explicit output names.">
-  <figcaption>Projection becomes a named list of expressions, so one input row can produce a wider output row.</figcaption>
+  <figcaption>Projection becomes an output list, so one input row can produce a wider output row.</figcaption>
 </figure>
 
 Chapter 5 can evaluate a complete expression tree, but its `Query` still stores
@@ -183,8 +183,9 @@ tokens `identifier`, `.`, and `*` form a qualified wildcard. These checks must
 happen before expression parsing because the expression parser would otherwise
 treat `*` as multiplication or expect a column name after the dot.
 
-Looking ahead by two tokens makes the qualified form visible without consuming
-the beginning of an ordinary expression.
+The `peek_at()` helper used by `parse_select_item()` below looks as far as two
+tokens ahead, making the qualified form visible without consuming the beginning
+of an ordinary expression.
 
 `src/parser.rs`: add after `peek()`
 
@@ -291,27 +292,59 @@ use std::io::{self, Write};
 use parser::parse;
 
 fn main() -> io::Result<()> {
-    print!("sql> ");
-    io::stdout().flush()?;
+    run_prompt()
+}
 
-    let mut sql = String::new();
-    while !sql.trim_end().ends_with(';') {
-        if !sql.is_empty() {
-            print!("...> ");
-            io::stdout().flush()?;
-        }
-        if io::stdin().read_line(&mut sql)? == 0 {
-            break;
-        }
-    }
-
-    match parse(&sql) {
+fn inspect_sql(sql: &str) {
+    match parse(sql) {
         Ok(query) => println!("{query:#?}"),
         Err(error) => eprintln!("error: {error}"),
     }
-    Ok(())
+}
+
+fn run_prompt() -> io::Result<()> {
+    loop {
+        let mut sql = String::new();
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
+        }
+
+        if !sql.trim().is_empty() {
+            inspect_sql(&sql);
+        }
+    }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 ```
+
+This is the multiline statement collector introduced in Chapter 3. Its inner
+loop reads through the terminating semicolon, and its outer loop keeps the AST
+inspector ready for another statement.
 
 Run it and enter the representative query:
 
@@ -362,9 +395,9 @@ employees catalog entry + alias e
           └── e.* → id, name, salary
 ```
 
-An expression and a qualified wildcard use the same qualifier rule. If an alias
-exists, it is the accepted qualifier; otherwise the table name is accepted.
-Move that check out of the column arm so wildcard expansion can reuse it.
+Recall the Chapter 5 qualifier rule: if an alias exists, it is accepted;
+otherwise the table name is accepted. Move that check out of the column arm so
+wildcard expansion can reuse it.
 
 `src/catalog.rs`: add after `Scope`
 
@@ -456,6 +489,11 @@ visited in their stored order. Each column becomes a bound column expression
 with the same output name. The three-column employee schema therefore expands
 `e.*` into `id`, `name`, and `salary` without creating a new plan node.
 
+<figure class="book-illustration book-diagram">
+  <img src="images/006-wildcard-expands-from-catalog.png" alt="The qualified wildcard e star and the employees catalog schema enter binding, which expands them into checked id, name, and salary project expressions and a three-field output row.">
+  <figcaption>Binding consults the catalog to expand one wildcard into an ordered list of checked column expressions.</figcaption>
+</figure>
+
 The duplicate-name check reflects the current `Row` representation. A row
 stores each value beside a name, and later name-based lookup should not have to
 choose between two fields with the same name. For example, `SELECT name, name`
@@ -498,10 +536,11 @@ now it can fill the same vector from the complete select list.
 
 ## 6.6 Reconnect the application
 
-The AST checkpoint has served its purpose. Restore the complete application,
-including the inherited prompt, and update the fixed demonstration to use both
-outputs. The catalog and shared parse-bind-execute path are unchanged from
-Chapter 5.
+The AST checkpoint has served its purpose. Restore the complete application and
+update the fixed demonstration to use both outputs. The prompt is unchanged
+from Chapter 3: its inner loop collects lines through the semicolon, and its
+outer loop accepts successive statements. The catalog and shared
+parse-bind-execute path are unchanged from Chapter 5.
 
 `src/main.rs`: replace the file
 
