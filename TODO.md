@@ -281,7 +281,7 @@ binding, general expressions, joins, optimizer rules, or full SQL-89 support.
 - [x] Approve the Chapter 3 teaching sequence through a complete reader build-along
 - [x] Decide that Chapter 3 does not require a standalone episode
 - [ ] Cover SQL, tokens, ASTs, binding, and plans in a later milestone video such as “How SQL Becomes Rows”
-- [x] Record verified source commit `b57026e01c0a9824a11a523895cbab99deb98133` and tag the completed state as `lesson-003`
+- [x] Record verified source commit `663fd3ce5486fa0cd4014118fc710b6a35fa258e` and tag the completed state as `lesson-003`
 
 Lesson 003 was verified with 17 passing tests, the deterministic Ada-and-Grace
 demo, and all 10 generated book pages. It closes without a standalone video
