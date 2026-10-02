@@ -21,37 +21,69 @@ fn main() {
     }
 }
 
-fn employee(id: i64, name: &str, salary: i64) -> Row {
+fn employee(id: i64, name: &str, salary: i64, department_id: i64) -> Row {
     Row::new(vec![
         ("id", Value::Integer(id)),
         ("name", Value::Text(name.into())),
         ("salary", Value::Integer(salary)),
+        ("department_id", Value::Integer(department_id)),
+    ])
+}
+
+fn department(id: i64, name: &str) -> Row {
+    Row::new(vec![
+        ("id", Value::Integer(id)),
+        ("name", Value::Text(name.into())),
     ])
 }
 
 fn employee_catalog() -> Catalog {
-    Catalog::new(vec![Table {
-        name: "employees".into(),
-        columns: vec![
-            Column {
-                name: "id".into(),
-                data_type: DataType::Integer,
-            },
-            Column {
-                name: "name".into(),
-                data_type: DataType::Text,
-            },
-            Column {
-                name: "salary".into(),
-                data_type: DataType::Integer,
-            },
-        ],
-        rows: vec![
-            employee(1, "Ada", 70_000),
-            employee(2, "Linus", 50_000),
-            employee(3, "Grace", 72_000),
-        ],
-    }])
+    Catalog::new(vec![
+        Table {
+            name: "employees".into(),
+            columns: vec![
+                Column {
+                    name: "id".into(),
+                    data_type: DataType::Integer,
+                },
+                Column {
+                    name: "name".into(),
+                    data_type: DataType::Text,
+                },
+                Column {
+                    name: "salary".into(),
+                    data_type: DataType::Integer,
+                },
+                Column {
+                    name: "department_id".into(),
+                    data_type: DataType::Integer,
+                },
+            ],
+            rows: vec![
+                employee(1, "Ada", 70_000, 10),
+                employee(2, "Linus", 50_000, 20),
+                employee(3, "Grace", 72_000, 30),
+            ],
+        },
+        Table {
+            name: "departments".into(),
+            columns: vec![
+                Column {
+                    name: "id".into(),
+                    data_type: DataType::Integer,
+                },
+                Column {
+                    name: "name".into(),
+                    data_type: DataType::Text,
+                },
+            ],
+            rows: vec![
+                department(10, "Engineering"),
+                department(20, "Systems"),
+                department(30, "Research"),
+            ],
+        },
+    ])
 }
 
 fn execute_sql(sql: &str, catalog: &Catalog) -> Result<Vec<Row>, String> {
@@ -60,12 +92,11 @@ fn execute_sql(sql: &str, catalog: &Catalog) -> Result<Vec<Row>, String> {
 }
 
 fn run_demo(catalog: &Catalog) {
-    let sql = "SELECT e.name AS employee_name, \
-        e.salary + 1000 AS raised_salary \
-        FROM employees AS e \
-        WHERE e.salary > 50000;";
+    let sql = "SELECT e.name AS employee_name, d.name AS department_name \
+        FROM employees AS e, departments AS d \
+        WHERE e.department_id = d.id;";
     let rows = execute_sql(sql, catalog).expect("the lesson query should execute");
-    println!("Employees with projected raises:");
+    println!("Employees and their departments:");
     for row in rows {
         println!("{row}");
     }
@@ -159,24 +190,41 @@ mod tests {
     }
 
     #[test]
-    fn multiple_outputs_have_explicit_names() {
+    fn join_query_returns_employee_and_department_names() {
         assert_eq!(
             execute_sql(
-                "SELECT name AS employee_name, salary + 1000 AS raised_salary \
-                 FROM employees WHERE salary > 50000;",
+                "SELECT e.name AS employee_name, d.name AS department_name \
+                 FROM employees AS e, departments AS d \
+                 WHERE e.department_id = d.id;",
                 &employee_catalog(),
             )
             .unwrap(),
             vec![
                 Row::new(vec![
                     ("employee_name", Value::Text("Ada".into())),
-                    ("raised_salary", Value::Integer(71_000)),
+                    ("department_name", Value::Text("Engineering".into())),
+                ]),
+                Row::new(vec![
+                    ("employee_name", Value::Text("Linus".into())),
+                    ("department_name", Value::Text("Systems".into())),
                 ]),
                 Row::new(vec![
                     ("employee_name", Value::Text("Grace".into())),
-                    ("raised_salary", Value::Integer(73_000)),
+                    ("department_name", Value::Text("Research".into())),
                 ]),
             ]
+        );
+    }
+
+    #[test]
+    fn unqualified_column_is_rejected_when_multiple_inputs_define_it() {
+        assert_eq!(
+            execute_sql(
+                "SELECT name FROM employees AS e, departments AS d WHERE e.department_id = d.id;",
+                &employee_catalog(),
+            )
+            .unwrap_err(),
+            "ambiguous column: name"
         );
     }
 
@@ -186,10 +234,37 @@ mod tests {
 
         assert!(!append_sql_line(
             &mut sql,
-            "SELECT name AS employee_name, salary + 1000 AS raised_salary\n"
+            "SELECT e.name AS employee_name, d.name AS department_name\n"
         ));
-        assert!(!append_sql_line(&mut sql, "FROM employees\n"));
-        assert!(append_sql_line(&mut sql, "WHERE salary > 50000;\n"));
-        assert_eq!(execute_sql(&sql, &employee_catalog()).unwrap().len(), 2);
+        assert!(!append_sql_line(
+            &mut sql,
+            "FROM employees AS e, departments AS d\n"
+        ));
+        assert!(append_sql_line(&mut sql, "WHERE e.department_id = d.id;\n"));
+        assert_eq!(execute_sql(&sql, &employee_catalog()).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn duplicate_input_aliases_are_rejected() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.name FROM employees AS e, departments AS e WHERE TRUE;",
+                &employee_catalog(),
+            )
+            .unwrap_err(),
+            "duplicate table or alias: e"
+        );
+    }
+
+    #[test]
+    fn duplicate_output_names_are_rejected() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.name, d.name FROM employees AS e, departments AS d WHERE TRUE;",
+                &employee_catalog(),
+            )
+            .unwrap_err(),
+            "duplicate output column: name"
+        );
     }
 }
