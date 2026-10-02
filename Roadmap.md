@@ -179,17 +179,17 @@ curriculum boundary, not a standards-compliance claim. Unsupported syntax must
 fail explicitly, and each construct appears only when a lesson needs the
 database behavior behind it.
 
-- Lesson 003 introduces lexical structure, `SELECT`, `FROM`, and one simple
-  `WHERE` comparison.
+- Lesson 003 introduces lexical structure, `SELECT`, `FROM`, one simple
+  `WHERE` comparison, and a prompt that collects input through the terminating
+  semicolon.
 - Lesson 004 adds qualified identifiers, aliases, literals, comparison
   expressions, arithmetic, Boolean and `NULL` predicates. It establishes the
   expression hierarchy and precedence without resolving names yet.
 - Lesson 005 binds tables, aliases, and columns against a catalog, checks
   expression types, and evaluates bound expressions with SQL three-valued
   logic.
-- Lesson 006 adds multiline prompt input and multiple selected expressions
-  with output aliases. It turns projection into a list without changing the
-  one-table binding scope.
+- Lesson 006 adds multiple selected expressions with output aliases. It turns
+  projection into a list without changing the one-table binding scope.
 - Lesson 007 adds SQL-89-style joins expressed with multiple `FROM` inputs and
   a `WHERE` predicate. It executes the first logical join with a visible
   nested loop and exposes that algorithm's cost.
@@ -257,6 +257,10 @@ Logical Plan
 
 Support a deliberately tiny SQL subset.
 
+The interactive prompt collects one statement through its terminating
+semicolon so the formatted SQL shown in later chapters can be pasted without
+being collapsed onto one line.
+
 Do not attempt full ANSI SQL.
 
 ---
@@ -301,7 +305,6 @@ operators with incompatible types.
 
 Introduce:
 
-- multiline prompt input collected through the terminating semicolon
 - multiple selected expressions and output aliases
 - explicit names for computed output expressions
 - duplicate output-name errors
