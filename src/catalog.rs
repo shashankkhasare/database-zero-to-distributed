@@ -26,6 +26,31 @@ impl Catalog {
     }
 }
 
+fn require_type(actual: &DataType, expected: &DataType, message: &str) -> Result<(), String> {
+    if actual == expected || actual == &DataType::Null {
+        Ok(())
+    } else {
+        Err(format!("{message}: found {actual:?}"))
+    }
+}
+
+fn require_matching_types(left: &DataType, right: &DataType) -> Result<(), String> {
+    if left == &DataType::Null || right == &DataType::Null || left == right {
+        Ok(())
+    } else {
+        Err(format!("cannot compare {left:?} with {right:?}"))
+    }
+}
+
+fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
+    match data_type {
+        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
+        _ => Err(format!(
+            "ordered comparison requires integers or text: found {data_type:?}"
+        )),
+    }
+}
+
 struct Scope<'a> {
     table_name: &'a str,
     alias: Option<&'a str>,
@@ -41,6 +66,7 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
                     return Err(format!("unknown table or alias: {qualifier}"));
                 }
             }
+
             let column = scope
                 .columns
                 .iter()
@@ -141,31 +167,6 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
     }
 }
 
-fn require_type(actual: &DataType, expected: &DataType, message: &str) -> Result<(), String> {
-    if actual == expected || actual == &DataType::Null {
-        Ok(())
-    } else {
-        Err(format!("{message}: found {actual:?}"))
-    }
-}
-
-fn require_matching_types(left: &DataType, right: &DataType) -> Result<(), String> {
-    if left == &DataType::Null || right == &DataType::Null || left == right {
-        Ok(())
-    } else {
-        Err(format!("cannot compare {left:?} with {right:?}"))
-    }
-}
-
-fn require_ordered_type(data_type: &DataType) -> Result<(), String> {
-    match data_type {
-        DataType::Integer | DataType::Text | DataType::Null => Ok(()),
-        _ => Err(format!(
-            "ordered comparison requires integers or text: found {data_type:?}"
-        )),
-    }
-}
-
 impl Catalog {
     pub fn bind(&self, query: Query) -> Result<Plan, String> {
         let table = self
@@ -173,6 +174,7 @@ impl Catalog {
             .iter()
             .find(|table| table.name == query.table)
             .ok_or_else(|| format!("unknown table: {}", query.table))?;
+
         let scope = Scope {
             table_name: &table.name,
             alias: query.table_alias.as_deref(),
@@ -195,8 +197,9 @@ impl Catalog {
         }
         let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
         if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
-            return Err("WHERE expression must be Boolean".into());
+            return Err("WHERE expression must be Boolean".to_string());
         }
+
         Ok(Plan::Project {
             expressions,
             input: Box::new(Plan::Filter {
