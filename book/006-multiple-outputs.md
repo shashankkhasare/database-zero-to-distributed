@@ -15,6 +15,11 @@ named output columns.
 
 > A result row can contain more than one answer.
 
+<figure class="book-illustration">
+  <img src="images/006-one-expression-becomes-an-output-list.png" alt="A narrow one-column result from one selected expression expands into a two-column result whose employee name and computed salary have explicit output names.">
+  <figcaption>Projection becomes a named list of expressions, so one input row can produce a wider output row.</figcaption>
+</figure>
+
 Chapter 5 can evaluate a complete expression tree, but its `Query` still stores
 only one projection expression. That prevents a query from returning a column
 and a computed value together:
@@ -123,6 +128,11 @@ Project [employee_name, raised_salary]
   Filter salary > 50000
     Scan employees
 ```
+
+<figure class="book-illustration book-diagram">
+  <img src="images/006-selected-expressions-become-output-fields.png" alt="Two selected SQL expressions with aliases become two checked ProjectExpression entries, which Project evaluates to construct the employee_name and raised_salary fields of each output row.">
+  <figcaption>Each selected expression carries its output name and checked computation into one field of the projected row.</figcaption>
+</figure>
 
 ## 6.4 Run the wider projection
 
