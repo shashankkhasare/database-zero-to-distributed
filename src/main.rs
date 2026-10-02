@@ -60,10 +60,12 @@ fn execute_sql(sql: &str, catalog: &Catalog) -> Result<Vec<Row>, String> {
 }
 
 fn run_demo(catalog: &Catalog) {
-    let sql =
-        "SELECT e.name FROM employees AS e WHERE e.salary + 5000 > 70000 AND e.name IS NOT NULL;";
+    let sql = "SELECT e.name AS employee_name, \
+        e.salary + 1000 AS raised_salary \
+        FROM employees AS e \
+        WHERE e.salary > 50000;";
     let rows = execute_sql(sql, catalog).expect("the lesson query should execute");
-    println!("Employees matching the bound expression:");
+    println!("Employees with projected raises:");
     for row in rows {
         println!("{row}");
     }
@@ -71,17 +73,41 @@ fn run_demo(catalog: &Catalog) {
 
 fn run_prompt(catalog: &Catalog) -> io::Result<()> {
     loop {
-        print!("sql> ");
-        io::stdout().flush()?;
         let mut sql = String::new();
-        if io::stdin().read_line(&mut sql)? == 0 {
-            println!();
-            return Ok(());
+
+        loop {
+            if sql.is_empty() {
+                print!("sql> ");
+            } else {
+                print!("...> ");
+            }
+            io::stdout().flush()?;
+
+            let mut line = String::new();
+            if io::stdin().read_line(&mut line)? == 0 {
+                println!();
+                if !sql.trim().is_empty() {
+                    eprintln!("error: incomplete query at end of input");
+                }
+                return Ok(());
+            }
+            if sql.is_empty() && line.trim().is_empty() {
+                break;
+            }
+            if append_sql_line(&mut sql, &line) {
+                break;
+            }
         }
+
         if !sql.trim().is_empty() {
             print_query_result(&sql, catalog);
         }
     }
+}
+
+fn append_sql_line(sql: &mut String, line: &str) -> bool {
+    sql.push_str(line);
+    line.trim_end().ends_with(';')
 }
 
 fn print_query_result(sql: &str, catalog: &Catalog) {
@@ -97,7 +123,7 @@ fn print_query_result(sql: &str, catalog: &Catalog) {
 
 #[cfg(test)]
 mod tests {
-    use super::{employee_catalog, execute_sql};
+    use super::{append_sql_line, employee_catalog, execute_sql};
     use crate::row::{Row, Value};
 
     #[test]
@@ -130,5 +156,40 @@ mod tests {
                 .len(),
             1
         );
+    }
+
+    #[test]
+    fn multiple_outputs_have_explicit_names() {
+        assert_eq!(
+            execute_sql(
+                "SELECT name AS employee_name, salary + 1000 AS raised_salary \
+                 FROM employees WHERE salary > 50000;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![
+                Row::new(vec![
+                    ("employee_name", Value::Text("Ada".into())),
+                    ("raised_salary", Value::Integer(71_000)),
+                ]),
+                Row::new(vec![
+                    ("employee_name", Value::Text("Grace".into())),
+                    ("raised_salary", Value::Integer(73_000)),
+                ]),
+            ]
+        );
+    }
+
+    #[test]
+    fn prompt_collects_lines_until_the_statement_ends() {
+        let mut sql = String::new();
+
+        assert!(!append_sql_line(
+            &mut sql,
+            "SELECT name AS employee_name, salary + 1000 AS raised_salary\n"
+        ));
+        assert!(!append_sql_line(&mut sql, "FROM employees\n"));
+        assert!(append_sql_line(&mut sql, "WHERE salary > 50000;\n"));
+        assert_eq!(execute_sql(&sql, &employee_catalog()).unwrap().len(), 2);
     }
 }

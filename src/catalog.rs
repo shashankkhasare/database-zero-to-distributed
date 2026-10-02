@@ -178,20 +178,27 @@ impl Catalog {
             alias: query.table_alias.as_deref(),
             columns: &table.columns,
         };
-        let (projection, _) = bind_expression(query.projection, &scope)?;
-        let projection_name = match &projection {
-            BoundExpr::Column(name) => name.clone(),
-            _ => "expression".into(),
-        };
+        let mut expressions = Vec::new();
+        for selected in query.projections {
+            let (expression, _) = bind_expression(selected.expression, &scope)?;
+            let name = selected.alias.unwrap_or_else(|| match &expression {
+                BoundExpr::Column(name) => name.clone(),
+                _ => "expression".into(),
+            });
+            if expressions
+                .iter()
+                .any(|existing: &ProjectExpression| existing.name == name)
+            {
+                return Err(format!("duplicate output column: {name}"));
+            }
+            expressions.push(ProjectExpression { name, expression });
+        }
         let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
         if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
             return Err("WHERE expression must be Boolean".into());
         }
         Ok(Plan::Project {
-            expressions: vec![ProjectExpression {
-                name: projection_name,
-                expression: projection,
-            }],
+            expressions,
             input: Box::new(Plan::Filter {
                 predicate,
                 input: Box::new(Plan::Scan {
@@ -260,6 +267,39 @@ mod tests {
                 .bind(parse("SELECT name FROM employees WHERE TRUE < FALSE;").unwrap())
                 .unwrap_err(),
             "ordered comparison requires integers or text: found Boolean"
+        );
+    }
+
+    #[test]
+    fn binds_multiple_named_outputs() {
+        let rows = catalog()
+            .bind(
+                parse(
+                    "SELECT name AS employee_name, salary + 1000 AS raised_salary \
+                     FROM employees WHERE TRUE;",
+                )
+                .unwrap(),
+            )
+            .unwrap()
+            .execute()
+            .unwrap();
+
+        assert_eq!(
+            rows,
+            vec![Row::new(vec![
+                ("employee_name", Value::Text("Ada".into())),
+                ("raised_salary", Value::Integer(71_000)),
+            ])]
+        );
+    }
+
+    #[test]
+    fn rejects_duplicate_output_names() {
+        assert_eq!(
+            catalog()
+                .bind(parse("SELECT name, name FROM employees WHERE TRUE;").unwrap())
+                .unwrap_err(),
+            "duplicate output column: name"
         );
     }
 }

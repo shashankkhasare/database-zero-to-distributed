@@ -168,7 +168,7 @@ or a general rewrite framework yet.
 
 Name the algebra tree as a logical plan and briefly contrast what it computes
 with how a physical plan computes it. Keep the current `Plan` enum combined.
-Defer the architectural separation and physical alternatives to Lesson 012.
+Defer the architectural separation and physical alternatives to Lesson 014.
 
 ---
 
@@ -187,16 +187,19 @@ database behavior behind it.
 - Lesson 005 binds tables, aliases, and columns against a catalog, checks
   expression types, and evaluates bound expressions with SQL three-valued
   logic.
-- Lesson 006 adds multiple selected expressions with output aliases, then
-  SQL-89-style joins expressed with multiple `FROM` inputs and a `WHERE`
-  predicate. After the underlying join is understood, it adds explicit
-  `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` forms and makes their
-  different row-preservation rules visible.
-- Lesson 007 adds aggregate functions, `GROUP BY`, and `HAVING`.
-- Lesson 008 adds `ORDER BY`, null ordering, `DISTINCT`, and `ALL`. It also adds
+- Lesson 006 adds multiline prompt input and multiple selected expressions
+  with output aliases. It turns projection into a list without changing the
+  one-table binding scope.
+- Lesson 007 adds SQL-89-style joins expressed with multiple `FROM` inputs and
+  a `WHERE` predicate. It executes the first logical join with a visible
+  nested loop and exposes that algorithm's cost.
+- Lesson 008 adds explicit `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON`
+  forms and makes their different row-preservation rules visible.
+- Lesson 009 adds aggregate functions, `GROUP BY`, and `HAVING`.
+- Lesson 010 adds `ORDER BY`, null ordering, `DISTINCT`, and `ALL`. It also adds
   `LIMIT` and `OFFSET` as explicit modern extensions rather than presenting
   them as SQL-89 syntax.
-- Lesson 009 adds nested queries, beginning with uncorrelated scalar, `IN`, and
+- Lesson 011 adds nested queries, beginning with uncorrelated scalar, `IN`, and
   `EXISTS` subqueries, then exposing correlation and its execution cost. It
   also introduces derived tables and non-recursive common table expressions
   once ordinary subquery scope is understood.
@@ -294,33 +297,59 @@ operators with incompatible types.
 
 ---
 
-## 006 — Joins
+## 006 — Multiple Outputs
 
 Introduce:
 
+- multiline prompt input collected through the terminating semicolon
 - multiple selected expressions and output aliases
-- multiple `FROM` inputs and qualified column resolution
-- SQL-89-style joins through a `WHERE` predicate
+- explicit names for computed output expressions
+- duplicate output-name errors
 
-Start with:
-
-```text
-NestedLoopJoin
-```
-
-Then expose its limitations.
-
-Introduce:
-
-```text
-HashJoin
-```
-
-Explore why logical operations and physical algorithms are different concepts.
+Keep one `FROM` input. This chapter changes the width and naming of projected
+rows without also changing the query's binding scope.
 
 ---
 
-## 007 — GROUP BY and Aggregation
+## 007 — The First Join
+
+Introduce:
+
+- multiple `FROM` inputs and qualified column resolution
+- SQL-89-style joins through a `WHERE` predicate
+- ambiguous unqualified-column errors
+- a logical `Join` node
+
+Represent the requested operation as:
+
+```text
+Join
+```
+
+Its current `execute()` arm will use two nested loops and make the number of
+row pairs it considers visible. Preserve `Join` as the logical operation and
+defer names such as `NestedLoopJoin` and alternative physical algorithms until
+the logical/physical-plan separation lesson.
+
+---
+
+## 008 — Join Syntax and Row Preservation
+
+Introduce:
+
+- `INNER JOIN ... ON`
+- `LEFT JOIN ... ON`
+- `RIGHT JOIN ... ON`
+- `FULL JOIN ... ON`
+- matched rows and preserved unmatched rows
+
+Relate an inner join written with `JOIN ... ON` to the comma-plus-`WHERE` form
+from Lesson 007. Keep execution straightforward and defer join algorithm
+selection.
+
+---
+
+## 009 — GROUP BY and Aggregation
 
 Implement:
 
@@ -335,7 +364,7 @@ Introduce hash aggregation.
 
 ---
 
-## 008 — Sort, DISTINCT and LIMIT
+## 010 — Sort, DISTINCT and LIMIT
 
 Implement:
 
@@ -348,7 +377,7 @@ Introduce blocking operators.
 
 ---
 
-## 009 — Subqueries Are Plans Inside Plans
+## 011 — Subqueries Are Plans Inside Plans
 
 Extend the AST so an expression or table source can contain another query.
 
@@ -363,7 +392,7 @@ semi-join rewrites, and cost-based choices until the optimizer season.
 
 # Season 2 — How Query Engines Execute
 
-## 010 — Materialize Everything
+## 012 — Materialize Everything
 
 Use the simplest complete execution strategy.
 
@@ -381,7 +410,7 @@ Optionally introduce temporary files.
 
 ---
 
-## 011 — Stop Materializing Everything
+## 013 — Stop Materializing Everything
 
 Introduce pipelining.
 
@@ -411,7 +440,7 @@ Avoid lifetime-heavy designs.
 
 ---
 
-## 012 — Logical Plan vs Physical Plan
+## 014 — Logical Plan vs Physical Plan
 
 Separate:
 
@@ -439,6 +468,10 @@ HashJoin
 MergeJoin
 ```
 
+Implement `NestedLoopJoin` and `HashJoin` as alternative physical algorithms
+for the same logical `Join`. Make the choice visible rather than embedding an
+algorithm name in the logical plan.
+
 And:
 
 ```text
@@ -461,7 +494,7 @@ IndexScan
 
 # Season 3 — Query Optimization
 
-## 013 — The First Query Optimizer
+## 015 — The First Query Optimizer
 
 Start with obvious rewrites.
 
@@ -475,7 +508,7 @@ Show the difference in intermediate row counts.
 
 ---
 
-## 014 — Statistics
+## 016 — Statistics
 
 Collect basic statistics:
 
@@ -488,7 +521,7 @@ Use them to estimate selectivity.
 
 ---
 
-## 015 — Cost
+## 017 — Cost
 
 Build a deliberately simple cost model.
 
@@ -502,7 +535,7 @@ Network cost will be added later.
 
 ---
 
-## 016 — Join Ordering
+## 018 — Join Ordering
 
 Demonstrate that:
 
@@ -533,7 +566,7 @@ of the read path, not the distributed-storage story.
 
 ---
 
-## 017 — Split the Table Into Partitions
+## 019 — Split the Table Into Partitions
 
 Take one large table and divide it into partitions.
 
@@ -560,7 +593,7 @@ The goal is to distinguish CPU/data parallelism from asynchronous networking.
 
 ---
 
-## 018 — The Plan Becomes a DAG
+## 020 — The Plan Becomes a DAG
 
 Represent computation dependencies explicitly.
 
@@ -574,7 +607,7 @@ Introduce:
 
 ---
 
-## 019 — Build a Scheduler
+## 021 — Build a Scheduler
 
 Introduce:
 
@@ -607,7 +640,7 @@ recover lost computation, while the durable data itself remains outside the
 engine. Replication, sharding, and distributed transactions arrive only after
 the local storage and transaction layers exist.
 
-## 020 — Our First Multi-Node Query
+## 022 — Our First Multi-Node Query
 
 Move workers into separate processes.
 
@@ -626,7 +659,7 @@ Stay synchronous initially if that keeps the implementation clearer.
 
 ---
 
-## 021 — Why Distributed Joins Break
+## 023 — Why Distributed Joins Break
 
 Create the problem:
 
@@ -644,7 +677,7 @@ This motivates data movement.
 
 ---
 
-## 022 — Invent Exchange
+## 024 — Invent Exchange
 
 Add an explicit physical operator:
 
@@ -665,7 +698,7 @@ Make data movement visible in the physical plan.
 
 ---
 
-## 023 — Build a Shuffle
+## 025 — Build a Shuffle
 
 Implement:
 
@@ -685,7 +718,7 @@ Introduce:
 
 ---
 
-## 024 — Distributed Aggregation
+## 026 — Distributed Aggregation
 
 Transform:
 
@@ -707,7 +740,7 @@ Explain why many aggregates are composable.
 
 ---
 
-## 025 — Distributed Hash Join
+## 027 — Distributed Hash Join
 
 Partition both sides by the join key.
 
@@ -729,7 +762,7 @@ Customers
 
 ---
 
-## 026 — Broadcast Join
+## 028 — Broadcast Join
 
 If one side is small:
 
@@ -747,7 +780,7 @@ Add planner logic for choosing broadcast versus shuffle.
 
 ---
 
-## 027 — Distributed Physical Planning
+## 029 — Distributed Physical Planning
 
 Convert a physical operator tree into:
 
@@ -773,7 +806,7 @@ FinalAggregate
 
 ---
 
-## 028 — When Synchronous Networking Stops Scaling
+## 030 — When Synchronous Networking Stops Scaling
 
 Create enough concurrent worker communication that the synchronous model becomes awkward.
 
@@ -797,7 +830,7 @@ rather than:
 
 ---
 
-## 029 — Failures Are Normal
+## 031 — Failures Are Normal
 
 Kill a worker during a query.
 
@@ -810,7 +843,7 @@ Implement:
 
 ---
 
-## 030 — Lost Shuffle Data
+## 032 — Lost Shuffle Data
 
 Show why simply retrying a downstream task may not be sufficient.
 
@@ -818,7 +851,7 @@ Introduce shuffle lineage and recomputation.
 
 ---
 
-## 031 — Data Skew
+## 033 — Data Skew
 
 Create a hot key representing a large percentage of the dataset.
 
@@ -839,7 +872,7 @@ Introduce:
 
 ---
 
-## 032 — Memory Is Finite
+## 034 — Memory Is Finite
 
 Set a memory limit.
 
@@ -853,7 +886,7 @@ Introduce explicit memory accounting.
 
 ---
 
-## 033 — Spill to Disk
+## 035 — Spill to Disk
 
 Implement:
 
@@ -865,7 +898,7 @@ Explain the difference between deliberate materialization and spill.
 
 ---
 
-## 034 — What Did We Build?
+## 036 — What Did We Build?
 
 Compare the concepts we derived with systems such as:
 
@@ -887,7 +920,7 @@ means when writes overlap or the process crashes.
 
 # Season 6 — Build a Storage Engine
 
-## 035 — A Database Starts With Bytes
+## 037 — A Database Starts With Bytes
 
 Start with:
 
@@ -913,7 +946,7 @@ Use safe Rust.
 
 ---
 
-## 036 — Slotted Pages
+## 038 — Slotted Pages
 
 Support variable-sized records.
 
@@ -937,7 +970,7 @@ Avoid serialization frameworks that hide the byte layout.
 
 ---
 
-## 037 — Heap Files
+## 039 — Heap Files
 
 Combine pages into a table.
 
@@ -950,7 +983,7 @@ Introduce:
 
 ---
 
-## 038 — The Buffer Pool
+## 040 — The Buffer Pool
 
 Observe repeated disk reads.
 
@@ -971,7 +1004,7 @@ Introduce simple synchronization only if concurrent access now requires it.
 
 ---
 
-## 039 — Build a B+ Tree
+## 041 — Build a B+ Tree
 
 Demonstrate why:
 
@@ -991,7 +1024,7 @@ Build:
 
 ---
 
-## 040 — Connect Query Execution to Storage
+## 042 — Connect Query Execution to Storage
 
 Replace simple file-based scans with:
 
@@ -1012,7 +1045,7 @@ storage engine can own rows. Add `UPDATE` and `DELETE` when the transaction
 machinery can make their effects atomic and recoverable. Assign their exact
 lesson boundaries when this season becomes active.
 
-## 041 — Break the Database
+## 043 — Break the Database
 
 Create failures:
 
@@ -1026,7 +1059,7 @@ Ask:
 
 ---
 
-## 042 — Write-Ahead Logging
+## 044 — Write-Ahead Logging
 
 Introduce WAL from the crash problem.
 
@@ -1039,7 +1072,7 @@ Implement:
 
 ---
 
-## 043 — Crash Recovery
+## 045 — Crash Recovery
 
 Crash the process deliberately.
 
@@ -1057,7 +1090,7 @@ Introduce checkpoints.
 
 ---
 
-## 044 — Concurrency Control With Locks
+## 046 — Concurrency Control With Locks
 
 Implement:
 
@@ -1077,7 +1110,7 @@ Introduce them because shared database state requires synchronization.
 
 ---
 
-## 045 — Deadlocks
+## 047 — Deadlocks
 
 Create a real deadlock.
 
@@ -1093,7 +1126,7 @@ Introduce wait-for graphs.
 
 ---
 
-## 046 — MVCC
+## 048 — MVCC
 
 Explore why readers and writers should not necessarily block each other.
 
@@ -1108,7 +1141,7 @@ visibility
 
 ---
 
-## 047 — Isolation Levels
+## 049 — Isolation Levels
 
 Create anomalies rather than starting with definitions.
 
@@ -1129,7 +1162,7 @@ Then introduce:
 
 ---
 
-## 048 — ACID, Finally
+## 050 — ACID, Finally
 
 Bring the pieces together:
 
@@ -1152,7 +1185,7 @@ preserve the guarantees established on one machine.
 
 # Season 8 — Distributed Storage
 
-## 049 — Replication
+## 051 — Replication
 
 Our storage engine works.
 
@@ -1164,7 +1197,7 @@ Implement a simple primary-replica model.
 
 ---
 
-## 050 — Replication Lag
+## 052 — Replication Lag
 
 Show why asynchronous replication can lose acknowledged writes.
 
@@ -1172,7 +1205,7 @@ Introduce synchronous replication and durability tradeoffs.
 
 ---
 
-## 051 — The Primary Dies
+## 053 — The Primary Dies
 
 Ask:
 
@@ -1187,7 +1220,7 @@ Introduce:
 
 ---
 
-## 052 — Build Raft
+## 054 — Build Raft
 
 Implement a minimal educational form of:
 
@@ -1201,7 +1234,7 @@ Do not use an existing Raft implementation.
 
 ---
 
-## 053 — Strongly Consistent Replicated Storage
+## 055 — Strongly Consistent Replicated Storage
 
 Connect the consensus log to storage operations.
 
@@ -1225,7 +1258,7 @@ storage
 
 # Season 9 — Sharding
 
-## 054 — One Node Cannot Hold Everything
+## 056 — One Node Cannot Hold Everything
 
 Introduce sharding.
 
@@ -1237,7 +1270,7 @@ hash(key) % N
 
 ---
 
-## 055 — Range Sharding
+## 057 — Range Sharding
 
 Compare:
 
@@ -1256,7 +1289,7 @@ Explore:
 
 ---
 
-## 056 — Routing
+## 058 — Routing
 
 Build a shard map.
 
@@ -1264,7 +1297,7 @@ Route requests to the correct shard.
 
 ---
 
-## 057 — Rebalancing
+## 059 — Rebalancing
 
 Add a node.
 
@@ -1276,7 +1309,7 @@ Handle requests while ownership changes.
 
 # Season 10 — Distributed Transactions
 
-## 058 — One Transaction, Two Shards
+## 060 — One Transaction, Two Shards
 
 Create:
 
@@ -1294,7 +1327,7 @@ Crash between operations.
 
 ---
 
-## 059 — Two-Phase Commit
+## 061 — Two-Phase Commit
 
 Derive:
 
@@ -1308,7 +1341,7 @@ Implement a basic coordinator.
 
 ---
 
-## 060 — Coordinator Failure
+## 062 — Coordinator Failure
 
 Crash the coordinator after participants prepare.
 
@@ -1322,7 +1355,7 @@ Explore why distributed transactions are difficult.
 
 ---
 
-## 061 — Distributed MVCC
+## 063 — Distributed MVCC
 
 Introduce timestamps spanning shards.
 
@@ -1330,7 +1363,7 @@ Build distributed snapshot reads.
 
 ---
 
-## 062 — Serializable Distributed Transactions
+## 064 — Serializable Distributed Transactions
 
 Explore:
 
@@ -1347,7 +1380,7 @@ Keep the treatment implementation-focused.
 
 # Season 11 — Advanced SQL and Compatibility
 
-## 063 — Set Operations
+## 065 — Set Operations
 
 Implement:
 
@@ -1360,14 +1393,14 @@ operation.
 
 ---
 
-## 064 — Common Table Expressions and Recursion
+## 066 — Common Table Expressions and Recursion
 
 Begin with non-recursive `WITH` as a named query. Then add `WITH RECURSIVE` and
 make iterative evaluation, termination, and duplicate behavior visible.
 
 ---
 
-## 065 — Rich Values and Expressions
+## 067 — Rich Values and Expressions
 
 Complete the scalar expression grammar required by the planned workloads:
 
@@ -1388,14 +1421,14 @@ the implementation that tests it.
 
 ---
 
-## 066 — Advanced Grouping
+## 068 — Advanced Grouping
 
 Implement `ROLLUP` and `CUBE` as visible expansions of ordinary grouping sets.
 Show how subtotal rows interact with `NULL` and ordering.
 
 ---
 
-## 067 — Window Functions and Frames
+## 069 — Window Functions and Frames
 
 Add `OVER`, `PARTITION BY`, window ordering, and `ROWS` and `RANGE` frames.
 Contrast a window calculation with aggregation: a window computes across a
@@ -1403,7 +1436,7 @@ related set of rows without collapsing them into one row per group.
 
 ---
 
-## 068 — SQL Compatibility Checkpoint
+## 070 — SQL Compatibility Checkpoint
 
 Audit Appendix B against executable parser and behavior tests. Run the complete
 TPC-H query set and the selected TPC-DS query subset through SQL text rather
@@ -1412,7 +1445,7 @@ the benchmark chapter measures execution.
 
 ---
 
-## 069 — Identities and Authorization
+## 071 — Identities and Authorization
 
 Introduce database identities and an authorization check at a real execution
 boundary. Then implement `GRANT` and `REVOKE` for `SELECT`, `INSERT`, `UPDATE`,
@@ -1422,7 +1455,7 @@ and `DELETE`. Syntax must not precede enforcement.
 
 # Season 12 — Bring Everything Together
 
-## 070 — Distributed SQL Over Distributed Storage
+## 072 — Distributed SQL Over Distributed Storage
 
 Connect:
 
@@ -1436,7 +1469,7 @@ Build the integrated architecture.
 
 ---
 
-## 071 — One SQL Query, End to End
+## 073 — One SQL Query, End to End
 
 Take a query such as:
 
@@ -1485,7 +1518,7 @@ Result
 
 ---
 
-## 072 — One Transaction, End to End
+## 074 — One Transaction, End to End
 
 Follow a distributed write through:
 
@@ -1509,7 +1542,7 @@ Commit
 
 ---
 
-## 073 — Benchmark It
+## 075 — Benchmark It
 
 Build a small repeatable benchmark suite inspired by analytical and transactional workloads.
 
@@ -1539,7 +1572,7 @@ Measure:
 
 ---
 
-## 074 — Break Everything
+## 076 — Break Everything
 
 Run failure experiments:
 
@@ -1556,7 +1589,7 @@ Observe which guarantees survive.
 
 ---
 
-## 075 — Where Real Databases Go Further
+## 077 — Where Real Databases Go Further
 
 Use our database as a mental model for understanding real systems.
 
