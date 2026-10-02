@@ -55,7 +55,10 @@ pub enum Expr {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BoundExpr {
-    Column(String),
+    Column {
+        index: usize,
+        name: String,
+    },
     Literal(Value),
     Unary {
         op: UnaryOp,
@@ -75,10 +78,7 @@ pub enum BoundExpr {
 impl BoundExpr {
     pub fn evaluate(&self, row: &Row) -> Result<Value, String> {
         match self {
-            BoundExpr::Column(name) => row
-                .get(name)
-                .cloned()
-                .ok_or_else(|| format!("bound column is missing at execution: {name}")),
+            BoundExpr::Column { index, name } => row.value_at(*index, name).cloned(),
             BoundExpr::Literal(value) => Ok(value.clone()),
             BoundExpr::Unary { op, expression } => {
                 let value = expression.evaluate(row)?;

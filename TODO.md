@@ -12,10 +12,10 @@ not design distant lessons prematurely.
 
 ---
 
-# Current milestone: 006, Multiple Outputs
+# Completed milestone: 006, Multiple Outputs
 
-Lesson 006 begins from Chapter 5's single selected expression. It will let a
-query project several expressions and give those outputs deliberate names. The
+Lesson 006 begins from Chapter 5's single selected expression. It lets a query
+project several expressions and give those outputs deliberate names. The
 binding scope remains limited to one table so the chapter has one central
 change: projection becomes a named list.
 
@@ -37,18 +37,18 @@ to describe its result values.
 
 ## Chapter 6 teaching sequence
 
-- [ ] Extend the grammar and AST from one selected expression to a
+- [x] Extend the grammar and AST from one selected expression to a
       comma-separated select list with optional output aliases
-- [ ] Run a parser checkpoint that preserves every selected expression and
+- [x] Run a parser checkpoint that preserves every selected expression and
       output alias while retaining one table reference
-- [ ] Bind every selected expression in the existing one-table scope
-- [ ] Use an explicit alias as the output name, retain a bare column's name,
+- [x] Bind every selected expression in the existing one-table scope
+- [x] Use an explicit alias as the output name, retain a bare column's name,
       and reject duplicate output names
-- [ ] Let the existing `Project` node evaluate the complete expression list
-- [ ] Run the representative query and show its two-column result rows
-- [ ] Add concept-focused parser, binding, and end-to-end tests
+- [x] Let the existing `Project` node evaluate the complete expression list
+- [x] Run the representative query and show its two-column result rows
+- [x] Add concept-focused parser, binding, and end-to-end tests
       without placing test code in the chapter narrative
-- [ ] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
+- [x] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
       the verified `lesson-006` tag
 
 ## Chapter 6 boundaries
@@ -60,7 +60,7 @@ to describe its result values.
 
 ---
 
-# Planned milestone: 007, The First Join
+# Current milestone: 007, The First Join
 
 Lesson 007 begins from Chapter 6's one-table query with multiple outputs. It
 will introduce multiple input tables, make ambiguous columns visible, and
@@ -296,7 +296,7 @@ book-link verifier at `lesson-005`.
 - [x] 003 — SQL Is Just a Frontend
 - [x] 004 — Expressions Are Trees
 - [x] 005 — Binding Gives Names Meaning
-- [ ] 006 — Multiple Outputs
+- [x] 006 — Multiple Outputs
 - [ ] 007 — The First Join
 - [ ] 008 — Join Syntax and Row Preservation
 - [ ] 009 — GROUP BY and Aggregation
