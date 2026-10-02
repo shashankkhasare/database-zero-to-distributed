@@ -12,12 +12,12 @@ not design distant lessons prematurely.
 
 ---
 
-# Current milestone: 006, Multiple Outputs
+# Completed milestone: 006, Multiple Outputs
 
-Lesson 006 begins from Chapter 5's single selected expression. It will let a
-query project several expressions, give those outputs deliberate names, and
-expand `*` or `e.*` from the selected table's catalog schema. The binding scope
-remains limited to one table: projection becomes a list of explicit or expanded
+Lesson 006 begins from Chapter 5's single selected expression. It lets a query
+project several expressions, give those outputs deliberate names, and expand
+`*` or `e.*` from the selected table's catalog schema. The binding scope remains
+limited to one table: projection becomes a list of explicit or expanded
 outputs.
 
 ## Chapter 6 contract
@@ -38,22 +38,22 @@ aliases make repeated or computed fields easier to interpret.
 
 ## Chapter 6 teaching sequence
 
-- [ ] Extend the grammar and AST from one selected expression to a
+- [x] Extend the grammar and AST from one selected expression to a
       comma-separated list of expression items, `*`, and qualified wildcards,
       with optional output aliases on expressions
-- [ ] Run a parser checkpoint that preserves every selected expression and
+- [x] Run a parser checkpoint that preserves every selected expression and
       output alias or wildcard while retaining one table reference
-- [ ] Bind every selected expression in the existing one-table scope and
+- [x] Bind every selected expression in the existing one-table scope and
       expand wildcards in catalog column order
-- [ ] Validate a qualified wildcard against the table name or alias before
+- [x] Validate a qualified wildcard against the table name or alias before
       expanding it
-- [ ] Use an explicit alias as the output name, retain a bare column's name,
+- [x] Use an explicit alias as the output name, retain a bare column's name,
       and preserve repeated labels in select-list order
-- [ ] Let the existing `Project` node evaluate the complete expression list
-- [ ] Run the representative query and show its two-column result rows
-- [ ] Add concept-focused parser, binding, and end-to-end tests
+- [x] Let the existing `Project` node evaluate the complete expression list
+- [x] Run the representative query and show its two-column result rows
+- [x] Add concept-focused parser, binding, and end-to-end tests
       without placing test code in the chapter narrative
-- [ ] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
+- [x] Update Appendix B, `TERMS.md`, the contents page, chapter art sources, and
       the verified `lesson-006` tag
 
 ## Chapter 6 boundaries
@@ -67,15 +67,14 @@ aliases make repeated or computed fields easier to interpret.
 
 ---
 
-# Planned milestone: 007, The First Join
+# Current milestone: 007, The First Join
 
 Lesson 007 begins from Chapter 6's one-table query with multiple outputs. It
 will introduce multiple input tables, make ambiguous columns visible, and
-execute the first logical join with a simple nested loop. The chapter will
-also make `WHERE` optional: without it the nested loop exposes the Cartesian
-product, while a predicate filters those candidate pairs into an inner join.
-It will expose the algorithm's cost without introducing physical-plan
-alternatives.
+execute the first logical join with a simple nested loop. The chapter will also
+make `WHERE` optional: without it the nested loop exposes the Cartesian product,
+while a predicate filters those candidate pairs into an inner join. It will
+expose the algorithm's cost without introducing physical-plan alternatives.
 
 ## Chapter 7 contract
 
@@ -308,7 +307,7 @@ book-link verifier at `lesson-005`.
 - [x] 003 — SQL Is Just a Frontend
 - [x] 004 — Expressions Are Trees
 - [x] 005 — Binding Gives Names Meaning
-- [ ] 006 — Multiple Outputs
+- [x] 006 — Multiple Outputs
 - [ ] 007 — The First Join
 - [ ] 008 — Join Syntax and Row Preservation
 - [ ] 009 — GROUP BY and Aggregation

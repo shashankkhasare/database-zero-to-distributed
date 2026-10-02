@@ -7,8 +7,7 @@ use crate::row::Value;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
     pub projections: Vec<SelectItem>,
-    pub table: String,
-    pub table_alias: Option<String>,
+    pub tables: Vec<TableReference>,
     pub filter: Expr,
 }
 
@@ -21,6 +20,12 @@ pub enum SelectItem {
         expression: Expr,
         alias: Option<String>,
     },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TableReference {
+    pub name: String,
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -82,9 +87,8 @@ impl Parser {
         self.expect(Token::Select, "expected SELECT at start of query")?;
         let projections = self.parse_select_list()?;
         self.expect(Token::From, "expected FROM after select list")?;
-        let table = self.identifier("expected a table name after FROM")?;
-        let table_alias = self.parse_alias()?;
-        self.expect(Token::Where, "expected WHERE after table name")?;
+        let tables = self.parse_table_list()?;
+        self.expect(Token::Where, "expected WHERE after table list")?;
         let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
         if self.current != self.tokens.len() {
@@ -92,8 +96,7 @@ impl Parser {
         }
         Ok(Query {
             projections,
-            table,
-            table_alias,
+            tables,
             filter,
         })
     }
@@ -121,6 +124,21 @@ impl Parser {
         }
         Ok(SelectItem::Expression {
             expression: self.parse_expression()?,
+            alias: self.parse_alias()?,
+        })
+    }
+
+    fn parse_table_list(&mut self) -> Result<Vec<TableReference>, ParseError> {
+        let mut tables = vec![self.parse_table_reference()?];
+        while self.consume(&Token::Comma) {
+            tables.push(self.parse_table_reference()?);
+        }
+        Ok(tables)
+    }
+
+    fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
+        Ok(TableReference {
+            name: self.identifier("expected a table name")?,
             alias: self.parse_alias()?,
         })
     }
@@ -343,8 +361,8 @@ mod tests {
     #[test]
     fn parses_aliases_qualified_columns_and_null_predicates() {
         let query = parse("SELECT e.name FROM employees AS e WHERE e.name IS NOT NULL;").unwrap();
-        assert_eq!(query.table, "employees");
-        assert_eq!(query.table_alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[0].name, "employees");
+        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
         assert!(matches!(query.filter, Expr::IsNull { negated: true, .. }));
     }
 
@@ -382,10 +400,11 @@ mod tests {
     }
 
     #[test]
-    fn parses_multiple_selected_expressions_and_output_aliases() {
+    fn parses_multiple_projections_and_tables() {
         let query = parse(
-            "SELECT e.name AS employee_name, e.salary + 1000 raised_salary \
-             FROM employees AS e WHERE e.salary > 50000;",
+            "SELECT e.name AS employee_name, d.name department_name \
+             FROM employees AS e, departments d \
+             WHERE e.department_id = d.id;",
         )
         .unwrap();
 
@@ -396,9 +415,11 @@ mod tests {
         ));
         assert!(matches!(
             &query.projections[1],
-            SelectItem::Expression { alias: Some(alias), .. } if alias == "raised_salary"
+            SelectItem::Expression { alias: Some(alias), .. } if alias == "department_name"
         ));
-        assert_eq!(query.table, "employees");
+        assert_eq!(query.tables.len(), 2);
+        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[1].alias.as_deref(), Some("d"));
     }
 
     #[test]

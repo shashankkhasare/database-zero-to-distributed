@@ -29,17 +29,26 @@ impl Row {
     pub fn from_owned(values: Vec<(String, Value)>) -> Self {
         Self { values }
     }
-}
 
-impl Row {
-    pub fn get(&self, column: &str) -> Option<&Value> {
-        for (name, value) in &self.values {
-            if name == column {
-                return Some(value);
-            }
+    pub fn value_at(&self, index: usize, expected_name: &str) -> Result<&Value, String> {
+        let (name, value) = self
+            .values
+            .get(index)
+            .ok_or_else(|| format!("bound column is missing at execution: {expected_name}"))?;
+
+        if name != expected_name {
+            return Err(format!(
+                "bound column mismatch at position {index}: expected {expected_name}, found {name}"
+            ));
         }
 
-        None
+        Ok(value)
+    }
+
+    pub fn combine(&self, right: &Row) -> Row {
+        let mut values = self.values.clone();
+        values.extend(right.values.iter().cloned());
+        Row { values }
     }
 }
 
@@ -67,5 +76,43 @@ impl fmt::Display for Value {
             Value::Boolean(value) => write!(formatter, "{value}"),
             Value::Null => write!(formatter, "NULL"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Row, Value};
+
+    #[test]
+    fn combined_rows_keep_values_in_left_then_right_order() {
+        let left = Row::new(vec![
+            ("id", Value::Integer(1)),
+            ("name", Value::Text("Ada".into())),
+        ]);
+        let right = Row::new(vec![
+            ("id", Value::Integer(10)),
+            ("name", Value::Text("Engineering".into())),
+        ]);
+
+        let combined = left.combine(&right);
+
+        assert_eq!(
+            combined.value_at(1, "name").cloned(),
+            Ok(Value::Text("Ada".into()))
+        );
+        assert_eq!(
+            combined.value_at(3, "name").cloned(),
+            Ok(Value::Text("Engineering".into()))
+        );
+    }
+
+    #[test]
+    fn positional_lookup_detects_catalog_and_row_disagreement() {
+        let row = Row::new(vec![("name", Value::Text("Ada".into()))]);
+
+        assert_eq!(
+            row.value_at(0, "salary").unwrap_err(),
+            "bound column mismatch at position 0: expected salary, found name"
+        );
     }
 }
