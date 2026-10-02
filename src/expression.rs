@@ -72,41 +72,35 @@ pub enum BoundExpr {
     },
 }
 
-impl BoundExpr {
-    pub fn evaluate(&self, row: &Row) -> Result<Value, String> {
-        match self {
-            BoundExpr::Column(name) => row
-                .get(name)
-                .cloned()
-                .ok_or_else(|| format!("bound column is missing at execution: {name}")),
-            BoundExpr::Literal(value) => Ok(value.clone()),
-            BoundExpr::Unary { op, expression } => {
-                let value = expression.evaluate(row)?;
-                evaluate_unary(op, value)
-            }
-            BoundExpr::Binary { left, op, right } => {
-                let left = left.evaluate(row)?;
-                let right = right.evaluate(row)?;
-                evaluate_binary(left, op, right)
-            }
-            BoundExpr::IsNull {
-                expression,
-                negated,
-            } => {
-                let is_null = expression.evaluate(row)? == Value::Null;
-                Ok(Value::Boolean(if *negated { !is_null } else { is_null }))
-            }
-        }
-    }
-}
-
 fn evaluate_unary(op: &UnaryOp, value: Value) -> Result<Value, String> {
     match (op, value) {
         (_, Value::Null) => Ok(Value::Null),
         (UnaryOp::Plus, Value::Integer(value)) => Ok(Value::Integer(value)),
         (UnaryOp::Minus, Value::Integer(value)) => Ok(Value::Integer(-value)),
         (UnaryOp::Not, Value::Boolean(value)) => Ok(Value::Boolean(!value)),
-        _ => Err("bound unary expression received an invalid value".to_string()),
+        _ => Err("bound unary expression received an invalid value".into()),
+    }
+}
+
+fn and(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(false), _) | (_, Value::Boolean(false)) => Ok(Value::Boolean(false)),
+        (Value::Boolean(true), Value::Boolean(true)) => Ok(Value::Boolean(true)),
+        (Value::Boolean(true), Value::Null)
+        | (Value::Null, Value::Boolean(true))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("AND received a non-Boolean value".into()),
+    }
+}
+
+fn or(left: Value, right: Value) -> Result<Value, String> {
+    match (left, right) {
+        (Value::Boolean(true), _) | (_, Value::Boolean(true)) => Ok(Value::Boolean(true)),
+        (Value::Boolean(false), Value::Boolean(false)) => Ok(Value::Boolean(false)),
+        (Value::Boolean(false), Value::Null)
+        | (Value::Null, Value::Boolean(false))
+        | (Value::Null, Value::Null) => Ok(Value::Null),
+        _ => Err("OR received a non-Boolean value".into()),
     }
 }
 
@@ -149,7 +143,7 @@ fn evaluate_binary(left: Value, op: &BinaryOp, right: Value) -> Result<Value, St
         (Value::Boolean(left), BinaryOp::Or, Value::Boolean(right)) => {
             Ok(Value::Boolean(left || right))
         }
-        _ => Err("bound binary expression received invalid values".to_string()),
+        _ => Err("bound binary expression received invalid values".into()),
     }
 }
 
@@ -161,30 +155,31 @@ fn compare<T: PartialEq + PartialOrd>(left: T, op: &BinaryOp, right: T) -> Resul
         BinaryOp::LessOrEqual => left <= right,
         BinaryOp::Greater => left > right,
         BinaryOp::GreaterOrEqual => left >= right,
-        _ => return Err("bound comparison received an invalid operator".to_string()),
+        _ => return Err("bound comparison received an invalid operator".into()),
     };
     Ok(Value::Boolean(result))
 }
 
-fn and(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(false), _) | (_, Value::Boolean(false)) => Ok(Value::Boolean(false)),
-        (Value::Boolean(true), Value::Boolean(true)) => Ok(Value::Boolean(true)),
-        (Value::Boolean(true), Value::Null)
-        | (Value::Null, Value::Boolean(true))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("AND received a non-Boolean value".to_string()),
-    }
-}
-
-fn or(left: Value, right: Value) -> Result<Value, String> {
-    match (left, right) {
-        (Value::Boolean(true), _) | (_, Value::Boolean(true)) => Ok(Value::Boolean(true)),
-        (Value::Boolean(false), Value::Boolean(false)) => Ok(Value::Boolean(false)),
-        (Value::Boolean(false), Value::Null)
-        | (Value::Null, Value::Boolean(false))
-        | (Value::Null, Value::Null) => Ok(Value::Null),
-        _ => Err("OR received a non-Boolean value".to_string()),
+impl BoundExpr {
+    pub fn evaluate(&self, row: &Row) -> Result<Value, String> {
+        match self {
+            BoundExpr::Column(name) => row
+                .get(name)
+                .cloned()
+                .ok_or_else(|| format!("bound column is missing at execution: {name}")),
+            BoundExpr::Literal(value) => Ok(value.clone()),
+            BoundExpr::Unary { op, expression } => evaluate_unary(op, expression.evaluate(row)?),
+            BoundExpr::Binary { left, op, right } => {
+                evaluate_binary(left.evaluate(row)?, op, right.evaluate(row)?)
+            }
+            BoundExpr::IsNull {
+                expression,
+                negated,
+            } => {
+                let is_null = expression.evaluate(row)? == Value::Null;
+                Ok(Value::Boolean(if *negated { !is_null } else { is_null }))
+            }
+        }
     }
 }
 
