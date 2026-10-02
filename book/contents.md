@@ -15,6 +15,7 @@ their manuscripts exist.
 4. [Expressions Are Trees](004-expressions-are-trees.md)
 5. [Binding Gives Names Meaning](005-binding-gives-names-meaning.md)
 6. [Multiple Outputs](006-multiple-outputs.md)
+7. [The First Join](007-the-first-join.md)
 
 Later chapters will be added when their implementation begins. The full
 curriculum is maintained in
