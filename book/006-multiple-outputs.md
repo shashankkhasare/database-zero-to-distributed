@@ -700,13 +700,29 @@ Start the prompt and enter the same query in its readable form:
 cargo run --quiet -- --prompt
 ```
 
+```sql
+SELECT e.name AS employee_name,
+       e.salary + 1000 AS raised_salary
+FROM employees AS e
+WHERE e.salary > 50000;
+```
+
 ```text
-sql> SELECT e.name AS employee_name,
-...>        e.salary + 1000 AS raised_salary
-...> FROM employees AS e
-...> WHERE e.salary > 50000;
 {employee_name: "Ada", raised_salary: 71000}
 {employee_name: "Grace", raised_salary: 73000}
+```
+
+A qualified wildcard can also appear beside another select item. This query
+expands every `employees` column, then appends the computed salary:
+
+```sql
+SELECT e.*, e.salary + 1000 AS raised_salary
+FROM employees AS e
+WHERE e.id = 1;
+```
+
+```text
+{id: 1, name: "Ada", salary: 70000, raised_salary: 71000}
 ```
 
 After the inherited prompt receives the semicolon, parsing produces two
