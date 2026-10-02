@@ -86,7 +86,7 @@ pub fn tokenize(sql: &str) -> Result<Vec<Token>, LexError> {
                 if current >= characters.len() {
                     return Err(LexError {
                         position: start + 1,
-                        message: "unterminated string".into(),
+                        message: "unterminated string".to_string(),
                     });
                 }
                 if characters[current] == '\'' {

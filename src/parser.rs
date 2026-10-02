@@ -43,6 +43,37 @@ struct Parser {
 }
 
 impl Parser {
+    fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
+
+    fn consume(&mut self, token: &Token) -> bool {
+        if self.peek() == Some(token) {
+            self.current += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn expect(&mut self, token: Token, message: &str) -> Result<(), ParseError> {
+        if self.consume(&token) {
+            Ok(())
+        } else {
+            Err(ParseError(message.to_string()))
+        }
+    }
+
+    fn identifier(&mut self, message: &str) -> Result<String, ParseError> {
+        match self.peek().cloned() {
+            Some(Token::Identifier(value)) => {
+                self.current += 1;
+                Ok(value)
+            }
+            _ => Err(ParseError(message.to_string())),
+        }
+    }
+
     fn parse_query(&mut self) -> Result<Query, ParseError> {
         self.expect(Token::Select, "expected SELECT at start of query")?;
         let projections = self.parse_select_list()?;
@@ -52,7 +83,7 @@ impl Parser {
         let filter = self.parse_expression()?;
         self.expect(Token::Semicolon, "expected ; after query")?;
         if self.current != self.tokens.len() {
-            return Err(ParseError("unexpected token after ;".into()));
+            return Err(ParseError("unexpected token after ;".to_string()));
         }
         Ok(Query {
             projections,
@@ -228,6 +259,22 @@ impl Parser {
         self.parse_primary()
     }
 
+    fn parse_column_reference(&mut self) -> Result<Expr, ParseError> {
+        let first = self.identifier("expected a column name")?;
+        if self.consume(&Token::Dot) {
+            let name = self.identifier("expected a column name after .")?;
+            Ok(Expr::Column {
+                qualifier: Some(first),
+                name,
+            })
+        } else {
+            Ok(Expr::Column {
+                qualifier: None,
+                name: first,
+            })
+        }
+    }
+
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         match self.peek().cloned() {
             Some(Token::Identifier(_)) => self.parse_column_reference(),
@@ -257,51 +304,7 @@ impl Parser {
                 self.expect(Token::RightParen, "expected ) after expression")?;
                 Ok(expression)
             }
-            _ => Err(ParseError("expected an expression".into())),
-        }
-    }
-
-    fn parse_column_reference(&mut self) -> Result<Expr, ParseError> {
-        let first = self.identifier("expected a column name")?;
-        if self.consume(&Token::Dot) {
-            let name = self.identifier("expected a column name after .")?;
-            Ok(Expr::Column {
-                qualifier: Some(first),
-                name,
-            })
-        } else {
-            Ok(Expr::Column {
-                qualifier: None,
-                name: first,
-            })
-        }
-    }
-
-    fn peek(&self) -> Option<&Token> {
-        self.tokens.get(self.current)
-    }
-    fn consume(&mut self, token: &Token) -> bool {
-        if self.peek() == Some(token) {
-            self.current += 1;
-            true
-        } else {
-            false
-        }
-    }
-    fn expect(&mut self, token: Token, message: &str) -> Result<(), ParseError> {
-        if self.consume(&token) {
-            Ok(())
-        } else {
-            Err(ParseError(message.into()))
-        }
-    }
-    fn identifier(&mut self, message: &str) -> Result<String, ParseError> {
-        match self.peek().cloned() {
-            Some(Token::Identifier(value)) => {
-                self.current += 1;
-                Ok(value)
-            }
-            _ => Err(ParseError(message.into())),
+            _ => Err(ParseError("expected an expression".to_string())),
         }
     }
 }
