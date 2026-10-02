@@ -188,11 +188,13 @@ database behavior behind it.
 - Lesson 005 binds tables, aliases, and columns against a catalog, checks
   expression types, and evaluates bound expressions with SQL three-valued
   logic.
-- Lesson 006 adds multiple selected expressions with output aliases. It turns
-  projection into a list without changing the one-table binding scope.
+- Lesson 006 adds multiple selected expressions, output aliases, `*`, and
+  qualified wildcards. It turns projection into a list and expands wildcards
+  from the one-table catalog schema without changing the binding scope.
 - Lesson 007 adds SQL-89-style joins expressed with multiple `FROM` inputs and
-  a `WHERE` predicate. It executes the first logical join with a visible
-  nested loop and exposes that algorithm's cost.
+  an optional `WHERE` predicate. Omitting `WHERE` exposes the Cartesian product;
+  supplying it filters candidate row pairs into an inner join. Execution uses
+  a visible nested loop and exposes that algorithm's cost.
 - Lesson 008 adds explicit `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON`
   forms and makes their different row-preservation rules visible.
 - Lesson 009 adds aggregate functions, `GROUP BY`, and `HAVING`.
@@ -306,6 +308,8 @@ operators with incompatible types.
 Introduce:
 
 - multiple selected expressions and output aliases
+- unqualified `*` and qualified wildcards such as `e.*`
+- catalog-driven wildcard expansion in the existing one-table scope
 - explicit names for computed output expressions
 - duplicate output-name errors
 
@@ -319,7 +323,9 @@ rows without also changing the query's binding scope.
 Introduce:
 
 - multiple `FROM` inputs and qualified column resolution
-- SQL-89-style joins through a `WHERE` predicate
+- an optional `WHERE` clause
+- the Cartesian product produced when multiple inputs have no filter
+- SQL-89-style inner joins through a `WHERE` predicate
 - ambiguous unqualified-column errors
 - a logical `Join` node
 

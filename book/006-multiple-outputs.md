@@ -35,9 +35,7 @@ This chapter changes projection from one expression into a named list. It does
 not change the input side of the query: binding still uses one table and the
 logical plan remains `Project -> Filter -> Scan`.
 
-The prompt has accepted multiline SQL since Chapter 3, so the query can already
-be entered in this readable form. This chapter carries its select list through
-the frontend:
+This chapter carries its select list through the frontend:
 
 ```text
 comma-separated SQL
@@ -49,9 +47,10 @@ Vec<ProjectExpression>
 one wider Row
 ```
 
-The final step needs no new plan node. Chapter 5 already made `Project` hold a
-vector of checked expressions; this chapter finally gives that vector more than
-one entry.
+Multiple selected expressions do not require a new plan node. Chapter 5 already
+made `Project` hold a vector of checked expressions. This chapter teaches the
+parser and binder to fill that vector with one entry for each selected
+expression.
 
 Before changing the program, begin from the completed Chapter 5 checkpoint:
 
