@@ -1,5 +1,5 @@
 use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
-use crate::parser::Query;
+use crate::parser::{Query, SelectItem};
 use crate::plan::{Plan, ProjectExpression};
 use crate::row::Row;
 
@@ -202,6 +202,49 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
     }
 }
 
+fn push_output(
+    expressions: &mut Vec<ProjectExpression>,
+    name: String,
+    expression: BoundExpr,
+) -> Result<(), String> {
+    if expressions.iter().any(|existing| existing.name == name) {
+        return Err(format!("duplicate output column: {name}"));
+    }
+    expressions.push(ProjectExpression { name, expression });
+    Ok(())
+}
+
+fn expand_wildcard(
+    qualifier: Option<String>,
+    scope: &Scope<'_>,
+    expressions: &mut Vec<ProjectExpression>,
+) -> Result<(), String> {
+    let tables: Vec<&ScopeTable<'_>> = match qualifier {
+        Some(qualifier) => vec![
+            scope
+                .tables
+                .iter()
+                .find(|table| table.qualifier == qualifier)
+                .ok_or_else(|| format!("unknown table or alias: {qualifier}"))?,
+        ],
+        None => scope.tables.iter().collect(),
+    };
+
+    for table in tables {
+        for (index, column) in table.columns.iter().enumerate() {
+            push_output(
+                expressions,
+                column.name.clone(),
+                BoundExpr::Column {
+                    index: table.offset + index,
+                    name: column.name.clone(),
+                },
+            )?;
+        }
+    }
+    Ok(())
+}
+
 impl Catalog {
     pub fn bind(&self, query: Query) -> Result<Plan, String> {
         let mut input_tables = Vec::new();
@@ -235,18 +278,19 @@ impl Catalog {
         };
         let mut expressions = Vec::new();
         for selected in query.projections {
-            let (expression, _) = bind_expression(selected.expression, &scope)?;
-            let name = selected.alias.unwrap_or_else(|| match &expression {
-                BoundExpr::Column { name, .. } => name.clone(),
-                _ => "expression".into(),
-            });
-            if expressions
-                .iter()
-                .any(|existing: &ProjectExpression| existing.name == name)
-            {
-                return Err(format!("duplicate output column: {name}"));
+            match selected {
+                SelectItem::Expression { expression, alias } => {
+                    let (expression, _) = bind_expression(expression, &scope)?;
+                    let name = alias.unwrap_or_else(|| match &expression {
+                        BoundExpr::Column { name, .. } => name.clone(),
+                        _ => "expression".into(),
+                    });
+                    push_output(&mut expressions, name, expression)?;
+                }
+                SelectItem::Wildcard { qualifier } => {
+                    expand_wildcard(qualifier, &scope, &mut expressions)?;
+                }
             }
-            expressions.push(ProjectExpression { name, expression });
         }
 
         let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
@@ -337,6 +381,38 @@ mod tests {
                 .bind(parse("SELECT name FROM employees WHERE TRUE < FALSE;").unwrap())
                 .unwrap_err(),
             "ordered comparison requires integers or text: found Boolean"
+        );
+    }
+
+    #[test]
+    fn expands_wildcards_in_catalog_order() {
+        let rows = catalog()
+            .bind(parse("SELECT * FROM employees WHERE TRUE;").unwrap())
+            .unwrap()
+            .execute()
+            .unwrap();
+
+        assert_eq!(
+            rows,
+            vec![Row::new(vec![
+                ("name", Value::Text("Ada".into())),
+                ("salary", Value::Integer(70_000)),
+            ])]
+        );
+    }
+
+    #[test]
+    fn validates_a_qualified_wildcard() {
+        assert!(
+            catalog()
+                .bind(parse("SELECT e.* FROM employees AS e WHERE TRUE;").unwrap())
+                .is_ok()
+        );
+        assert_eq!(
+            catalog()
+                .bind(parse("SELECT x.* FROM employees AS e WHERE TRUE;").unwrap())
+                .unwrap_err(),
+            "unknown table or alias: x"
         );
     }
 }

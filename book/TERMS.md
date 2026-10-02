@@ -48,7 +48,9 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | type checking | Chapter 5, §5.4 | Verifying that expression operators receive compatible operand types before execution |
 | three-valued logic | Chapter 5, §5.5 | SQL Boolean logic whose possible results are true, false, and unknown (`NULL`) |
 | join | Chapter 5, §5.13 | An operation that combines related rows from two input relations |
-| output alias | Chapter 6, §6.2 | A query-provided name for a value produced by a selected expression |
+| select list | Chapter 6, §6.1 | The ordered items written after `SELECT`, each of which contributes one or more output columns |
+| output alias | Chapter 6, §6.1 | A query-provided name for a value produced by a selected expression |
+| wildcard | Chapter 6, §6.1 | `*` or a qualified form such as `e.*`, expanded during binding into the visible catalog columns in schema order |
 
 ## Maintenance rule
 

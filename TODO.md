@@ -15,9 +15,10 @@ not design distant lessons prematurely.
 # Completed milestone: 006, Multiple Outputs
 
 Lesson 006 begins from Chapter 5's single selected expression. It lets a query
-project several expressions and give those outputs deliberate names. The
-binding scope remains limited to one table so the chapter has one central
-change: projection becomes a named list.
+project several expressions, give those outputs deliberate names, and expand
+`*` or `e.*` from the selected table's catalog schema. The binding scope remains
+limited to one table: projection becomes a list of explicit or expanded
+outputs.
 
 ## Chapter 6 contract
 
@@ -38,10 +39,14 @@ to describe its result values.
 ## Chapter 6 teaching sequence
 
 - [x] Extend the grammar and AST from one selected expression to a
-      comma-separated select list with optional output aliases
+      comma-separated list of expression items, `*`, and qualified wildcards,
+      with optional output aliases on expressions
 - [x] Run a parser checkpoint that preserves every selected expression and
-      output alias while retaining one table reference
-- [x] Bind every selected expression in the existing one-table scope
+      output alias or wildcard while retaining one table reference
+- [x] Bind every selected expression in the existing one-table scope and
+      expand wildcards in catalog column order
+- [x] Validate a qualified wildcard against the table name or alias before
+      expanding it
 - [x] Use an explicit alias as the output name, retain a bare column's name,
       and reject duplicate output names
 - [x] Let the existing `Project` node evaluate the complete expression list
@@ -64,7 +69,9 @@ to describe its result values.
 
 Lesson 007 begins from Chapter 6's one-table query with multiple outputs. It
 will introduce multiple input tables, make ambiguous columns visible, and
-execute the first logical join with a simple nested loop. The chapter will
+execute the first logical join with a simple nested loop. The chapter will also
+make `WHERE` optional: without it the nested loop exposes the Cartesian product,
+while a predicate filters those candidate pairs into an inner join. It will
 expose the algorithm's cost without introducing physical-plan alternatives.
 
 ## Chapter 7 contract
@@ -84,6 +91,7 @@ column still fails before execution.
 ## Chapter 7 teaching sequence
 
 - [ ] Extend `FROM` from one table reference to a comma-separated input list
+- [ ] Make `WHERE` optional and represent the absence of a filter explicitly
 - [ ] Run a parser checkpoint that preserves every selected expression, output
       alias, table name, and input alias
 - [ ] Add `departments` to the in-memory catalog and create one binding scope
@@ -94,7 +102,8 @@ column still fails before execution.
       distinguishes columns belonging to different inputs
 - [ ] Add a logical `Join` node whose two children are input plans
 - [ ] Execute `Join` with two visible nested loops, combine each row pair, and
-      leave the `WHERE` predicate in the existing `Filter` node
+      place a present `WHERE` predicate in the existing `Filter` node
+- [ ] Run a query without `WHERE` to expose the complete Cartesian product
 - [ ] Build and print the complete `Project -> Filter -> Join(Scan, Scan)` plan
 - [ ] Run the representative query and explain why three employees and three
       departments require nine candidate row pairs before filtering
@@ -105,8 +114,8 @@ column still fails before execution.
 
 ## Chapter 7 boundaries
 
-- Use comma-separated inputs plus `WHERE`; explicit `JOIN ... ON` belongs to
-  Chapter 8.
+- Use comma-separated inputs with an optional `WHERE`; explicit `JOIN ... ON`
+  belongs to Chapter 8.
 - Keep `Join` logical. Do not add `NestedLoopJoin`, `HashJoin`, or a physical
   plan yet.
 - Do not optimize the nested loop or introduce join ordering.

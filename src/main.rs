@@ -267,4 +267,21 @@ mod tests {
             "duplicate output column: name"
         );
     }
+
+    #[test]
+    fn wildcard_projection_uses_catalog_column_order() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.* FROM employees AS e WHERE e.id = 1;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![Row::new(vec![
+                ("id", Value::Integer(1)),
+                ("name", Value::Text("Ada".into())),
+                ("salary", Value::Integer(70_000)),
+                ("department_id", Value::Integer(10)),
+            ])]
+        );
+    }
 }

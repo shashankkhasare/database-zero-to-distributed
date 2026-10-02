@@ -258,8 +258,8 @@ because no early chapter needs it.
 | One-column `SELECT`/`FROM`/`WHERE`, `>`, integer, semicolon, basic identifiers | `lesson-003` | Implemented and tested. |
 | Qualified names, aliases, core literals, arithmetic, comparison, Boolean and `NULL` predicates | `lesson-004` foundation and Chapter 67 completion | Core parsing and precedence are executable and tested; later expression forms complete the planned hierarchy. |
 | Catalog binding, basic expression types, and three-valued evaluation | `lesson-005` | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
-| Multiple selected expressions and output aliases | Chapter 6 | Projection produces several deliberately named values while retaining one input table. |
-| Multiple table references and comma-plus-`WHERE` inner joins | Chapter 7 | Multi-table binding, ambiguity errors, and the first logical join are executable. |
+| Multiple selected expressions, output aliases, `*`, and qualified wildcards | Chapter 6 | Projection produces several deliberately named values, and wildcard items expand from the catalog in one-table scope. |
+| Multiple table references, optional `WHERE`, Cartesian products, and comma-plus-`WHERE` inner joins | Chapter 7 | Multi-table binding, ambiguity errors, unfiltered row combinations, and the first logical join are executable. |
 | `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 8 | Each join form has defined row-preservation and execution semantics. |
 | Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 9 | Aggregate and grouping behavior is executable and tested. |
 | `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 10 | Ordering and duplicate behavior is explicit. |
