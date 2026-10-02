@@ -6,16 +6,21 @@ use crate::row::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
-    pub projections: Vec<SelectExpression>,
+    pub projections: Vec<SelectItem>,
     pub table: String,
     pub table_alias: Option<String>,
     pub filter: Expr,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct SelectExpression {
-    pub expression: Expr,
-    pub alias: Option<String>,
+pub enum SelectItem {
+    Wildcard {
+        qualifier: Option<String>,
+    },
+    Expression {
+        expression: Expr,
+        alias: Option<String>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -40,6 +45,10 @@ struct Parser {
 impl Parser {
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.current)
+    }
+
+    fn peek_at(&self, offset: usize) -> Option<&Token> {
+        self.tokens.get(self.current + offset)
     }
 
     fn consume(&mut self, token: &Token) -> bool {
@@ -89,16 +98,28 @@ impl Parser {
         })
     }
 
-    fn parse_select_list(&mut self) -> Result<Vec<SelectExpression>, ParseError> {
-        let mut expressions = vec![self.parse_select_expression()?];
+    fn parse_select_list(&mut self) -> Result<Vec<SelectItem>, ParseError> {
+        let mut expressions = vec![self.parse_select_item()?];
         while self.consume(&Token::Comma) {
-            expressions.push(self.parse_select_expression()?);
+            expressions.push(self.parse_select_item()?);
         }
         Ok(expressions)
     }
 
-    fn parse_select_expression(&mut self) -> Result<SelectExpression, ParseError> {
-        Ok(SelectExpression {
+    fn parse_select_item(&mut self) -> Result<SelectItem, ParseError> {
+        if self.consume(&Token::Star) {
+            return Ok(SelectItem::Wildcard { qualifier: None });
+        }
+        if let (Some(Token::Identifier(qualifier)), Some(Token::Dot), Some(Token::Star)) =
+            (self.peek_at(0), self.peek_at(1), self.peek_at(2))
+        {
+            let qualifier = qualifier.clone();
+            self.current += 3;
+            return Ok(SelectItem::Wildcard {
+                qualifier: Some(qualifier),
+            });
+        }
+        Ok(SelectItem::Expression {
             expression: self.parse_expression()?,
             alias: self.parse_alias()?,
         })
@@ -293,22 +314,25 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use super::parse;
+    use super::{SelectItem, parse};
     use crate::expression::{BinaryOp, Expr};
 
     #[test]
     fn multiplication_binds_more_tightly_than_addition() {
         let query = parse("SELECT salary + 2 * 3 FROM employees WHERE salary > 0;").unwrap();
+        let SelectItem::Expression { expression, .. } = &query.projections[0] else {
+            panic!("expected a selected expression")
+        };
         let Expr::Binary {
             op: BinaryOp::Add,
             right,
             ..
-        } = query.projections[0].expression.clone()
+        } = expression
         else {
             panic!("expected addition")
         };
         assert!(matches!(
-            *right,
+            **right,
             Expr::Binary {
                 op: BinaryOp::Multiply,
                 ..
@@ -327,10 +351,10 @@ mod tests {
     #[test]
     fn parses_boolean_literals() {
         let query = parse("SELECT TRUE FROM employees WHERE FALSE;").unwrap();
-        assert_eq!(
-            query.projections[0].expression.clone(),
-            Expr::Literal(crate::row::Value::Boolean(true))
-        );
+        let SelectItem::Expression { expression, .. } = &query.projections[0] else {
+            panic!("expected a selected expression")
+        };
+        assert_eq!(expression, &Expr::Literal(crate::row::Value::Boolean(true)));
         assert_eq!(
             query.filter,
             Expr::Literal(crate::row::Value::Boolean(false))
@@ -366,8 +390,29 @@ mod tests {
         .unwrap();
 
         assert_eq!(query.projections.len(), 2);
-        assert_eq!(query.projections[0].alias.as_deref(), Some("employee_name"));
-        assert_eq!(query.projections[1].alias.as_deref(), Some("raised_salary"));
+        assert!(matches!(
+            &query.projections[0],
+            SelectItem::Expression { alias: Some(alias), .. } if alias == "employee_name"
+        ));
+        assert!(matches!(
+            &query.projections[1],
+            SelectItem::Expression { alias: Some(alias), .. } if alias == "raised_salary"
+        ));
         assert_eq!(query.table, "employees");
+    }
+
+    #[test]
+    fn parses_unqualified_and_qualified_wildcards() {
+        let query = parse("SELECT *, e.* FROM employees AS e WHERE TRUE;").unwrap();
+
+        assert_eq!(
+            query.projections,
+            vec![
+                SelectItem::Wildcard { qualifier: None },
+                SelectItem::Wildcard {
+                    qualifier: Some("e".into()),
+                },
+            ]
+        );
     }
 }

@@ -4,13 +4,13 @@
 Chapter contract
 
 Continue from Chapter 5's one selected expression. Add a list of selected
-expressions and explicit output aliases while retaining one input table and the
-existing one-table binding scope.
+items: expressions with output aliases, `*`, and qualified wildcards. Retain
+one input table and the existing one-table binding scope.
 
 Visible outcome
 
-A query projects an employee name and a computed salary into two deliberately
-named output columns.
+A query can project deliberately named expressions or expand the selected
+table's columns in catalog order.
 -->
 
 > A result row can contain more than one answer.
@@ -31,26 +31,28 @@ FROM employees AS e
 WHERE e.salary > 50000;
 ```
 
-This chapter changes projection from one expression into a named list. It does
-not change the input side of the query: binding still uses one table and the
-logical plan remains `Project -> Filter -> Scan`.
+This chapter changes projection from one expression into a list of selected
+items. Most items are expressions with optional output aliases. A wildcard is
+different: `*` asks the binder to produce one output for every column visible
+from the selected table. The input side remains unchanged, so binding still
+uses one table and the logical plan remains `Project -> Filter -> Scan`.
 
 This chapter carries its select list through the frontend:
 
 ```text
-comma-separated SQL
+comma-separated select items
         ↓ parse
-Vec<SelectExpression>
+Vec<SelectItem>
         ↓ bind in one Scope
 Vec<ProjectExpression>
         ↓ evaluate for each surviving row
 one wider Row
 ```
 
-Multiple selected expressions do not require a new plan node. Chapter 5 already
-made `Project` hold a vector of checked expressions. This chapter teaches the
-parser and binder to fill that vector with one entry for each selected
-expression.
+Multiple selected items do not require a new plan node. Chapter 5 already made
+`Project` hold a vector of checked expressions. This chapter teaches the parser
+and binder to fill that vector from explicit expressions and catalog-expanded
+wildcards.
 
 Before changing the program, begin from the completed Chapter 5 checkpoint:
 
@@ -61,53 +63,60 @@ git switch --create chapter-006 lesson-005
 ## 6.1 Represent a select list
 
 The query grammar currently accepts one expression after `SELECT`. Replace that
-single position with a comma-separated list:
+single position with a comma-separated list of selected items:
 
 ```text
 query             = "SELECT" select_list
                     "FROM" identifier alias?
                     "WHERE" expression ";" ;
 
-select_list       = select_expression ("," select_expression)* ;
-select_expression = expression alias? ;
+select_list       = select_item ("," select_item)* ;
+select_item       = "*" | qualified_star | expression alias? ;
+qualified_star    = identifier "." "*" ;
 alias             = "AS"? identifier ;
 ```
 
 `select_list` must contain at least one item. The parenthesized group may then
 repeat zero or more times, so every additional item begins with a comma.
-`SELECT FROM ...` remains invalid, while one selected expression remains valid.
+`SELECT FROM ...` remains invalid, while one item remains valid.
 
-Each item needs both the expression to compute and the optional name supplied
-by the query. Introduce that pair beside `Query`, then replace its singular
-projection with a vector.
+An expression item needs the expression to compute and its optional output
+alias. A wildcard instead preserves an optional qualifier until binding can
+check it and consult the table schema. Represent those two shapes explicitly,
+then replace the singular projection with a vector.
 
-`src/parser.rs`: replace `Query` and add `SelectExpression`
+`src/parser.rs`: replace `Query` and add `SelectItem`
 
 ```rust
 #[derive(Debug, PartialEq, Eq)]
 pub struct Query {
-    pub projections: Vec<SelectExpression>,
+    pub projections: Vec<SelectItem>,
     pub table: String,
     pub table_alias: Option<String>,
     pub filter: Expr,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct SelectExpression {
-    pub expression: Expr,
-    pub alias: Option<String>,
+pub enum SelectItem {
+    Wildcard {
+        qualifier: Option<String>,
+    },
+    Expression {
+        expression: Expr,
+        alias: Option<String>,
+    },
 }
 ```
 
 For the representative query, the vector will contain two entries:
 
 ```text
-SelectExpression {
+SelectItem::Expression {
     expression: Column(e.name),
     alias: Some("employee_name"),
 }
 
-SelectExpression {
+SelectItem::Expression {
     expression: Add(Column(e.salary), Integer(1000)),
     alias: Some("raised_salary"),
 }
@@ -116,11 +125,26 @@ SelectExpression {
 These are still unresolved AST expressions. The aliases name their eventual
 outputs; they do not participate in resolving `e.name` or `e.salary`.
 
+The two wildcard spellings become:
+
+```text
+*    → SelectItem::Wildcard { qualifier: None }
+e.*  → SelectItem::Wildcard { qualifier: Some("e") }
+```
+
+The parser records the request but does not expand it. Only the binder knows
+which catalog table `e` names and which columns that table contains.
+
+These alternatives complete the planned `select_list` shapes in Appendix B.
+`DISTINCT` and `ALL` are not select-list items; they modify the result of the
+whole `SELECT` and remain with duplicate handling in Chapter 10.
+
 ## 6.2 Recognize the comma
 
 The new grammar contains only one token that the lexer does not already know:
-the comma separating selected expressions. Add its representation beside the
-other punctuation tokens.
+the comma separating selected items. `Star` already represents `*` because the
+expression grammar uses the same character for multiplication. Add the comma
+beside the other punctuation tokens.
 
 `src/lexer.rs`: add `Comma` after `Dot` in `Token`
 
@@ -140,47 +164,77 @@ Then recognize its one-character spelling in the punctuation helper.
 ('(', _) => Some((Token::LeftParen, 1)),
 ```
 
-`AS` and identifiers already have tokens, so output aliases need no other
-lexer change. The parser can now distinguish the boundary between one selected
-expression and the next.
+`AS`, identifiers, dots, and stars already have tokens, so aliases and
+wildcards need no other lexer change. The parser can now distinguish the
+boundary between one selected item and the next.
 
-## 6.3 Parse every selected expression
+## 6.3 Parse every selected item
 
-We will implement the two new grammar productions directly:
+We will implement the three new grammar productions directly:
 
 ```text
-select_list       = select_expression ("," select_expression)* ;
-select_expression = expression alias? ;
+select_list       = select_item ("," select_item)* ;
+select_item       = "*" | qualified_star | expression alias? ;
+qualified_star    = identifier "." "*" ;
 ```
 
-`parse_select_expression()` delegates the expression to the precedence parser
-from Chapter 4. That parser naturally stops at `AS`, a direct alias, or a
-comma because none of them is an expression operator. The existing
-`parse_alias()` method can then consume the optional output alias.
+At a select-item boundary, a leading `*` is an unqualified wildcard. The three
+tokens `identifier`, `.`, and `*` form a qualified wildcard. These checks must
+happen before expression parsing because the expression parser would otherwise
+treat `*` as multiplication or expect a column name after the dot.
+
+Looking ahead by two tokens makes the qualified form visible without consuming
+the beginning of an ordinary expression.
+
+`src/parser.rs`: add after `peek()`
+
+```rust
+fn peek_at(&self, offset: usize) -> Option<&Token> {
+    self.tokens.get(self.current + offset)
+}
+```
+
+If neither wildcard form matches, `parse_select_item()` delegates to the
+precedence parser from Chapter 4. That parser naturally stops at `AS`, a direct
+alias, or a comma because none is an expression operator. The existing
+`parse_alias()` method then consumes the optional output alias.
 
 `src/parser.rs`: add before `parse_alias()`
 
 ```rust
-fn parse_select_list(&mut self) -> Result<Vec<SelectExpression>, ParseError> {
-    let mut expressions = vec![self.parse_select_expression()?];
+fn parse_select_list(&mut self) -> Result<Vec<SelectItem>, ParseError> {
+    let mut expressions = vec![self.parse_select_item()?];
     while self.consume(&Token::Comma) {
-        expressions.push(self.parse_select_expression()?);
+        expressions.push(self.parse_select_item()?);
     }
     Ok(expressions)
 }
 
-fn parse_select_expression(&mut self) -> Result<SelectExpression, ParseError> {
-    Ok(SelectExpression {
+fn parse_select_item(&mut self) -> Result<SelectItem, ParseError> {
+    if self.consume(&Token::Star) {
+        return Ok(SelectItem::Wildcard { qualifier: None });
+    }
+    if let (Some(Token::Identifier(qualifier)),
+        Some(Token::Dot), Some(Token::Star)) =
+        (self.peek_at(0), self.peek_at(1), self.peek_at(2))
+    {
+        let qualifier = qualifier.clone();
+        self.current += 3;
+        return Ok(SelectItem::Wildcard {
+            qualifier: Some(qualifier),
+        });
+    }
+    Ok(SelectItem::Expression {
         expression: self.parse_expression()?,
         alias: self.parse_alias()?,
     })
 }
 ```
 
-The first call before the loop implements the required first
-`select_expression`. Each successful comma consumption implements one
-repetition of `("," select_expression)*`. If there is no comma, the loop ends
-without consuming `FROM`.
+The first call before the loop implements the required first `select_item`.
+Each successful comma consumption implements one repetition of
+`("," select_item)*`. If there is no comma, the loop ends without consuming
+`FROM`.
 
 The outer query parser should now ask for the complete list rather than one
 expression.
@@ -265,16 +319,16 @@ Run it and enter the representative query:
 cargo run --quiet
 ```
 
-The relevant portion of the output contains two selected expressions and both
+The relevant portion of the output contains two expression items and both
 aliases:
 
 ```text
 projections: [
-    SelectExpression {
+    Expression {
         expression: Column { qualifier: Some("e"), name: "name" },
         alias: Some("employee_name"),
     },
-    SelectExpression {
+    Expression {
         expression: Binary { ... },
         alias: Some("raised_salary"),
     },
@@ -282,56 +336,131 @@ projections: [
 ```
 
 The parser has preserved the list and its names, but it has not checked either
-expression. We now need to send both entries through the one-table scope built
-in Chapter 5.
+expression. Enter a second query to inspect the other item shape:
 
-## 6.5 Bind and name every output
+```sql
+SELECT *, e.* FROM employees AS e WHERE TRUE;
+```
 
-Table lookup and scope construction do not change. Both selected expressions
-belong to the same query and therefore reuse the same `Scope`:
+Its two entries are `Wildcard { qualifier: None }` and
+`Wildcard { qualifier: Some("e") }`. The AST still does not contain the three
+employee columns because parsing has no catalog. We now send every item through
+the one-table scope built in Chapter 5.
+
+## 6.5 Bind and expand every output
+
+Table lookup and scope construction do not change. Every selected item belongs
+to the same query and therefore reuses the same `Scope`:
 
 ```text
 employees catalog entry + alias e
                  ↓
-              Scope
-              ↙   ↘
-        e.name     e.salary + 1000
+       Scope { qualifier: e,
+               columns: id, name, salary }
+          ├── e.name
+          ├── e.salary + 1000
+          └── e.* → id, name, salary
 ```
 
-Replace the single projection binding inside `Catalog::bind()` with a loop over
-`query.projections`.
+An expression and a qualified wildcard use the same qualifier rule. If an alias
+exists, it is the accepted qualifier; otherwise the table name is accepted.
+Move that check out of the column arm so wildcard expansion can reuse it.
+
+`src/catalog.rs`: add after `Scope`
+
+```rust
+fn require_qualifier(qualifier: Option<&str>, scope: &Scope<'_>)
+    -> Result<(), String>
+{
+    if let Some(qualifier) = qualifier {
+        let expected = scope.alias.unwrap_or(scope.table_name);
+        if qualifier != expected {
+            return Err(format!("unknown table or alias: {qualifier}"));
+        }
+    }
+    Ok(())
+}
+```
+
+`src/catalog.rs`: replace the qualifier check in the `Expr::Column` arm
+
+```rust
+require_qualifier(qualifier.as_deref(), scope)?;
+```
+
+Both expression items and wildcard expansion can introduce duplicate output
+names. Keep that rule in one function which appends an output only after its
+name is known to be unique.
+
+`src/catalog.rs`: add after `bind_expression()`
+
+```rust
+fn push_output(expressions: &mut Vec<ProjectExpression>,
+    name: String, expression: BoundExpr) -> Result<(), String>
+{
+    if expressions.iter().any(|existing| existing.name == name) {
+        return Err(format!("duplicate output column: {name}"));
+    }
+    expressions.push(ProjectExpression { name, expression });
+    Ok(())
+}
+```
+
+Import `SelectItem`, then replace the single projection binding inside
+`Catalog::bind()` with a loop over `query.projections`.
+
+`src/catalog.rs`: replace the parser import
+
+```rust
+use crate::parser::{Query, SelectItem};
+```
 
 `src/catalog.rs`: replace the old projection-binding block
 
 ```rust
 let mut expressions = Vec::new();
 for selected in query.projections {
-    let (expression, _) = bind_expression(selected.expression, &scope)?;
-    let name = selected.alias.unwrap_or_else(|| match &expression {
-        BoundExpr::Column(name) => name.clone(),
-        _ => "expression".into(),
-    });
-    if expressions
-        .iter()
-        .any(|existing: &ProjectExpression| existing.name == name)
-    {
-        return Err(format!("duplicate output column: {name}"));
+    match selected {
+        SelectItem::Expression { expression, alias } => {
+            let (expression, _) = bind_expression(expression, &scope)?;
+            let name = alias.unwrap_or_else(|| match &expression {
+                BoundExpr::Column(name) => name.clone(),
+                _ => "expression".into(),
+            });
+            push_output(&mut expressions, name, expression)?;
+        }
+        SelectItem::Wildcard { qualifier } => {
+            require_qualifier(qualifier.as_deref(), &scope)?;
+            for column in scope.columns {
+                push_output(
+                    &mut expressions,
+                    column.name.clone(),
+                    BoundExpr::Column(column.name.clone()),
+                )?;
+            }
+        }
     }
-    expressions.push(ProjectExpression { name, expression });
 }
 ```
 
-Each iteration does three things in order:
+For an expression item, each iteration does three things in order:
 
 1. `bind_expression()` resolves and type-checks the selected expression.
 2. The binder chooses its output name. An explicit alias wins, a bare column
    keeps its column name, and an unnamed computation still uses `expression`.
-3. The new `ProjectExpression` pairs that name with the checked tree.
+3. `push_output()` pairs that name with the checked tree after rejecting a
+   duplicate.
+
+For a wildcard, the qualifier is checked once and the catalog columns are
+visited in their stored order. Each column becomes a bound column expression
+with the same output name. The three-column employee schema therefore expands
+`e.*` into `id`, `name`, and `salary` without creating a new plan node.
 
 The duplicate-name check reflects the current `Row` representation. A row
 stores each value beside a name, and later name-based lookup should not have to
 choose between two fields with the same name. For example, `SELECT name, name`
-now fails during binding with `duplicate output column: name`.
+fails during binding with `duplicate output column: name`; `SELECT *, name`
+fails for the same reason after `*` has already introduced `name`.
 
 Finally, give the existing project node the vector we just assembled.
 
@@ -542,8 +671,27 @@ sql> SELECT e.name AS employee_name,
 ```
 
 After the inherited prompt receives the semicolon, parsing produces two
-`SelectExpression` nodes, binding produces two checked `ProjectExpression`
-nodes, and the existing executor constructs the wider rows.
+expression-shaped `SelectItem` nodes, binding produces two checked
+`ProjectExpression` nodes, and the existing executor constructs the wider
+rows.
+
+Now ask the catalog to supply the complete output list:
+
+```text
+sql> SELECT e.* FROM employees AS e WHERE e.id = 1;
+{id: 1, name: "Ada", salary: 70000}
+```
+
+Parsing records one qualified wildcard. Binding validates `e`, expands the
+employee columns in catalog order, and gives `Project` three checked column
+expressions. The executor still receives an ordinary projection list.
+
+An unknown qualifier stops during binding:
+
+```text
+sql> SELECT x.* FROM employees AS e WHERE TRUE;
+error: unknown table or alias: x
+```
 
 Output-name errors also occur before any rows are scanned:
 
@@ -563,6 +711,10 @@ sql> SELECT name, name AS copied_name FROM employees WHERE id = 1;
 
 - A query still has exactly one input table.
 - Every query still requires `WHERE`.
+- Wildcards expand only the one table in the current scope; Chapter 7 will
+  define their behavior when several inputs are visible.
+- `DISTINCT` and `ALL` remain in Chapter 10, where duplicate handling becomes
+  observable.
 - A computed expression without an alias still receives the temporary name
   `expression`.
 - Duplicate output names are rejected instead of introducing a richer result
@@ -581,6 +733,9 @@ Run the prompt, predict the output names or error, and then try each query.
 4. Select `salary + 1000, salary - 1000` without aliases.
 5. Select `name AS result, salary AS result`.
 6. Select `name AS employee_name, salary, salary + 1000 AS raised_salary`.
+7. Select `*` and predict the output order from `employee_catalog()`.
+8. Select `e.*` using the alias `e`, then replace it with `x.*`.
+9. Try `SELECT *, name FROM employees WHERE TRUE;`.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -594,14 +749,19 @@ Run the prompt, predict the output names or error, and then try each query.
 5. Binding reports `duplicate output column: result`.
 6. The result contains three fields in select-list order: `employee_name`,
    `salary`, and `raised_salary`.
+7. The wildcard expands to `id`, `name`, and `salary` in catalog order.
+8. `e.*` expands successfully. `x.*` fails with
+   `unknown table or alias: x`.
+9. Binding reports `duplicate output column: name` because the wildcard has
+   already introduced that output.
 
 </details>
 
 ## 6.10 One output list, one input scope
 
-Projection can now compute and name several values, but every column still
-comes from the same table. That makes an unqualified name such as `name`
-unambiguous.
+Projection can now compute and name several values or expand a table wildcard,
+but every column still comes from the same table. That makes an unqualified
+name such as `name` unambiguous and gives `*` only one possible input.
 
 Consider what changes when the database has two tables:
 
@@ -620,8 +780,9 @@ WHERE e.department_id = d.id;
 
 The projection list and its output aliases are no longer a problem. The
 remaining difficulty is on the input side. The binder must track both table
-aliases, decide which table owns each column, and reject an unqualified `name`
-because both inputs define one.
+aliases, decide which table owns each column, reject an unqualified `name`
+because both inputs define one, and decide which schemas an unqualified `*`
+should expand.
 
 After those names are resolved, execution must combine an employee row with a
 department row before the existing filter can test their identifiers and the

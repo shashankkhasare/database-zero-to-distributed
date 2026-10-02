@@ -192,4 +192,20 @@ mod tests {
         assert!(append_sql_line(&mut sql, "WHERE salary > 50000;\n"));
         assert_eq!(execute_sql(&sql, &employee_catalog()).unwrap().len(), 2);
     }
+
+    #[test]
+    fn wildcard_projection_uses_catalog_column_order() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.* FROM employees AS e WHERE e.id = 1;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![Row::new(vec![
+                ("id", Value::Integer(1)),
+                ("name", Value::Text("Ada".into())),
+                ("salary", Value::Integer(70_000)),
+            ])]
+        );
+    }
 }
