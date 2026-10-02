@@ -1449,40 +1449,31 @@ then try it.
 
 </details>
 
-## 5.12 One input and one output are no longer enough
+## 5.12 One selected expression is no longer enough
 
 The frontend can now preserve expression structure, and the binder can reject
-unknown names and incompatible types before execution. The last exercise
-worked because every query still had exactly one input table. An unqualified
-column such as `name` could belong to only that table, and a bound column could
-be stored by name alone. The query also selected only one expression, so the
-project node never had to name two output columns.
+unknown names and incompatible types before execution. One limitation remains
+in the outer query representation: `Query` stores exactly one projection
+expression.
 
-Consider what changes when the database has two tables:
-
-```text
-employees(id, name, department_id)
-departments(id, name)
-```
-
-A useful query needs values from both tables:
+That is enough to select `name` or compute `salary + 1000`, but not to return
+both results together:
 
 ```sql
-SELECT e.name AS employee_name, d.name AS department_name
-FROM employees AS e, departments AS d
-WHERE e.department_id = d.id;
+SELECT name AS employee_name,
+       salary + 1000 AS raised_salary
+FROM employees
+WHERE salary > 50000;
 ```
 
-This query exposes three connected problems. The binder must track both table
-aliases and decide which input owns each column. The parser and project node
-must accept more than one selected expression. Because both selected columns
-are named `name`, selected-expression aliases must also give the output
-columns distinct names. These output aliases are different from `e` and `d`,
-which qualify input columns.
+This query still uses the one-table scope built in this chapter. Its new
+problem is on the output side. The parser must preserve a list of selected
+expressions, the binder must check every expression in that list, and the
+project node must give each resulting value a useful name. A bare column can
+retain its column name, while a computed expression needs an output alias such
+as `raised_salary` instead of the temporary name `expression`.
 
-After binding resolves the qualified references, the executor must combine an
-employee row with the matching department row. That row-combining operation is
-a **join**. The next chapter will extend the select list and output naming,
-build the simplest join, and then ask what its straightforward execution
-strategy costs.
+The next chapter widens projection from one expression to a named list. It also
+lets the prompt collect the longer query across several lines, while keeping
+the existing single-table scope unchanged.
 
