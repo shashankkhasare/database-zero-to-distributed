@@ -380,10 +380,11 @@ Column {
 },
 ```
 
-Qualified lookup searches one scope entry. Unqualified lookup searches every
-visible entry and succeeds only when exactly one contains the name.
+`bind_column()` receives the qualifier preserved by the parser, the column
+name, and the completed query scope. It returns both the checked column node
+and the column's catalog type. Begin with the qualified case.
 
-`src/catalog.rs`: replace `require_qualifier()` with `bind_column()`
+`src/catalog.rs`: replace `require_qualifier()` and begin `bind_column()`
 
 ```rust
 fn bind_column(
@@ -403,7 +404,28 @@ fn bind_column(
             name,
         }, column.data_type.clone()));
     }
+```
 
+When a qualifier is present, only the matching `ScopeTable` is searched. The
+index produced by `enumerate()` is local to that table's column list. Adding
+`table.offset` converts it into a slot in the combined row:
+
+```text
+e.name  → employee offset 0 + local index 1 → slot 1
+d.name  → department offset 4 + local index 1 → slot 5
+```
+
+An unknown qualifier fails before column lookup. A known qualifier followed
+by a missing column fails as an unknown column. A successful lookup retains
+the name for diagnostics, stores the absolute slot, and returns the column's
+type for the surrounding operator checks.
+
+Without a qualifier, the binder must search every visible table and accept the
+name only if exactly one table defines it.
+
+`src/catalog.rs`: finish `bind_column()`
+
+```rust
     let mut matched = None;
     for table in &scope.tables {
         if let Some((index, column)) = table.columns.iter().enumerate()
@@ -421,6 +443,13 @@ fn bind_column(
     Ok((BoundExpr::Column { index, name }, column.data_type.clone()))
 }
 ```
+
+`matched` begins as `None`. The first table containing the column stores its
+absolute slot and catalog entry. A second match makes the name ambiguous and
+returns an error immediately. If the loop ends without a match, the column is
+unknown; otherwise the single match becomes the checked column. For example,
+unqualified `department_id` resolves only in `employees`, while unqualified
+`name` matches both inputs and is rejected.
 
 Delegate the column arm of the recursive binder to that lookup.
 
