@@ -31,10 +31,11 @@ FROM employees AS e, departments AS d
 WHERE e.department_id = d.id;
 ```
 
-The parser must now preserve a list of input tables rather than one table. The
-binder must decide whether each column belongs to `employees` or `departments`,
-and the executor must place one row from each table together before it can
-evaluate `e.department_id = d.id`.
+Supporting this query requires changes across the pipeline. The parser must
+preserve a list of input tables rather than one table. The binder must decide
+whether each column belongs to `employees` or `departments`, and the executor
+must place one row from each table together before it can evaluate
+`e.department_id = d.id`.
 
 That combined row creates a new challenge for `Filter`. Until now, a bound
 column name was enough to retrieve one value from a one-table row. A joined row
@@ -46,17 +47,17 @@ department's `id`.
 
 This chapter makes those changes in three steps:
 
-1. Extend the query AST and binding scope from one input table to several.
-2. Bind each column to a stable position in the combined row and reject an
-   unqualified name when more than one input table contains it.
-3. Add a logical `Join` whose first execution strategy pairs every left row
-   with every right row using visible nested loops.
+1. Extend the query AST to store multiple input tables and an optional `WHERE`
+   expression.
+2. Build a multi-table scope, bind each column to a stable position in the
+   combined row, and reject ambiguous unqualified names.
+3. Add a logical `Join` that pairs left and right rows with visible nested
+   loops, then place `Filter` above it when a `WHERE` predicate is present.
 
-The output aliases label the two selected `name` columns as `employee_name`
-and `department_name`, making their roles clear in the result.
-
-With a predicate, the completed plan keeps the familiar filter and project
-operations:
+The two selected columns share the source name `name`. Their output aliases,
+`employee_name` and `department_name`, make their roles clear when `Project`
+constructs the result. With the join predicate present, the completed plan
+places the new operation beneath the familiar `Filter` and `Project` nodes:
 
 ```text
 Project(employee_name, department_name)
@@ -68,11 +69,15 @@ Filter(e.department_id = d.id)
  Scan(employees)    Scan(departments)
 ```
 
-`Join` expresses the request to combine the two inputs; it does not yet choose
-among several physical join algorithms. Its first implementation pairs every
-employee with every department. Making `WHERE` optional lets us observe that
-nine-row Cartesian product directly. Adding the predicate places `Filter`
-above the join and retains the three pairs whose department identifiers match.
+Read from the scans upward, `Join` combines the two inputs by pairing every
+employee with every department. `Filter` retains the pairs whose department
+identifiers match, and `Project` produces the two named output columns.
+Omitting `WHERE` removes the `Filter`, allowing all nine candidate pairs to
+reach projection.
+
+The logical `Join` records that the inputs must be combined; it does not yet
+choose among physical join algorithms. This chapter will execute it with
+visible nested loops.
 
 By the end of the chapter, the query above returns Ada with Engineering, Linus
 with Systems, and Grace with Research.
