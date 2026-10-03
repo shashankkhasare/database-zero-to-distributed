@@ -1,0 +1,126 @@
+lesson: "007"
+style: book/art/STYLE.md
+
+images:
+  - id: all-pairs-become-matches
+    kind: generated-raster
+    output: book/images/007-all-pairs-become-matches.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: Literal employees and departments tables form a nine-cell candidate-pair matrix, whose three matching cells become three employee-department output rows.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening educational
+      database diagram. Create a literal, technical three-stage database
+      diagram rather than a visual metaphor.
+
+      Stage 1 on the left is headed exactly "INPUT TABLES" and contains two
+      compact literal table cards: a teal card headed "employees" with exactly
+      three rows "Ada | 10", "Linus | 20", and "Grace | 30"; and an ochre
+      card headed "departments" with exactly three rows
+      "10 | Engineering", "20 | Systems", and "30 | Research".
+
+      Stage 2 in the center is headed exactly "9 CANDIDATE PAIRS" and shows a
+      clean three-by-three matrix of nine cells. Put employee names down the
+      left edge and department names across the top edge. Highlight the three
+      diagonal matching cells in muted turquoise. Connect Stage 1 to Stage 2
+      with one straight arrow labelled exactly "JOIN".
+
+      Stage 3 on the right is headed exactly "3 MATCHES" and contains exactly
+      three rows: "Ada | Engineering", "Linus | Systems", and
+      "Grace | Research". Connect Stage 2 to Stage 3 with one straight arrow
+      labelled exactly "WHERE IDs MATCH".
+
+      Permitted text only: "INPUT TABLES", "employees", "departments", "Ada",
+      "Linus", "Grace", "10", "20", "30", "Engineering", "Systems",
+      "Research", "9 CANDIDATE PAIRS", "JOIN", "WHERE IDs MATCH", and
+      "3 MATCHES". Render every label exactly and legibly.
+
+      Follow book/art/STYLE.md: preserve the warm ivory paper, hand-drawn
+      charcoal ink, restrained watercolor and gouache texture, deep teal,
+      muted turquoise, ochre, wide landscape composition, and generous
+      margins. No icons, people, buildings, curved connection lines, fading
+      cards, sieve, kitchen utensil, extra rows, prose, SQL code, crossed
+      arrows, logos, watermark, photorealism, interface chrome, glossy 3D, or
+      unlisted text.
+
+  - id: qualified-columns-become-slots
+    kind: generated-raster
+    output: book/images/007-qualified-columns-become-slots.png
+    placement: section 7.5 after the combined-row slot layout is introduced
+    alt: The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact positional-binding
+      diagram for a technical database book. Show how two source rows combine
+      into one indexed row and how qualified column names become distinct
+      slots.
+
+      Across the top, place two separate row cards. The left card is headed
+      exactly "EMPLOYEES" and contains four ordered fields labeled exactly
+      "id", "name", "salary", and "department_id". The right card is headed
+      exactly "DEPARTMENTS" and contains two ordered fields labeled exactly
+      "id" and "name". Use teal for the employee card and ochre for the
+      department card.
+
+      Use one centered downward arrow labeled exactly "COMBINE" into a single
+      six-field row below. Preserve this exact field order: "id", "name",
+      "salary", "department_id", "id", "name". Place slot numbers exactly
+      "0", "1", "2", "3", "4", and "5" directly beneath the corresponding
+      fields.
+
+      Beneath the combined row, place exactly two callouts. Connect
+      "e.name" to slot "1" and connect "d.name" to slot "5" with straight,
+      noncrossing lines. Highlight slots 1 and 5 in muted turquoise. Make it
+      unmistakable that the repeated label "name" is disambiguated by its
+      checked position.
+
+      Permitted text only: "EMPLOYEES", "DEPARTMENTS", "COMBINE", "id",
+      "name", "salary", "department_id", "0", "1", "2", "3", "4", "5",
+      "e.name", and "d.name". Repetitions are permitted only where this
+      specification requires them. Render all labels exactly and legibly.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained gouache and watercolor, subtle print texture, deep teal,
+      muted turquoise, and ochre. Wide landscape composition with large
+      readable labels, generous margins, strict left-to-right alignment, and
+      straight noncrossing connectors. No people, SQL prose, extra fields,
+      logos, watermark, photorealism, interface chrome, glossy 3D, gradients,
+      tiny labels, crossed arrows, or unlisted text.
+
+  - id: nested-loops-reset-inner-scan
+    kind: generated-raster
+    output: book/images/007-nested-loops-reset-inner-scan.png
+    placement: section 7.8 after the nested-loop execution arm
+    alt: Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.
+    prompt: >-
+      Use case: scientific-educational. Asset type: execution-mechanics
+      diagram for a technical database book. Focus on how nested loops advance
+      rather than repeating the chapter opening's three-by-three matrix.
+
+      Create exactly three left-to-right execution panels. Panel 1 is headed
+      exactly "HOLD Ada". Show one teal Ada row held beside one vertical ochre
+      list containing exactly "Engineering", "Systems", and "Research". A
+      downward cursor visits all three inner rows. At the bottom write exactly
+      "3 PAIRS". Between Panel 1 and Panel 2, draw one curved return arrow
+      labelled exactly "RESET INNER LOOP".
+
+      Panel 2 is headed exactly "HOLD Linus", repeats the same three-row inner
+      list and downward cursor, and ends with exactly "3 PAIRS". Between Panel
+      2 and Panel 3 draw the same reset arrow labelled exactly
+      "RESET INNER LOOP".
+
+      Panel 3 is headed exactly "HOLD Grace", repeats the same inner list and
+      cursor, and ends with exactly "3 PAIRS". Along the bottom, use one
+      bracket spanning all panels labelled exactly "9 PAIRS TOTAL".
+
+      Permitted text only: "HOLD Ada", "HOLD Linus", "HOLD Grace",
+      "Engineering", "Systems", "Research", "3 PAIRS",
+      "RESET INNER LOOP", and "9 PAIRS TOTAL". Repetitions are allowed only
+      where required. Render all text exactly and legibly.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained gouache and watercolor, subtle print texture, deep teal for
+      held employee rows, ochre for inner rows, and muted turquoise accents.
+      Wide landscape composition, generous margins, large readable labels,
+      and minimal noncrossing connectors. No output matrix, filter, matching
+      highlight, SQL code, extra rows, logos, watermark, photorealism,
+      interface chrome, glossy 3D, tiny text, crossed arrows, or unlisted
+      text.
