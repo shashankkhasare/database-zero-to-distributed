@@ -10,7 +10,7 @@ one input table and the existing one-table binding scope.
 Visible outcome
 
 A query can project deliberately named expressions or expand the selected
-table's columns in catalog order.
+table's columns in catalog order. Binding rejects duplicate output names.
 -->
 
 > A result row can contain more than one answer.
@@ -36,6 +36,12 @@ items. Most items are expressions with optional output aliases. A wildcard is
 different: `*` asks the binder to produce one output for every column visible
 from the selected table. The input side remains unchanged, so binding still
 uses one table and the logical plan remains `Project -> Filter -> Scan`.
+
+Each selected item must also produce an unambiguous output name. An explicit
+alias names a computed expression, a bare column keeps its column name, and a
+wildcard contributes the catalog column names it expands. If two items produce
+the same name, binding rejects the query instead of constructing a row whose
+fields cannot be distinguished by name.
 
 This chapter carries its select list through the frontend:
 
