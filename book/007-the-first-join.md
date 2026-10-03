@@ -106,11 +106,19 @@ table_reference   = identifier alias? ;
 alias             = "AS"? identifier ;
 ```
 
-Table references store input aliases. Those differ from Chapter 6's output
-aliases: `e` identifies an input inside expressions, while `employee_name`
-labels a value in the result row. Parentheses followed by `?` make the complete
-`WHERE` clause optional. Either the keyword and expression are both present,
-or neither is.
+Table references store input aliases. In `FROM employees AS e`, the alias `e`
+becomes the qualifier used to identify that input. References such as `e.name`
+and `e.department_id` use it to tell the binder which table should contain the
+column.
+
+An output alias serves a different stage. In
+`SELECT e.name AS employee_name`, the binder first resolves `e.name`;
+`Project` later evaluates that expression and labels its value `employee_name`
+in the output row. The output alias does not identify an input table or
+participate in resolving the query's source columns.
+
+Parentheses followed by `?` make the complete `WHERE` clause optional. Either
+the keyword and expression are both present, or neither is.
 
 The grammar can now describe the new query shape. The AST must next preserve
 its table list and the possible absence of a filter.
@@ -137,6 +145,14 @@ pub struct TableReference {
     pub name: String,
     pub alias: Option<String>,
 }
+```
+
+`parse_query()` implements the updated outer production:
+
+```text
+query = "SELECT" select_list
+        "FROM" table_list
+        ("WHERE" expression)? ";" ;
 ```
 
 The parser reads the complete input list before deciding whether a `WHERE`
@@ -170,9 +186,18 @@ fn parse_query(&mut self) -> Result<Query, ParseError> {
 }
 ```
 
-The table list uses the same comma-separated shape as the select list. It
-parses one required item, then consumes each comma followed by another item.
-Requiring the first table keeps `FROM ;` invalid.
+The next two methods implement the productions that make up `table_list`:
+
+```text
+table_list      = table_reference ("," table_reference)* ;
+table_reference = identifier alias? ;
+alias           = "AS"? identifier ;
+```
+
+The list parser reads one required table reference, then consumes each comma
+followed by another reference. Requiring the first table keeps `FROM ;`
+invalid. A table reference reads the table name and delegates its optional
+alias to the existing `parse_alias()` method.
 
 `src/parser.rs`: add before `parse_alias()`
 
