@@ -1,0 +1,125 @@
+lesson: "007"
+style: book/art/STYLE.md
+
+images:
+  - id: all-pairs-become-matches
+    kind: generated-raster
+    output: book/images/007-all-pairs-become-matches.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: Literal employees and departments tables form a nine-cell candidate-pair matrix, whose three matching cells become three employee-department output rows.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening educational
+      database diagram. Create a literal, technical three-stage database
+      diagram rather than a visual metaphor.
+
+      Stage 1 on the left is headed exactly "INPUT TABLES" and contains two
+      compact literal table cards: a teal card headed "employees" with exactly
+      three rows "Ada | 10", "Linus | 20", and "Grace | 30"; and an ochre
+      card headed "departments" with exactly three rows
+      "10 | Engineering", "20 | Systems", and "30 | Research".
+
+      Stage 2 in the center is headed exactly "9 CANDIDATE PAIRS" and shows a
+      clean three-by-three matrix of nine cells. Put employee names down the
+      left edge and department names across the top edge. Highlight the three
+      diagonal matching cells in muted turquoise. Connect Stage 1 to Stage 2
+      with one straight arrow labelled exactly "JOIN".
+
+      Stage 3 on the right is headed exactly "3 MATCHES" and contains exactly
+      three rows: "Ada | Engineering", "Linus | Systems", and
+      "Grace | Research". Connect Stage 2 to Stage 3 with one straight arrow
+      labelled exactly "WHERE IDs MATCH".
+
+      Permitted text only: "INPUT TABLES", "employees", "departments", "Ada",
+      "Linus", "Grace", "10", "20", "30", "Engineering", "Systems",
+      "Research", "9 CANDIDATE PAIRS", "JOIN", "WHERE IDs MATCH", and
+      "3 MATCHES". Render every label exactly and legibly.
+
+      Follow book/art/STYLE.md: preserve the warm ivory paper, hand-drawn
+      charcoal ink, restrained watercolor and gouache texture, deep teal,
+      muted turquoise, ochre, wide landscape composition, and generous
+      margins. No icons, people, buildings, curved connection lines, fading
+      cards, sieve, kitchen utensil, extra rows, prose, SQL code, crossed
+      arrows, logos, watermark, photorealism, interface chrome, glossy 3D, or
+      unlisted text.
+
+  - id: qualified-columns-become-slots
+    kind: generated-raster
+    output: book/images/007-qualified-columns-become-slots.png
+    placement: section 7.5 after the combined-row slot layout is introduced
+    alt: The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact positional-binding
+      diagram for a technical database book. Show how two source rows combine
+      into one indexed row and how qualified column names become distinct
+      slots.
+
+      Across the top, place two separate row cards. The left card is headed
+      exactly "EMPLOYEES" and contains four ordered fields labeled exactly
+      "id", "name", "salary", and "department_id". The right card is headed
+      exactly "DEPARTMENTS" and contains two ordered fields labeled exactly
+      "id" and "name". Use teal for the employee card and ochre for the
+      department card.
+
+      Use one centered downward arrow labeled exactly "COMBINE" into a single
+      six-field row below. Preserve this exact field order: "id", "name",
+      "salary", "department_id", "id", "name". Place slot numbers exactly
+      "0", "1", "2", "3", "4", and "5" directly beneath the corresponding
+      fields.
+
+      Beneath the combined row, place exactly two callouts. Connect
+      "e.name" to slot "1" and connect "d.name" to slot "5" with straight,
+      noncrossing lines. Highlight slots 1 and 5 in muted turquoise. Make it
+      unmistakable that the repeated label "name" is disambiguated by its
+      checked position.
+
+      Permitted text only: "EMPLOYEES", "DEPARTMENTS", "COMBINE", "id",
+      "name", "salary", "department_id", "0", "1", "2", "3", "4", "5",
+      "e.name", and "d.name". Repetitions are permitted only where this
+      specification requires them. Render all labels exactly and legibly.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained gouache and watercolor, subtle print texture, deep teal,
+      muted turquoise, and ochre. Wide landscape composition with large
+      readable labels, generous margins, strict left-to-right alignment, and
+      straight noncrossing connectors. No people, SQL prose, extra fields,
+      logos, watermark, photorealism, interface chrome, glossy 3D, gradients,
+      tiny labels, crossed arrows, or unlisted text.
+
+  - id: nested-loops-produce-nine-pairs
+    kind: generated-raster
+    output: book/images/007-nested-loops-produce-nine-pairs.png
+    placement: section 7.8 after the nested-loop execution arm
+    alt: An outer loop visits each of three employee rows, and for each employee an inner loop visits all three department rows, producing nine combined rows in deterministic order.
+    prompt: >-
+      Use case: scientific-educational. Asset type: compact execution diagram
+      for a technical database book. Explain two nested loops that produce a
+      deterministic Cartesian product.
+
+      On the left, create a vertical column headed exactly "OUTER LOOP" with
+      exactly three teal row cards labeled "Ada", "Linus", and "Grace" from
+      top to bottom. Beside it, create a vertical column headed exactly
+      "INNER LOOP" with exactly three ochre row cards labeled "Engineering",
+      "Systems", and "Research" from top to bottom.
+
+      On the right, place a tidy three-by-three output matrix headed exactly
+      "9 PAIRS". Show nine compact paired cards in row-major order. The first
+      matrix row repeats Ada beside Engineering, Systems, and Research. The
+      second repeats Linus beside the same three departments. The third
+      repeats Grace beside the same three departments. Use simple braces or
+      one looping connector from each employee row toward the complete inner
+      column, then one broad arrow into the matrix. Do not draw nine separate
+      crossing arrows.
+
+      Permitted text only: "OUTER LOOP", "INNER LOOP", "9 PAIRS", "Ada",
+      "Linus", "Grace", "Engineering", "Systems", and "Research". Names may
+      repeat inside the matrix as required. Render all text exactly and
+      legibly.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained gouache and watercolor, subtle print texture, deep teal for
+      employees, ochre for departments, and muted turquoise for the output
+      matrix. Wide landscape composition, generous margins, large readable
+      labels, deterministic top-to-bottom order, and minimal noncrossing
+      connectors. No filter, matching highlight, SQL code, extra rows, logos,
+      watermark, photorealism, interface chrome, glossy 3D, tiny text,
+      crossed arrows, or unlisted text.

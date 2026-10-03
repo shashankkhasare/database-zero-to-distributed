@@ -17,6 +17,11 @@ unqualified name shared by both tables fails as ambiguous before execution.
 
 > A join begins by asking which rows belong together.
 
+<figure class="book-illustration">
+  <img src="images/007-all-pairs-become-matches.png" alt="Literal employees and departments tables form a nine-cell candidate-pair matrix, whose three matching cells become three employee-department output rows.">
+  <figcaption>Three employee rows and three department rows create nine candidate pairs; matching identifiers retain three rows.</figcaption>
+</figure>
+
 Chapter 6 can project several named expressions, but every column still belongs
 to one input table. The next request exceeds that remaining limit:
 
@@ -277,6 +282,11 @@ employees row                 departments row
 
 In this layout, `e.name` binds to slot 1 and `d.name` binds to slot 5. The two
 labels may be identical because execution reads the checked slots.
+
+<figure class="book-illustration book-diagram">
+  <img src="images/007-qualified-columns-become-slots.png" alt="The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.">
+  <figcaption>Binding replaces each qualified name with a stable position in the combined row.</figcaption>
+</figure>
 
 `src/expression.rs`: replace the `BoundExpr::Column` variant
 
@@ -578,6 +588,11 @@ Plan::Join { left, right } => {
     Ok(output)
 }
 ```
+
+<figure class="book-illustration book-diagram">
+  <img src="images/007-nested-loops-produce-nine-pairs.png" alt="An outer loop visits each of three employee rows, and for each employee an inner loop visits all three department rows, producing nine combined rows in deterministic order.">
+  <figcaption>The outer loop fixes one employee while the inner loop visits every department, producing nine pairs in a stable order.</figcaption>
+</figure>
 
 The outer loop fixes one left row while the inner loop visits every right row.
 Their order makes the output deterministic: all department pairs for Ada come
