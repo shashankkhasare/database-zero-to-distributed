@@ -36,6 +36,14 @@ binder must decide whether each column belongs to `employees` or `departments`,
 and the executor must place one row from each table together before it can
 evaluate `e.department_id = d.id`.
 
+That combined row creates a new challenge for `Filter`. Until now, a bound
+column name was enough to retrieve one value from a one-table row. A joined row
+contains values from both inputs, which may contribute columns with the same
+name. The binder must therefore replace each qualified column reference with
+its position, or **slot**, in the combined row. The filter can then read the
+correct values before comparing the employee's `department_id` with the
+department's `id`.
+
 This chapter makes those changes in three steps:
 
 1. Extend the query AST and binding scope from one input table to several.
@@ -44,9 +52,8 @@ This chapter makes those changes in three steps:
 3. Add a logical `Join` whose first execution strategy pairs every left row
    with every right row using visible nested loops.
 
-The output aliases give the two source columns called `name` distinct labels
-in the result. They improve readability rather than make the query valid,
-because Chapter 6 already permits repeated output labels.
+The output aliases label the two selected `name` columns as `employee_name`
+and `department_name`, making their roles clear in the result.
 
 With a predicate, the completed plan keeps the familiar filter and project
 operations:
@@ -78,8 +85,11 @@ git switch --create chapter-007 lesson-006
 
 ## 7.1 Expand the `FROM` grammar
 
-The existing expression and projection grammars do not change. The outer query
-now gives `FROM` a comma-separated list:
+The new query shape creates three grammar requirements: `FROM` must accept
+multiple table references, each table reference must retain its optional
+alias, and `WHERE` must be optional so we can run the Cartesian product by
+itself. The existing expression and projection rules do not change. Here is
+the updated outer grammar for those deltas:
 
 ```text
 query             = "SELECT" select_list
@@ -96,6 +106,9 @@ aliases: `e` identifies an input inside expressions, while `employee_name`
 labels a value in the result row. Parentheses followed by `?` make the complete
 `WHERE` clause optional. Either the keyword and expression are both present,
 or neither is.
+
+The grammar can now describe the new query shape. The AST must next preserve
+its table list and the possible absence of a filter.
 
 ## 7.2 Preserve the input list in the AST
 
@@ -274,6 +287,9 @@ Unqualified lookup now has three possible outcomes:
 For example, both inputs contain `name`. The binder must reject unqualified
 `name` rather than choose one silently.
 
+The scope can now determine which table owns a column and recover its type.
+Execution still needs to know where that column appears in the combined row.
+
 ## 7.5 Bind columns to slots
 
 Chapter 5 stored a bound column by name. That was sufficient while a row could
@@ -400,6 +416,9 @@ BoundExpr::Column { index, name } =>
     row.value_at(*index, name).cloned(),
 ```
 
+Bound columns can now retrieve the correct value after two rows are combined.
+The plan still needs an operation that creates that combined row.
+
 ## 7.6 Add the logical join
 
 The plan gains a `Join` node with left and right input plans. For this chapter's
@@ -427,6 +446,10 @@ Join {
     right: Box<Plan>,
 },
 ```
+
+The plan can now represent two inputs and their Cartesian product. The binder
+must next assemble the scans, joins, optional filter, and projection in the
+correct order.
 
 ## 7.7 Assemble the bound plan
 
@@ -570,6 +593,10 @@ Ok(Plan::Project {
     input: Box::new(input),
 })
 ```
+
+Binding can now produce the complete checked plan for queries with or without
+`WHERE`. The new `Join` node still needs an execution rule that produces its
+combined rows.
 
 ## 7.8 Execute the nested loops
 
@@ -822,6 +849,9 @@ The fixed demonstration runs that filtered form:
 cargo run --quiet
 ```
 
+The product and filtered query establish the successful path. We should also
+confirm that invalid and ambiguous multi-table names stop during binding.
+
 ## 7.11 Inspect binding failures
 
 The prompt should distinguish missing and ambiguous names before scanning any
@@ -863,6 +893,10 @@ them into the chapter. Run them now:
 cargo test
 ```
 
+The successful queries, binding failures, and execution order are now
+verified. We can state the boundaries that keep this first join deliberately
+small.
+
 ## 7.12 What we deliberately did not build
 
 - Join syntax is limited to comma-separated inputs. An optional `WHERE`
@@ -874,6 +908,10 @@ cargo test
 - Bound column slots are local to one plan and are not durable catalog IDs.
 - Repeated output labels remain valid final results. Positional result-schema
   identity arrives before projected rows can become inputs to another query.
+
+These limits leave a compact join implementation whose behavior is visible.
+The exercises below vary its names, predicate, and optional filter without
+introducing later join syntax or algorithms.
 
 ## 7.13 Try it
 
