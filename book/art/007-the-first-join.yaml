@@ -85,41 +85,42 @@ images:
       logos, watermark, photorealism, interface chrome, glossy 3D, gradients,
       tiny labels, crossed arrows, or unlisted text.
 
-  - id: nested-loops-produce-nine-pairs
+  - id: nested-loops-reset-inner-scan
     kind: generated-raster
-    output: book/images/007-nested-loops-produce-nine-pairs.png
+    output: book/images/007-nested-loops-reset-inner-scan.png
     placement: section 7.8 after the nested-loop execution arm
-    alt: An outer loop visits each of three employee rows, and for each employee an inner loop visits all three department rows, producing nine combined rows in deterministic order.
+    alt: Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.
     prompt: >-
-      Use case: scientific-educational. Asset type: compact execution diagram
-      for a technical database book. Explain two nested loops that produce a
-      deterministic Cartesian product.
+      Use case: scientific-educational. Asset type: execution-mechanics
+      diagram for a technical database book. Focus on how nested loops advance
+      rather than repeating the chapter opening's three-by-three matrix.
 
-      On the left, create a vertical column headed exactly "OUTER LOOP" with
-      exactly three teal row cards labeled "Ada", "Linus", and "Grace" from
-      top to bottom. Beside it, create a vertical column headed exactly
-      "INNER LOOP" with exactly three ochre row cards labeled "Engineering",
-      "Systems", and "Research" from top to bottom.
+      Create exactly three left-to-right execution panels. Panel 1 is headed
+      exactly "HOLD Ada". Show one teal Ada row held beside one vertical ochre
+      list containing exactly "Engineering", "Systems", and "Research". A
+      downward cursor visits all three inner rows. At the bottom write exactly
+      "3 PAIRS". Between Panel 1 and Panel 2, draw one curved return arrow
+      labelled exactly "RESET INNER LOOP".
 
-      On the right, place a tidy three-by-three output matrix headed exactly
-      "9 PAIRS". Show nine compact paired cards in row-major order. The first
-      matrix row repeats Ada beside Engineering, Systems, and Research. The
-      second repeats Linus beside the same three departments. The third
-      repeats Grace beside the same three departments. Use simple braces or
-      one looping connector from each employee row toward the complete inner
-      column, then one broad arrow into the matrix. Do not draw nine separate
-      crossing arrows.
+      Panel 2 is headed exactly "HOLD Linus", repeats the same three-row inner
+      list and downward cursor, and ends with exactly "3 PAIRS". Between Panel
+      2 and Panel 3 draw the same reset arrow labelled exactly
+      "RESET INNER LOOP".
 
-      Permitted text only: "OUTER LOOP", "INNER LOOP", "9 PAIRS", "Ada",
-      "Linus", "Grace", "Engineering", "Systems", and "Research". Names may
-      repeat inside the matrix as required. Render all text exactly and
-      legibly.
+      Panel 3 is headed exactly "HOLD Grace", repeats the same inner list and
+      cursor, and ends with exactly "3 PAIRS". Along the bottom, use one
+      bracket spanning all panels labelled exactly "9 PAIRS TOTAL".
+
+      Permitted text only: "HOLD Ada", "HOLD Linus", "HOLD Grace",
+      "Engineering", "Systems", "Research", "3 PAIRS",
+      "RESET INNER LOOP", and "9 PAIRS TOTAL". Repetitions are allowed only
+      where required. Render all text exactly and legibly.
 
       Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
       restrained gouache and watercolor, subtle print texture, deep teal for
-      employees, ochre for departments, and muted turquoise for the output
-      matrix. Wide landscape composition, generous margins, large readable
-      labels, deterministic top-to-bottom order, and minimal noncrossing
-      connectors. No filter, matching highlight, SQL code, extra rows, logos,
-      watermark, photorealism, interface chrome, glossy 3D, tiny text,
-      crossed arrows, or unlisted text.
+      held employee rows, ochre for inner rows, and muted turquoise accents.
+      Wide landscape composition, generous margins, large readable labels,
+      and minimal noncrossing connectors. No output matrix, filter, matching
+      highlight, SQL code, extra rows, logos, watermark, photorealism,
+      interface chrome, glossy 3D, tiny text, crossed arrows, or unlisted
+      text.

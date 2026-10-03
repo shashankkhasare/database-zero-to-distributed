@@ -590,8 +590,8 @@ Plan::Join { left, right } => {
 ```
 
 <figure class="book-illustration book-diagram">
-  <img src="images/007-nested-loops-produce-nine-pairs.png" alt="An outer loop visits each of three employee rows, and for each employee an inner loop visits all three department rows, producing nine combined rows in deterministic order.">
-  <figcaption>The outer loop fixes one employee while the inner loop visits every department, producing nine pairs in a stable order.</figcaption>
+  <img src="images/007-nested-loops-reset-inner-scan.png" alt="Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.">
+  <figcaption>The inner scan restarts for each held outer row: three department visits per employee produce nine pairs.</figcaption>
 </figure>
 
 The outer loop fixes one left row while the inner loop visits every right row.
