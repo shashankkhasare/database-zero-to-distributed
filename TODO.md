@@ -33,8 +33,8 @@ WHERE e.salary > 50000;
 
 The visible result contains two named values for Ada and Grace. A bare column
 may retain its column name, while a computed expression can receive an output
-alias. Duplicate output names fail before execution because `Row` uses names
-to describe its result values.
+alias. Output labels may repeat because these projected rows are final results;
+aliases make repeated or computed fields easier to interpret.
 
 ## Chapter 6 teaching sequence
 
@@ -48,7 +48,7 @@ to describe its result values.
 - [x] Validate a qualified wildcard against the table name or alias before
       expanding it
 - [x] Use an explicit alias as the output name, retain a bare column's name,
-      and reject duplicate output names
+      and preserve repeated labels in select-list order
 - [x] Let the existing `Project` node evaluate the complete expression list
 - [x] Run the representative query and show its two-column result rows
 - [x] Add concept-focused parser, binding, and end-to-end tests
@@ -62,6 +62,8 @@ to describe its result values.
 - Do not add `Join`, positional bound columns, or ambiguous-column checks.
 - Do not add selected-expression aliases beyond optional `AS` and the direct
   alias form already used for table aliases.
+- Keep projected rows as terminal results. Chapter 11 will add positional
+  result-schema identity before projected rows become query inputs.
 
 ---
 

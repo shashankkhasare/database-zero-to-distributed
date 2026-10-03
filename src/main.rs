@@ -217,6 +217,21 @@ mod tests {
     }
 
     #[test]
+    fn unnamed_computations_may_share_a_display_label() {
+        assert_eq!(
+            execute_sql(
+                "SELECT salary + 1, salary + 1000 FROM employees WHERE id = 1;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![Row::new(vec![
+                ("expression", Value::Integer(70_001)),
+                ("expression", Value::Integer(71_000)),
+            ])]
+        );
+    }
+
+    #[test]
     fn unqualified_column_is_rejected_when_multiple_inputs_define_it() {
         assert_eq!(
             execute_sql(
@@ -257,14 +272,18 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_output_names_are_rejected() {
+    fn duplicate_output_names_are_preserved() {
         assert_eq!(
             execute_sql(
-                "SELECT e.name, d.name FROM employees AS e, departments AS d WHERE TRUE;",
+                "SELECT e.name, d.name FROM employees AS e, departments AS d \
+                 WHERE e.id = 1 AND d.id = 10;",
                 &employee_catalog(),
             )
-            .unwrap_err(),
-            "duplicate output column: name"
+            .unwrap(),
+            vec![Row::new(vec![
+                ("name", Value::Text("Ada".into())),
+                ("name", Value::Text("Engineering".into())),
+            ])]
         );
     }
 

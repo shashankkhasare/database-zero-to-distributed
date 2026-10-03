@@ -202,16 +202,8 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
     }
 }
 
-fn push_output(
-    expressions: &mut Vec<ProjectExpression>,
-    name: String,
-    expression: BoundExpr,
-) -> Result<(), String> {
-    if expressions.iter().any(|existing| existing.name == name) {
-        return Err(format!("duplicate output column: {name}"));
-    }
+fn push_output(expressions: &mut Vec<ProjectExpression>, name: String, expression: BoundExpr) {
     expressions.push(ProjectExpression { name, expression });
-    Ok(())
 }
 
 fn expand_wildcard(
@@ -239,7 +231,7 @@ fn expand_wildcard(
                     index: table.offset + index,
                     name: column.name.clone(),
                 },
-            )?;
+            );
         }
     }
     Ok(())
@@ -285,7 +277,7 @@ impl Catalog {
                         BoundExpr::Column { name, .. } => name.clone(),
                         _ => "expression".into(),
                     });
-                    push_output(&mut expressions, name, expression)?;
+                    push_output(&mut expressions, name, expression);
                 }
                 SelectItem::Wildcard { qualifier } => {
                     expand_wildcard(qualifier, &scope, &mut expressions)?;
@@ -381,6 +373,23 @@ mod tests {
                 .bind(parse("SELECT name FROM employees WHERE TRUE < FALSE;").unwrap())
                 .unwrap_err(),
             "ordered comparison requires integers or text: found Boolean"
+        );
+    }
+
+    #[test]
+    fn preserves_duplicate_output_labels() {
+        let rows = catalog()
+            .bind(parse("SELECT salary + 1, salary + 1000 FROM employees WHERE TRUE;").unwrap())
+            .unwrap()
+            .execute()
+            .unwrap();
+
+        assert_eq!(
+            rows,
+            vec![Row::new(vec![
+                ("expression", Value::Integer(70_001)),
+                ("expression", Value::Integer(71_000)),
+            ])]
         );
     }
 

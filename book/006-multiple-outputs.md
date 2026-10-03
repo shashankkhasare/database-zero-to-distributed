@@ -10,7 +10,7 @@ one input table and the existing one-table binding scope.
 Visible outcome
 
 A query can project deliberately named expressions or expand the selected
-table's columns in catalog order. Binding rejects duplicate output names.
+table's columns in catalog order. Repeated output labels remain valid.
 -->
 
 > A result row can contain more than one answer.
@@ -37,11 +37,12 @@ different: `*` asks the binder to produce one output for every column visible
 from the selected table. The input side remains unchanged, so binding still
 uses one table and the logical plan remains `Project -> Filter -> Scan`.
 
-Each selected item must also produce an unambiguous output name. An explicit
-alias names a computed expression, a bare column keeps its column name, and a
-wildcard contributes the catalog column names it expands. If two items produce
-the same name, binding rejects the query instead of constructing a row whose
-fields cannot be distinguished by name.
+Each selected item also receives an output label. An explicit alias names a
+computed expression, a bare column keeps its column name, and a wildcard
+contributes the catalog column names it expands. Labels describe result fields;
+they do not identify the checked expressions during execution, so two outputs
+may have the same label. Aliases remain the way to make those fields useful to
+a reader.
 
 This chapter carries its select list through the frontend:
 
@@ -461,21 +462,16 @@ fn require_qualifier(qualifier: Option<&str>, scope: &Scope<'_>)
 require_qualifier(qualifier.as_deref(), scope)?;
 ```
 
-Both expression items and wildcard expansion can introduce duplicate output
-names. Keep that rule in one function which appends an output only after its
-name is known to be unique.
+Expression items and wildcard expansion both append checked outputs. Keep that
+small construction step in one function.
 
 `src/catalog.rs`: add after `bind_expression()`
 
 ```rust
 fn push_output(expressions: &mut Vec<ProjectExpression>,
-    name: String, expression: BoundExpr) -> Result<(), String>
+    name: String, expression: BoundExpr)
 {
-    if expressions.iter().any(|existing| existing.name == name) {
-        return Err(format!("duplicate output column: {name}"));
-    }
     expressions.push(ProjectExpression { name, expression });
-    Ok(())
 }
 ```
 
@@ -510,7 +506,7 @@ impl Catalog {
                         BoundExpr::Column(name) => name.clone(),
                         _ => "expression".into(),
                     });
-                    push_output(&mut expressions, name, expression)?;
+                    push_output(&mut expressions, name, expression);
                 }
                 SelectItem::Wildcard { qualifier } => {
                     require_qualifier(qualifier.as_deref(), &scope)?;
@@ -519,7 +515,7 @@ impl Catalog {
                             &mut expressions,
                             column.name.clone(),
                             BoundExpr::Column(column.name.clone()),
-                        )?;
+                        );
                     }
                 }
             }
@@ -549,8 +545,7 @@ For an expression item, each iteration does three things in order:
 1. `bind_expression()` resolves and type-checks the selected expression.
 2. The binder chooses its output name. An explicit alias wins, a bare column
    keeps its column name, and an unnamed computation still uses `expression`.
-3. `push_output()` pairs that name with the checked tree after rejecting a
-   duplicate.
+3. `push_output()` pairs that label with the checked tree.
 
 For a wildcard, the qualifier is checked once and the catalog columns are
 visited in their stored order. Each column becomes a bound column expression
@@ -562,11 +557,12 @@ with the same output name. The three-column employee schema therefore expands
   <figcaption>Binding consults the catalog to expand one wildcard into an ordered list of checked column expressions.</figcaption>
 </figure>
 
-The duplicate-name check reflects the current `Row` representation. A row
-stores each value beside a name, and later name-based lookup should not have to
-choose between two fields with the same name. For example, `SELECT name, name`
-fails during binding with `duplicate output column: name`; `SELECT *, name`
-fails for the same reason after `*` has already introduced `name`.
+The label is not a column identity. `Project` is the outermost node in this
+chapter, so its rows are displayed rather than rebound by another query.
+`SELECT name, name` may therefore produce two fields labelled `name`, and two
+unnamed computations may both use the temporary label `expression`. A later
+result-schema representation will need positional identity when projected rows
+can become another query's input.
 
 The resulting plan keeps its existing shape:
 
@@ -796,24 +792,30 @@ SELECT x.* FROM employees AS e WHERE TRUE;
 error: unknown table or alias: x
 ```
 
-Output-name errors also occur before any rows are scanned:
+Repeated labels are allowed. Two unnamed computations both use the temporary
+label `expression`:
 
 ```sql
-SELECT name, name FROM employees WHERE TRUE;
+SELECT salary + 1, salary + 1000
+FROM employees
+WHERE id = 1;
 ```
 
 ```text
-error: duplicate output column: name
+{expression: 70001, expression: 71000}
 ```
 
-An alias resolves the conflict:
+Aliases make the result easier to interpret:
 
 ```sql
-SELECT name, name AS copied_name FROM employees WHERE id = 1;
+SELECT salary + 1 AS next_salary,
+       salary + 1000 AS raised_salary
+FROM employees
+WHERE id = 1;
 ```
 
 ```text
-{name: "Ada", copied_name: "Ada"}
+{next_salary: 70001, raised_salary: 71000}
 ```
 
 ## 6.8 What we deliberately did not build
@@ -830,15 +832,16 @@ bounded in these ways:
   observable.
 - A computed expression without an alias still receives the temporary name
   `expression`.
-- Duplicate output names are rejected instead of introducing a richer result
-  schema representation.
+- Output labels may repeat because projected rows are final results in this
+  chapter. Chapter 11 will introduce a result schema with positional identity
+  before projected rows can become inputs to another query.
 
 These limits keep the chapter focused on widening projection. The next chapter
 changes the other side of the query by allowing more than one input table.
 
 ## 6.9 Try it
 
-Run the prompt, predict the output names or error, and then try each query.
+Run the prompt, predict the output labels, and then try each query.
 
 1. Select `name, salary` without aliases.
 2. Select `name, salary + 1000 AS raised_salary`.
@@ -855,9 +858,9 @@ Run the prompt, predict the output names or error, and then try each query.
 2. The bare column is named `name`; the computation uses its explicit
    `raised_salary` alias.
 3. Direct aliases are accepted, so the result is unchanged.
-4. Both computations receive the fallback name `expression`, so binding
-   rejects the duplicate output name.
-5. Binding reports `duplicate output column: result`.
+4. Both computations receive the fallback label `expression`; both values
+   remain in the result row.
+5. Both values remain in the result row with the shared label `result`.
 6. The result contains three fields in select-list order: `employee_name`,
    `salary`, and `raised_salary`.
 7. The wildcard expands to `id`, `name`, and `salary` in catalog order.

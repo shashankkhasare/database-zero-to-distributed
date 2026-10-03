@@ -311,7 +311,7 @@ Introduce:
 - unqualified `*` and qualified wildcards such as `e.*`
 - catalog-driven wildcard expansion in the existing one-table scope
 - explicit names for computed output expressions
-- duplicate output-name errors
+- repeated output labels, with aliases available when distinct labels matter
 
 Keep one `FROM` input. This chapter changes the width and naming of projected
 rows without also changing the query's binding scope.
@@ -393,6 +393,11 @@ Extend the AST so an expression or table source can contain another query.
 Begin with uncorrelated scalar, `IN`, and `EXISTS` subqueries. Define their
 result-shape and empty-result behavior, then introduce correlated references
 and nested binding scopes. Execute them in the simplest visible way first.
+
+Introduce a result schema that separates positional column identity from
+display labels before a projected result can become a derived-table or common
+table expression input. Repeated labels remain valid results, but a later
+reference to a repeated label is ambiguous.
 
 Expose repeated correlated execution as a limitation. Defer decorrelation,
 semi-join rewrites, and cost-based choices until the optimizer season.
