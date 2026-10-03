@@ -27,9 +27,11 @@ WHERE e.department_id = d.id;
 ```
 
 This query needs two input rows before its predicate can be evaluated. It also
-needs two output names because both source columns are called `name`. Removing
-the `WHERE` clause remains meaningful: it asks for every employee-department
-pair and makes the join's nine-row Cartesian product visible.
+uses output aliases so the two source columns called `name` remain easy to
+distinguish. Chapter 6 permits repeated output labels, so the aliases improve
+the result's readability rather than make the query valid. Removing the
+`WHERE` clause remains meaningful: it asks for every employee-department pair
+and makes the join's nine-row Cartesian product visible.
 
 With a predicate, the completed plan keeps the familiar filter and project
 operations:
@@ -179,6 +181,8 @@ inputs.
   a physical plan yet.
 - There is no join reordering or cost-based choice.
 - Bound column slots are local to one plan and are not durable catalog IDs.
+- Repeated output labels remain valid final results. Positional result-schema
+  identity arrives before projected rows can become inputs to another query.
 
 ## 7.10 Try it
 

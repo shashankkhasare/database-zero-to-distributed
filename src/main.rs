@@ -298,14 +298,18 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_output_names_are_rejected() {
+    fn duplicate_output_names_are_preserved() {
         assert_eq!(
             execute_sql(
-                "SELECT e.name, d.name FROM employees AS e, departments AS d WHERE TRUE;",
+                "SELECT e.name, d.name FROM employees AS e, departments AS d \
+                 WHERE e.id = 1 AND d.id = 10;",
                 &employee_catalog(),
             )
-            .unwrap_err(),
-            "duplicate output column: name"
+            .unwrap(),
+            vec![Row::new(vec![
+                ("name", Value::Text("Ada".into())),
+                ("name", Value::Text("Engineering".into())),
+            ])]
         );
     }
 
