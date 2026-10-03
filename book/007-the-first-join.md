@@ -1052,14 +1052,16 @@ Run the prompt and predict which stage handles each change:
 
 </details>
 
-## 7.14 One join operation can have different algorithms
+## 7.14 Some joins preserve unmatched rows
 
 The database can now combine two relations. Omitting `WHERE` exposes exactly
 what the logical `Join` produces: every possible row pair. Adding a predicate
-does not reduce that work; it only removes rows afterward. That cost is visible
-even in our three-by-three example.
+retains the matching pairs and discards the rest. This is the behavior of an
+inner join: a row without a match does not appear in the result.
 
-The next chapter will stay with this straightforward execution while adding
-explicit inner and outer join syntax. The later physical-planning chapter will
-return to the cost problem and let one logical `Join` become either a
-`NestedLoopJoin` or a `HashJoin`.
+Sometimes the database must keep an unmatched row and fill the missing side
+with `NULL`. The next chapter will add explicit `INNER`, `LEFT`, `RIGHT`, and
+`FULL JOIN ... ON` forms and make their different row-preservation rules
+visible. It will keep the straightforward nested-loop execution; choosing
+between nested-loop and hash join algorithms remains a later physical-planning
+problem.
