@@ -181,6 +181,21 @@ mod tests {
     }
 
     #[test]
+    fn unnamed_computations_may_share_a_display_label() {
+        assert_eq!(
+            execute_sql(
+                "SELECT salary + 1, salary + 1000 FROM employees WHERE id = 1;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![Row::new(vec![
+                ("expression", Value::Integer(70_001)),
+                ("expression", Value::Integer(71_000)),
+            ])]
+        );
+    }
+
+    #[test]
     fn prompt_collects_lines_until_the_statement_ends() {
         let mut sql = String::new();
 

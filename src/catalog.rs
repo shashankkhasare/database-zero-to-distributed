@@ -172,16 +172,8 @@ fn bind_expression(expression: Expr, scope: &Scope<'_>) -> Result<(BoundExpr, Da
     }
 }
 
-fn push_output(
-    expressions: &mut Vec<ProjectExpression>,
-    name: String,
-    expression: BoundExpr,
-) -> Result<(), String> {
-    if expressions.iter().any(|existing| existing.name == name) {
-        return Err(format!("duplicate output column: {name}"));
-    }
+fn push_output(expressions: &mut Vec<ProjectExpression>, name: String, expression: BoundExpr) {
     expressions.push(ProjectExpression { name, expression });
-    Ok(())
 }
 
 impl Catalog {
@@ -206,7 +198,7 @@ impl Catalog {
                         BoundExpr::Column(name) => name.clone(),
                         _ => "expression".into(),
                     });
-                    push_output(&mut expressions, name, expression)?;
+                    push_output(&mut expressions, name, expression);
                 }
                 SelectItem::Wildcard { qualifier } => {
                     require_qualifier(qualifier.as_deref(), &scope)?;
@@ -215,7 +207,7 @@ impl Catalog {
                             &mut expressions,
                             column.name.clone(),
                             BoundExpr::Column(column.name.clone()),
-                        )?;
+                        );
                     }
                 }
             }
@@ -322,18 +314,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_duplicate_output_names() {
+    fn preserves_duplicate_output_labels() {
+        let rows = catalog()
+            .bind(parse("SELECT salary + 1, salary + 1000 FROM employees WHERE TRUE;").unwrap())
+            .unwrap()
+            .execute()
+            .unwrap();
+
         assert_eq!(
-            catalog()
-                .bind(parse("SELECT name, name FROM employees WHERE TRUE;").unwrap())
-                .unwrap_err(),
-            "duplicate output column: name"
-        );
-        assert_eq!(
-            catalog()
-                .bind(parse("SELECT *, name FROM employees WHERE TRUE;").unwrap())
-                .unwrap_err(),
-            "duplicate output column: name"
+            rows,
+            vec![Row::new(vec![
+                ("expression", Value::Integer(70_001)),
+                ("expression", Value::Integer(71_000)),
+            ])]
         );
     }
 
