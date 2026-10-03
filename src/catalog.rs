@@ -285,10 +285,16 @@ impl Catalog {
             }
         }
 
-        let (predicate, predicate_type) = bind_expression(query.filter, &scope)?;
-        if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
-            return Err("WHERE expression must be Boolean".to_string());
-        }
+        let predicate = match query.filter {
+            Some(filter) => {
+                let (predicate, predicate_type) = bind_expression(filter, &scope)?;
+                if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
+                    return Err("WHERE expression must be Boolean".to_string());
+                }
+                Some(predicate)
+            }
+            None => None,
+        };
 
         let mut inputs = input_tables.into_iter();
         let first = inputs
@@ -305,12 +311,15 @@ impl Catalog {
                 }),
             };
         }
-        Ok(Plan::Project {
-            expressions,
-            input: Box::new(Plan::Filter {
+        if let Some(predicate) = predicate {
+            input = Plan::Filter {
                 predicate,
                 input: Box::new(input),
-            }),
+            };
+        }
+        Ok(Plan::Project {
+            expressions,
+            input: Box::new(input),
         })
     }
 }

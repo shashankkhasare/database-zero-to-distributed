@@ -8,7 +8,7 @@ use crate::row::Value;
 pub struct Query {
     pub projections: Vec<SelectItem>,
     pub tables: Vec<TableReference>,
-    pub filter: Expr,
+    pub filter: Option<Expr>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -88,8 +88,11 @@ impl Parser {
         let projections = self.parse_select_list()?;
         self.expect(Token::From, "expected FROM after select list")?;
         let tables = self.parse_table_list()?;
-        self.expect(Token::Where, "expected WHERE after table list")?;
-        let filter = self.parse_expression()?;
+        let filter = if self.consume(&Token::Where) {
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
         self.expect(Token::Semicolon, "expected ; after query")?;
         if self.current != self.tokens.len() {
             return Err(ParseError("unexpected token after ;".to_string()));
@@ -363,7 +366,10 @@ mod tests {
         let query = parse("SELECT e.name FROM employees AS e WHERE e.name IS NOT NULL;").unwrap();
         assert_eq!(query.tables[0].name, "employees");
         assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
-        assert!(matches!(query.filter, Expr::IsNull { negated: true, .. }));
+        assert!(matches!(
+            query.filter,
+            Some(Expr::IsNull { negated: true, .. })
+        ));
     }
 
     #[test]
@@ -375,7 +381,7 @@ mod tests {
         assert_eq!(expression, &Expr::Literal(crate::row::Value::Boolean(true)));
         assert_eq!(
             query.filter,
-            Expr::Literal(crate::row::Value::Boolean(false))
+            Some(Expr::Literal(crate::row::Value::Boolean(false)))
         );
     }
 
@@ -420,6 +426,18 @@ mod tests {
         assert_eq!(query.tables.len(), 2);
         assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
         assert_eq!(query.tables[1].alias.as_deref(), Some("d"));
+    }
+
+    #[test]
+    fn parses_a_query_without_where() {
+        let query = parse(
+            "SELECT e.name, d.name AS department_name \
+             FROM employees AS e, departments AS d;",
+        )
+        .unwrap();
+
+        assert_eq!(query.tables.len(), 2);
+        assert_eq!(query.filter, None);
     }
 
     #[test]

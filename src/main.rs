@@ -232,6 +232,32 @@ mod tests {
     }
 
     #[test]
+    fn query_without_where_returns_the_cartesian_product() {
+        let rows = execute_sql(
+            "SELECT e.name AS employee_name, d.name AS department_name \
+             FROM employees AS e, departments AS d;",
+            &employee_catalog(),
+        )
+        .unwrap();
+
+        assert_eq!(rows.len(), 9);
+        assert_eq!(
+            rows.first(),
+            Some(&Row::new(vec![
+                ("employee_name", Value::Text("Ada".into())),
+                ("department_name", Value::Text("Engineering".into())),
+            ]))
+        );
+        assert_eq!(
+            rows.last(),
+            Some(&Row::new(vec![
+                ("employee_name", Value::Text("Grace".into())),
+                ("department_name", Value::Text("Research".into())),
+            ]))
+        );
+    }
+
+    #[test]
     fn unqualified_column_is_rejected_when_multiple_inputs_define_it() {
         assert_eq!(
             execute_sql(
