@@ -459,10 +459,10 @@ Delegate the column arm of the recursive binder to that lookup.
 Expr::Column { qualifier, name } => bind_column(qualifier, name, scope),
 ```
 
-Execution now needs positional access. It also needs to concatenate the left
-and right rows in exactly the order used to calculate the offsets.
+Execution now needs positional access. Begin the row changes with the checked
+slot lookup.
 
-`src/row.rs`: replace the second `impl Row`
+`src/row.rs`: begin replacing the second `impl Row`
 
 ```rust
 impl Row {
@@ -480,7 +480,21 @@ impl Row {
         }
         Ok(value)
     }
+```
 
+`value_at()` reads the position chosen during binding. A missing position means
+the runtime row is shorter than the catalog layout promised. The name check
+does not resolve the column again; it detects an internal mismatch between the
+catalog layout used during binding and the row layout received during
+execution.
+
+The join also needs to concatenate its two input rows. Their order must match
+the order used to calculate the scope offsets: all left values first, followed
+by all right values.
+
+`src/row.rs`: finish the second `impl Row`
+
+```rust
     pub fn combine(&self, right: &Row) -> Row {
         let mut values = self.values.clone();
         values.extend(right.values.iter().cloned());
@@ -489,9 +503,9 @@ impl Row {
 }
 ```
 
-The name check does not resolve the column again. It catches an internal
-mismatch between the catalog layout used during binding and the row layout
-received during execution.
+Because `combine()` appends the right row, an employee row with four values
+leaves those values in slots 0 through 3 and places the first department value
+at slot 4. That is the same layout recorded in Section 7.4.
 
 `src/expression.rs`: replace the column arm in `BoundExpr::evaluate()`
 
@@ -573,6 +587,15 @@ for table_reference in query.tables {
 let scope = Scope { tables: scope_tables };
 ```
 
+The two vectors serve different later steps. `scope_tables` records the names,
+types, and offsets needed while binding expressions. `input_tables` retains
+the verified catalog tables whose rows will become `Scan` nodes. For each
+input, `unwrap_or(table_reference.name)` chooses its alias when present and
+otherwise its table name. The current `offset` is stored before advancing by
+that table's column count, so every scope entry begins immediately after the
+previous input. Duplicate accepted qualifiers fail before either the
+projection or filter is bound.
+
 The projection loop now sees the structured column variant. Update the
 fallback label for a bare selected column:
 
@@ -617,6 +640,13 @@ fn expand_wildcard(
     Ok(())
 }
 ```
+
+The first phase chooses which scope entries to expand. A qualified wildcard
+selects one entry; an unqualified wildcard collects every entry in `FROM`
+order. The nested loops then visit each selected table's columns in catalog
+order. Adding `table.offset` to the table-local `index` produces the same
+absolute slots used by explicit column references, while `push_output()` keeps
+the corresponding result labels.
 
 Update the wildcard arm in `Catalog::bind()`:
 
