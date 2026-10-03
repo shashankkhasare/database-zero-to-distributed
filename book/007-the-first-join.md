@@ -22,8 +22,8 @@ unqualified name shared by both tables fails as ambiguous before execution.
   <figcaption>Three employee rows and three department rows create nine candidate pairs; matching identifiers retain three rows.</figcaption>
 </figure>
 
-Chapter 6 can project several named expressions, but every column still belongs
-to one input table. The next request exceeds that remaining limit:
+Chapter 6 can return several named expressions from one table. It cannot yet
+answer a question whose columns come from two tables:
 
 ```sql
 SELECT e.name AS employee_name, d.name AS department_name
@@ -31,12 +31,22 @@ FROM employees AS e, departments AS d
 WHERE e.department_id = d.id;
 ```
 
-This query needs two input rows before its predicate can be evaluated. It also
-uses output aliases so the two source columns called `name` remain easy to
-distinguish. Chapter 6 permits repeated output labels, so the aliases improve
-the result's readability rather than make the query valid. Removing the
-`WHERE` clause remains meaningful: it asks for every employee-department pair
-and makes the join's nine-row Cartesian product visible.
+The parser must now preserve a list of input tables rather than one table. The
+binder must decide whether each column belongs to `employees` or `departments`,
+and the executor must place one row from each table together before it can
+evaluate `e.department_id = d.id`.
+
+This chapter makes those changes in three steps:
+
+1. Extend the query AST and binding scope from one input table to several.
+2. Bind each column to a stable position in the combined row and reject an
+   unqualified name when more than one input table contains it.
+3. Add a logical `Join` whose first execution strategy pairs every left row
+   with every right row using visible nested loops.
+
+The output aliases give the two source columns called `name` distinct labels
+in the result. They improve readability rather than make the query valid,
+because Chapter 6 already permits repeated output labels.
 
 With a predicate, the completed plan keeps the familiar filter and project
 operations:
@@ -51,12 +61,14 @@ Filter(e.department_id = d.id)
  Scan(employees)    Scan(departments)
 ```
 
-`Join` is the logical request to combine the inputs. Its first implementation
-will simply pair every left row with every right row. When `WHERE` is present,
-the filter above it retains the pairs whose department identifiers match. When
-`WHERE` is absent, the plan has no `Filter` and `Project` receives all nine
-pairs. We will make that simple execution work before introducing physical
-join algorithms.
+`Join` expresses the request to combine the two inputs; it does not yet choose
+among several physical join algorithms. Its first implementation pairs every
+employee with every department. Making `WHERE` optional lets us observe that
+nine-row Cartesian product directly. Adding the predicate places `Filter`
+above the join and retains the three pairs whose department identifiers match.
+
+By the end of the chapter, the query above returns Ada with Engineering, Linus
+with Systems, and Grace with Research.
 
 Before changing the program, begin from the completed Chapter 6 checkpoint:
 
