@@ -248,21 +248,26 @@ now distinguishes an omitted predicate from one the binder must validate.
 
 ## 7.4 Build a multi-table scope
 
-A database may contain many tables, but this query makes only `employees` and
-`departments` visible. The binder will create one scope entry per input,
-recording its accepted qualifier, columns, and starting position in the row
-that the join will produce.
+Chapter 5 introduced a scope for one input table:
 
-```text
-database catalog
-├── employees   ← visible as e, starts at slot 0
-├── departments ← visible as d, starts at slot 4
-└── other tables remain outside this query's scope
+```rust
+struct Scope<'a> {
+    table_name: &'a str,
+    alias: Option<&'a str>,
+    columns: &'a [Column],
+}
 ```
 
-Each input needs its own scope entry. `qualifier` is the alias when one was
-written and otherwise the table name. `offset` is the number of columns
-contributed by earlier inputs.
+That representation can expose only one table name, one optional alias, and
+one column list. It cannot keep both `employees AS e` and `departments AS d`
+visible at the same time. It also cannot distinguish two visible columns named
+`name` or record where either table begins in the combined row.
+
+The new scope therefore needs one entry per input table. Each entry records
+the qualifier accepted in expressions, the table's catalog columns, and the
+starting position of those columns in the combined row. `qualifier` is the
+alias when one was written and otherwise the table name. `offset` is the
+number of columns contributed by earlier inputs.
 
 `src/catalog.rs`: replace `Scope`
 
@@ -277,6 +282,64 @@ struct Scope<'a> {
     tables: Vec<ScopeTable<'a>>,
 }
 ```
+
+For the representative query, the binder finds both catalog tables before it
+walks either the projection or filter expressions:
+
+```sql
+SELECT e.name AS employee_name, d.name AS department_name
+FROM employees AS e, departments AS d
+WHERE e.department_id = d.id;
+```
+
+It then creates a scope that conceptually contains:
+
+```text
+Scope {
+    tables: [
+        ScopeTable {
+            qualifier: "e",
+            columns: [
+                id: Integer,
+                name: Text,
+                salary: Integer,
+                department_id: Integer,
+            ],
+            offset: 0,
+        },
+        ScopeTable {
+            qualifier: "d",
+            columns: [
+                id: Integer,
+                name: Text,
+            ],
+            offset: 4,
+        },
+    ],
+}
+```
+
+Table aliases are optional. Without `AS e` and `AS d`, the table names
+themselves become the accepted qualifiers, so the same join can be written as:
+
+```sql
+SELECT employees.name AS employee_name,
+       departments.name AS department_name
+FROM employees, departments
+WHERE employees.department_id = departments.id;
+```
+
+A column qualifier is also optional when its name identifies exactly one
+visible column. For example, `department_id` is unique to `employees` in this
+scope and may be unqualified. Both tables contain `name` and `id`, so those
+names require a qualifier. When a table alias is declared, this teaching
+dialect accepts the alias rather than the original table name as its
+qualifier.
+
+The employee columns occupy slots 0 through 3, so the department columns begin
+at slot 4. Other catalog tables remain outside this query's scope. The binder
+passes the same shared `&Scope` while it recursively binds every projection
+and the optional filter; binding changes the expression tree, not the scope.
 
 Unqualified lookup now has three possible outcomes:
 
