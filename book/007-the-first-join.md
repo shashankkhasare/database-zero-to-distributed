@@ -219,8 +219,8 @@ fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
 ```
 
 The same `parse_alias()` method now serves two grammar positions. After a
-selected expression it records an output alias; after a table name it records
-the qualifier accepted for that input.
+selected expression, it records an output alias. After a table name, it
+records the alias used to qualify that table, which we call an input alias.
 
 The existing parser tests inspect Chapter 6's singular `table`, `table_alias`,
 and required `filter` fields. Remove the `#[cfg(test)] mod tests` block from
@@ -276,6 +276,11 @@ Add `WHERE e.department_id = d.id` before the semicolon and run it again. The
 same input list remains, while `filter` becomes `Some(Binary { ... })`. The AST
 now distinguishes an omitted predicate from one the binder must validate.
 
+The parser has preserved both input tables, but it has not checked their names
+or the columns that refer to them. The binder must now keep both tables in the
+same scope, then use that scope to validate and bind every projection and the
+optional filter.
+
 ## 7.4 Build a multi-table scope
 
 Chapter 5 introduced a scope for one input table:
@@ -291,7 +296,7 @@ struct Scope<'a> {
 That representation can expose only one table name, one optional alias, and
 one column list. It cannot keep both `employees AS e` and `departments AS d`
 visible at the same time. It also cannot distinguish two visible columns named
-`name` or record where either table begins in the combined row.
+`name` or record where either table will begin after their rows are combined.
 
 The new scope therefore needs one entry per input table. Each entry records
 the qualifier accepted in expressions, the table's catalog columns, and the
@@ -349,27 +354,15 @@ Scope {
 }
 ```
 
-Table aliases are optional. Without `AS e` and `AS d`, the table names
-themselves become the accepted qualifiers, so the same join can be written as:
+Each scope entry records which qualifier identifies an input, which columns
+that input defines, and where those columns will begin after execution combines
+the input rows.
 
-```sql
-SELECT employees.name AS employee_name,
-       departments.name AS department_name
-FROM employees, departments
-WHERE employees.department_id = departments.id;
-```
-
-A column qualifier is also optional when its name identifies exactly one
-visible column. For example, `department_id` is unique to `employees` in this
-scope and may be unqualified. Both tables contain `name` and `id`, so those
-names require a qualifier. When a table alias is declared, this teaching
-dialect accepts the alias rather than the original table name as its
-qualifier.
-
-The employee columns occupy slots 0 through 3, so the department columns begin
-at slot 4. Other catalog tables remain outside this query's scope. The binder
-passes the same shared `&Scope` while it recursively binds every projection
-and the optional filter; binding changes the expression tree, not the scope.
+The employee entry begins at offset 0 because it is the first input. It defines
+four columns, so the department entry begins at offset 4. These offsets predict
+the combined layout that `Join` will later produce; no rows have been scanned
+or combined during binding. Other catalog tables remain outside this query's
+scope.
 
 Unqualified lookup now has three possible outcomes:
 
@@ -380,14 +373,22 @@ Unqualified lookup now has three possible outcomes:
 For example, both inputs contain `name`. The binder must reject unqualified
 `name` rather than choose one silently.
 
-The scope can now determine which table owns a column and recover its type.
-Execution still needs to know where that column appears in the combined row.
+The scope can now identify a column's owning table and recover its type. The
+next step turns that ownership and offset into the exact position from which
+execution will read the value.
 
 ## 7.5 Bind columns to slots
 
-Chapter 5 stored a bound column by name. That was sufficient while a row could
-contain only one column with that name. A joined row may contain both
-`employees.name` and `departments.name`.
+The scope predicts the joined layout before execution sees any data. At
+execution time, each `Scan` still produces rows shaped like its own table: an
+employee row has four values and a department row has two. `Join` appends one
+department row to one employee row, producing a six-value combined row.
+For the representative query, `Filter` reads that complete row without
+changing its width, and `Project` creates the final two-value result row.
+
+Chapter 5 stored a bound column by name. That was sufficient while an input row
+could contain only one column with that name. The six-value joined row may
+contain both `employees.name` and `departments.name`.
 
 The binder will therefore replace each resolved name with a **column slot**,
 its zero-based position in the combined row. It retains the original name for
@@ -535,7 +536,7 @@ by all right values.
 
 Because `combine()` appends the right row, an employee row with four values
 leaves those values in slots 0 through 3 and places the first department value
-at slot 4. That is the same layout recorded in Section 7.4.
+at slot 4. That is the same layout predicted in Section 7.4.
 
 `src/expression.rs`: replace the column arm in `BoundExpr::evaluate()`
 
