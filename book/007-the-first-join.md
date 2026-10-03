@@ -361,18 +361,10 @@ contain only one column with that name. A joined row may contain both
 
 The binder will therefore replace each resolved name with a **column slot**,
 its zero-based position in the combined row. It retains the original name for
-readable diagnostics:
-
-```text
-employees row                 departments row
-[id, name, salary, department_id] + [id, name]
-                ↓
-[id, name, salary, department_id, id, name]
-  0    1      2          3         4    5
-```
-
-In this layout, `e.name` binds to slot 1 and `d.name` binds to slot 5. The two
-labels may be identical because execution reads the checked slots.
+readable diagnostics. The employee fields occupy slots 0 through 3, followed
+by the department fields in slots 4 and 5. In this layout, `e.name` binds to
+slot 1 and `d.name` binds to slot 5. The two labels may be identical because
+execution reads the checked slots.
 
 <figure class="book-illustration book-diagram">
   <img src="images/007-qualified-columns-become-slots.png" alt="The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.">

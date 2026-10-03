@@ -64,12 +64,21 @@ images:
       six-field row below. Preserve this exact field order: "id", "name",
       "salary", "department_id", "id", "name". Place slot numbers exactly
       "0", "1", "2", "3", "4", and "5" directly beneath the corresponding
-      fields.
+      fields. Shade the complete field and slot-number cells for slots 0, 1,
+      2, and 3 with a light employee teal derived from the EMPLOYEES card.
+      Shade the complete field and slot-number cells for slots 4 and 5 with a
+      light department ochre derived from the DEPARTMENTS card. This source
+      coloring must make the boundary between the two parent rows immediately
+      visible in the combined row.
 
       Beneath the combined row, place exactly two callouts. Connect
       "e.name" to slot "1" and connect "d.name" to slot "5" with straight,
-      noncrossing lines. Highlight slots 1 and 5 in muted turquoise. Make it
-      unmistakable that the repeated label "name" is disambiguated by its
+      noncrossing lines. Highlight both the field cell and slot-number cell at
+      slot 1 with a stronger employee teal, and use that same teal for its
+      connector and "e.name" callout. Highlight both cells at slot 5 with a
+      stronger department ochre, and use that same ochre for its connector and
+      "d.name" callout. Make it unmistakable both which parent table supplied
+      each slot and how the repeated label "name" is disambiguated by its
       checked position.
 
       Permitted text only: "EMPLOYEES", "DEPARTMENTS", "COMBINE", "id",
