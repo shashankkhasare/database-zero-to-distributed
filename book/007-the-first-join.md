@@ -392,8 +392,9 @@ Unqualified lookup now has three possible outcomes:
 - exactly one table contains it, so binding succeeds;
 - more than one table contains it, so the name is ambiguous.
 
-For example, both inputs contain `name`. The binder must reject unqualified
-`name` rather than choose one silently.
+For example, both `employees` and `departments` contain a column named `name`.
+The binder must reject unqualified `name` rather than choose one table
+silently.
 
 The scope can now identify a column's owning table and recover its type. The
 next step turns that ownership and offset into the exact position from which
@@ -416,8 +417,10 @@ The binder will therefore replace each resolved name with a **column slot**,
 its zero-based position in the combined row. It retains the original name for
 readable diagnostics. The employee fields occupy slots 0 through 3, followed
 by the department fields in slots 4 and 5. In this layout, `e.name` binds to
-slot 1 and `d.name` binds to slot 5. The two labels may be identical because
-execution reads the checked slots.
+slot 1 and `d.name` binds to slot 5. Both bound columns retain `name` for
+diagnostics, but that shared label no longer decides which value is read.
+Execution uses slot 1 for the employee name and slot 5 for the department
+name, so the two columns remain distinct even though their labels match.
 
 <figure class="book-illustration book-diagram">
   <img src="images/007-qualified-columns-become-slots.png" alt="The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.">
