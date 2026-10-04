@@ -29,7 +29,9 @@ impl Row {
     pub fn from_owned(values: Vec<(String, Value)>) -> Self {
         Self { values }
     }
+}
 
+impl Row {
     pub fn value_at(&self, index: usize, expected_name: &str) -> Result<&Value, String> {
         let (name, value) = self
             .values

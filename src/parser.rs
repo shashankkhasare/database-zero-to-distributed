@@ -12,6 +12,12 @@ pub struct Query {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct TableReference {
+    pub name: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum SelectItem {
     Wildcard {
         qualifier: Option<String>,
@@ -20,12 +26,6 @@ pub enum SelectItem {
         expression: Expr,
         alias: Option<String>,
     },
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct TableReference {
-    pub name: String,
-    pub alias: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]

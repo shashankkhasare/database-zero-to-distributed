@@ -67,14 +67,14 @@ aliases make repeated or computed fields easier to interpret.
 
 ---
 
-# Current milestone: 007, The First Join
+# Completed milestone: 007, The First Join
 
 Lesson 007 begins from Chapter 6's one-table query with multiple outputs. It
-will introduce multiple input tables, make ambiguous columns visible, and
-execute the first logical join with a simple nested loop. The chapter will also
-make `WHERE` optional: without it the nested loop exposes the Cartesian product,
-while a predicate filters those candidate pairs into an inner join. It will
-expose the algorithm's cost without introducing physical-plan alternatives.
+introduces multiple input tables, makes ambiguous columns visible, and executes
+the first logical join with a simple nested loop. It also makes `WHERE`
+optional: without it the nested loop exposes the Cartesian product, while a
+predicate filters those candidate pairs into an inner join. The implementation
+exposes the algorithm's cost without introducing physical-plan alternatives.
 
 ## Chapter 7 contract
 
@@ -92,26 +92,26 @@ column still fails before execution.
 
 ## Chapter 7 teaching sequence
 
-- [ ] Extend `FROM` from one table reference to a comma-separated input list
-- [ ] Make `WHERE` optional and represent the absence of a filter explicitly
-- [ ] Run a parser checkpoint that preserves every selected expression, output
+- [x] Extend `FROM` from one table reference to a comma-separated input list
+- [x] Make `WHERE` optional and represent the absence of a filter explicitly
+- [x] Run a parser checkpoint that preserves every selected expression, output
       alias, table name, and input alias
-- [ ] Add `departments` to the in-memory catalog and create one binding scope
+- [x] Add `departments` to the in-memory catalog and create one binding scope
       containing all query inputs
-- [ ] Reject duplicate input aliases, unknown qualifiers, unknown columns, and
+- [x] Reject duplicate input aliases, unknown qualifiers, unknown columns, and
       ambiguous unqualified columns
-- [ ] Replace bare-name bound columns with the smallest explicit identity that
+- [x] Replace bare-name bound columns with the smallest explicit identity that
       distinguishes columns belonging to different inputs
-- [ ] Add a logical `Join` node whose two children are input plans
-- [ ] Execute `Join` with two visible nested loops, combine each row pair, and
+- [x] Add a logical `Join` node whose two children are input plans
+- [x] Execute `Join` with two visible nested loops, combine each row pair, and
       place a present `WHERE` predicate in the existing `Filter` node
-- [ ] Run a query without `WHERE` to expose the complete Cartesian product
-- [ ] Build and print the complete `Project -> Filter -> Join(Scan, Scan)` plan
-- [ ] Run the representative query and explain why three employees and three
+- [x] Run a query without `WHERE` to expose the complete Cartesian product
+- [x] Build and print the complete `Project -> Filter -> Join(Scan, Scan)` plan
+- [x] Run the representative query and explain why three employees and three
       departments require nine candidate row pairs before filtering
-- [ ] Add concept-focused parser, binding, plan, execution, ambiguity, alias,
+- [x] Add concept-focused parser, binding, plan, execution, ambiguity, alias,
       and end-to-end tests without placing test code in the chapter narrative
-- [ ] Update Appendix B, Appendix C if type behavior changes, `TERMS.md`, the
+- [x] Update Appendix B, Appendix C if type behavior changes, `TERMS.md`, the
       contents page, chapter art sources, and the verified `lesson-007` tag
 
 ## Chapter 7 boundaries
@@ -121,6 +121,9 @@ column still fails before execution.
 - Keep `Join` logical. Do not add `NestedLoopJoin`, `HashJoin`, or a physical
   plan yet.
 - Do not optimize the nested loop or introduce join ordering.
+- Keep every `WHERE` predicate above the complete join, even when one conjunct
+  refers to only one input. Predicate pushdown belongs to the first optimizer
+  milestone.
 - Continue materializing complete child results.
 - Accept one semicolon-terminated statement at a time; do not build a general
   multi-statement script parser.
@@ -308,7 +311,7 @@ book-link verifier at `lesson-005`.
 - [x] 004 — Expressions Are Trees
 - [x] 005 — Binding Gives Names Meaning
 - [x] 006 — Multiple Outputs
-- [ ] 007 — The First Join
+- [x] 007 — The First Join
 - [ ] 008 — Join Syntax and Row Preservation
 - [ ] 009 — GROUP BY and Aggregation
 - [ ] 010 — Sort, DISTINCT and LIMIT
