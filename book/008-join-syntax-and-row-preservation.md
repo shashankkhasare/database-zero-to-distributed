@@ -30,8 +30,8 @@ the center plus the left row, RIGHT keeps the center plus the right row, and
 FULL keeps all three regions.
 -->
 
-[Chapter 7](007-the-first-join.md) creates every possible pair and lets
-`WHERE` discard the pairs that do not match:
+Chapter 7 creates every possible pair and lets `WHERE` discard the pairs that
+do not match:
 
 ```sql
 SELECT e.name AS employee_name, d.name AS department_name
@@ -79,8 +79,7 @@ This chapter makes those changes in four steps:
 4. Extend the nested loops to emit null-extended rows when the join kind
    preserves an unmatched side.
 
-Before changing the program, begin from the completed
-[Chapter 7](007-the-first-join.md) checkpoint:
+Before changing the program, begin from the completed Chapter 7 checkpoint:
 
 ```bash
 git switch --create chapter-008 lesson-007
@@ -129,10 +128,10 @@ We will preserve that order in the grammar, AST, logical plan, and executor.
 
 ## 8.2 Extend the join grammar
 
-[Chapter 7](007-the-first-join.md) treats `FROM` as a comma-separated list of
-simple table references. The expanded grammar lets each table reference carry
-explicit joins. [Appendix B](appendix-b-sql-grammar.md) places this addition in
-the larger SQL grammar:
+Chapter 7 treats `FROM` as a comma-separated list of simple table references.
+The expanded grammar lets each table reference carry explicit joins.
+[Appendix B](appendix-b-sql-grammar.md) places this addition in the larger SQL
+grammar:
 
 ```text
 query            = "SELECT" select_list
@@ -199,9 +198,8 @@ For the representative query, `first` stores `employees AS e`. Its one
 tree for `e.department_id = d.id`.
 
 The outer `Vec<TableReference>` remains useful. A comma between two table
-references still requests the Cartesian combination introduced in
-[Chapter 7](007-the-first-join.md); an explicit join inside one table reference
-carries a join kind and condition.
+references still requests the Cartesian combination introduced in Chapter 7;
+an explicit join inside one table reference carries a join kind and condition.
 
 ## 8.4 Parse table primaries and join clauses
 
@@ -241,9 +239,9 @@ types make the request valid.
 
 ## 8.5 Bind `ON` when both inputs are visible
 
-[Chapter 7](007-the-first-join.md) builds one scope containing every
-comma-separated input before it binds projection and `WHERE`. An explicit join
-needs a more precise moment for its condition.
+Chapter 7 builds one scope containing every comma-separated input before it
+binds projection and `WHERE`. An explicit join needs a more precise moment for
+its condition.
 
 For:
 
@@ -276,17 +274,16 @@ error: ON expression must be Boolean
 
 `NULL` is accepted as a condition type because SQL three-valued logic treats
 it as not matching a pair. Name resolution, ambiguity checks, column slots, and
-ordinary operator type checks remain the same as
-[Chapter 7](007-the-first-join.md).
+ordinary operator type checks remain the same as Chapter 7.
 
 After the complete `FROM` input is bound, projection and the optional `WHERE`
 expression use the full resulting scope.
 
 ## 8.6 Put matching and preservation in the logical plan
 
-[Chapter 7's](007-the-first-join.md) logical `Join` only means “combine every
-left row with every right row.” The new node must also record which pairs match
-and which unmatched sides survive.
+Chapter 7's logical `Join` only means “combine every left row with every right
+row.” The new node must also record which pairs match and which unmatched sides
+survive.
 
 The proposed logical shape is:
 
@@ -301,9 +298,8 @@ Join {
 }
 ```
 
-`condition` is absent only for
-[Chapter 7's](007-the-first-join.md) comma-separated Cartesian join. Explicit
-joins carry their checked `ON` expression.
+`condition` is absent only for Chapter 7's comma-separated Cartesian join.
+Explicit joins carry their checked `ON` expression.
 
 The column-name lists are execution metadata, not projected output names. When
 one side has no match, the executor needs its names to construct the correct
@@ -365,10 +361,9 @@ FALSE or NULL: discard it
 The three matching employee-department pairs survive. Edsger and Operations do
 not appear because neither has a match.
 
-This produces the same rows as
-[Chapter 7's](007-the-first-join.md) comma-plus-`WHERE` query. That equivalence
-is useful, but it is limited to inner joins. Moving an outer join's `ON`
-condition into `WHERE` changes which unmatched rows survive.
+This produces the same rows as Chapter 7's comma-plus-`WHERE` query. That
+equivalence is useful, but it is limited to inner joins. Moving an outer join's
+`ON` condition into `WHERE` changes which unmatched rows survive.
 
 ## 8.9 Preserve the left or right side
 
