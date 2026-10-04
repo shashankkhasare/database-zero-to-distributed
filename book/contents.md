@@ -32,9 +32,7 @@ the database can answer substantial read-only queries.
 5. [Binding Gives Names Meaning](005-binding-gives-names-meaning.md)
 6. [Multiple Outputs](006-multiple-outputs.md)
 7. [The First Join](007-the-first-join.md)
-
-**Currently building:** explicit join syntax and the rules that preserve
-unmatched rows in inner and outer joins.
+8. [Join Syntax and Row Preservation](008-join-syntax-and-row-preservation.md)
 
 ### Season 2: See How Query Engines Execute
 
