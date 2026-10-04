@@ -52,7 +52,7 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | output alias | Chapter 6, §6.1 | A query-provided name for a value produced by a selected expression |
 | wildcard | Chapter 6, §6.1 | `*` or a qualified form such as `e.*`, expanded during binding into the visible catalog columns in schema order |
 | column slot | Chapter 7, §7.5 | A bound column's zero-based position in the combined row produced from the query inputs |
-| Cartesian product | Chapter 7, §7.8 | Every possible pairing of one row from the left input with one row from the right input |
+| Cartesian product | Chapter 7, §7.6.2 | Every possible pairing of one row from the left input with one row from the right input |
 
 ## Maintenance rule
 
