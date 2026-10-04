@@ -869,8 +869,12 @@ Ok(Plan::Project {
 Using the first scan as the starting plan makes the construction left-deep.
 With three inputs `A`, `B`, and `C`, the loop would first produce
 `Join(Scan(A), Scan(B))`, then use that entire plan as the left child of a join
-with `Scan(C)`. The grammar guarantees at least one table, while the explicit
-empty-input error protects the binder's internal assumption.
+with `Scan(C)`. The `table_list` grammar begins with one `table_reference`, so
+a query produced by the parser always supplies at least one input. The binder
+still checks for an empty `input_tables` vector before taking its first item.
+That defensive check keeps the assumption local to `Catalog::bind()` and
+returns a clear error if a `Query` is ever constructed directly or a later
+parser change stops enforcing the grammar rule.
 
 If a predicate exists, `Filter` wraps the complete join tree and therefore
 sees columns from every input. `Project` is always the root because it shapes
