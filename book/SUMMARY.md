@@ -11,6 +11,7 @@
 - [Binding Gives Names Meaning](005-binding-gives-names-meaning.md)
 - [Multiple Outputs](006-multiple-outputs.md)
 - [The First Join](007-the-first-join.md)
+- [Join Syntax and Row Preservation](008-join-syntax-and-row-preservation.md)
 
 # Appendices
 
