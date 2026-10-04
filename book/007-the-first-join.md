@@ -582,6 +582,16 @@ correct order.
 
 ## 7.7 Assemble the bound plan
 
+The earlier sections prepared the pieces that `Catalog::bind()` needs. It can
+now turn one parsed `Query` into a complete plan in four phases:
+
+1. Resolve every `FROM` input and establish the shared scope.
+2. Bind each selected item against that scope.
+3. Bind and type-check the optional filter.
+4. Assemble scans, joins, the optional filter, and projection.
+
+### 7.7.1 Resolve inputs and establish the scope
+
 Binding starts with the parsed table references because every projection and
 predicate must use the resulting scope. For each reference, find the catalog
 table, choose its accepted qualifier, record its offset, and retain the table
@@ -627,8 +637,23 @@ that table's column count, so every scope entry begins immediately after the
 previous input. Duplicate accepted qualifiers fail before either the
 projection or filter is bound.
 
-The projection loop now sees the structured column variant. Update the
-fallback label for a bare selected column:
+For the representative query, the offset progression is concrete. The
+employee entry records offset 0, then its four columns advance `offset` to 4.
+The department entry records offset 4, then its two columns advance the final
+value to 6. Those recorded offsets agree with the six-value row that `Join`
+will later create.
+
+### 7.7.2 Bind the projection list
+
+Chapter 6 already loops over `query.projections`, binding expression items and
+expanding wildcards. That loop continues to use one `expressions` vector for
+the eventual `Project` node, but its bound columns now contain slots.
+
+For an expression item, `bind_expression()` validates its column references
+and operators against the shared scope. An explicit output alias remains the
+result label. Without one, a bare column keeps its column name and a computed
+expression keeps the temporary label `expression`. Update the bare-column
+match for the new structured variant:
 
 `src/catalog.rs`: replace the output-name match
 
@@ -687,8 +712,16 @@ SelectItem::Wildcard { qualifier } => {
 }
 ```
 
-The optional filter is bound only when the AST contains one. Its existing
-Boolean-or-null requirement does not change.
+Explicit references such as `e.name` and the columns produced by `e.*` or `*`
+now use the same absolute-slot convention.
+
+### 7.7.3 Bind the optional filter
+
+The parser represented `WHERE` as `Option<Expr>`, so binding mirrors those two
+cases. `Some(filter)` binds the expression in the same multi-table scope used
+for projection and checks its result type. `None` means the plan will expose
+the Cartesian product without a `Filter` node. The existing Boolean-or-null
+requirement does not change.
 
 `src/catalog.rs`: replace the old filter binding
 
@@ -705,6 +738,12 @@ let predicate = match query.filter {
     None => None,
 };
 ```
+
+`DataType::Null` remains valid because an unknown `WHERE` result is a legal SQL
+condition; execution removes that row just as it removes a false condition.
+Any other result type is rejected before a plan is constructed.
+
+### 7.7.4 Assemble the plan
 
 Finally, turn each catalog input into a `Scan`. The first scan starts the
 input plan; every later scan becomes the right child of another `Join`. Add a
@@ -738,6 +777,16 @@ Ok(Plan::Project {
     input: Box::new(input),
 })
 ```
+
+Using the first scan as the starting plan makes the construction left-deep.
+With three inputs `A`, `B`, and `C`, the loop would first produce
+`Join(Scan(A), Scan(B))`, then use that entire plan as the left child of a join
+with `Scan(C)`. The grammar guarantees at least one table, while the explicit
+empty-input error protects the binder's internal assumption.
+
+If a predicate exists, `Filter` wraps the complete join tree and therefore
+sees columns from every input. `Project` is always the root because it shapes
+the final result whether or not the query contains `WHERE`.
 
 Binding can now produce the complete checked plan for queries with or without
 `WHERE`. The new `Join` node still needs an execution rule that produces its
