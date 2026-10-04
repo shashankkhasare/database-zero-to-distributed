@@ -392,8 +392,9 @@ Unqualified lookup now has three possible outcomes:
 - exactly one table contains it, so binding succeeds;
 - more than one table contains it, so the name is ambiguous.
 
-For example, both inputs contain `name`. The binder must reject unqualified
-`name` rather than choose one silently.
+For example, both `employees` and `departments` contain a column named `name`.
+The binder must reject unqualified `name` rather than choose one table
+silently.
 
 The scope can now identify a column's owning table and recover its type. The
 next step turns that ownership and offset into the exact position from which
@@ -416,8 +417,10 @@ The binder will therefore replace each resolved name with a **column slot**,
 its zero-based position in the combined row. It retains the original name for
 readable diagnostics. The employee fields occupy slots 0 through 3, followed
 by the department fields in slots 4 and 5. In this layout, `e.name` binds to
-slot 1 and `d.name` binds to slot 5. The two labels may be identical because
-execution reads the checked slots.
+slot 1 and `d.name` binds to slot 5. Both bound columns retain `name` for
+diagnostics, but that shared label no longer decides which value is read.
+Execution uses slot 1 for the employee name and slot 5 for the department
+name, so the two columns remain distinct even though their labels match.
 
 <figure class="book-illustration book-diagram">
   <img src="images/007-qualified-columns-become-slots.png" alt="The employee row and department row combine in left-to-right order, allowing e.name to bind to slot 1 and d.name to bind to slot 5 even though both columns are named name.">
@@ -866,8 +869,12 @@ Ok(Plan::Project {
 Using the first scan as the starting plan makes the construction left-deep.
 With three inputs `A`, `B`, and `C`, the loop would first produce
 `Join(Scan(A), Scan(B))`, then use that entire plan as the left child of a join
-with `Scan(C)`. The grammar guarantees at least one table, while the explicit
-empty-input error protects the binder's internal assumption.
+with `Scan(C)`. The `table_list` grammar begins with one `table_reference`, so
+a query produced by the parser always supplies at least one input. The binder
+still checks for an empty `input_tables` vector before taking its first item.
+That defensive check keeps the assumption local to `Catalog::bind()` and
+returns a clear error if a `Query` is ever constructed directly or a later
+parser change stops enforcing the grammar rule.
 
 If a predicate exists, `Filter` wraps the complete join tree and therefore
 sees columns from every input. `Project` is always the root because it shapes
@@ -1124,18 +1131,16 @@ FROM employees AS e, departments AS e;
 error: duplicate table or alias: e
 ```
 
-The source tests cover parsing with and without `WHERE`, input aliases,
-ambiguous names, positional lookup, Cartesian-product order, filtering, and
-the complete query. Keep those tests in the Rust files rather than copying
-them into the chapter. Run them now:
+Run the retained tests to check that the join changes have not broken behavior
+from earlier chapters:
 
 ```bash
 cargo test
 ```
 
-The successful queries, binding failures, and execution order are now
-verified. We can state the boundaries that keep this first join deliberately
-small.
+The completed `lesson-007` checkpoint also includes tests for the new join
+behavior; their code remains outside the build-along narration. We can now
+state the boundaries that keep this first join deliberately small.
 
 ## 7.11 What we deliberately did not build
 
@@ -1144,36 +1149,45 @@ small.
 - `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` belong to Chapter 8.
 - Nested loops are the only execution method, but they are not represented as
   a physical plan yet.
+- `Filter` remains above the complete join. Even a table-local condition such
+  as `e.salary > 50000` is evaluated after all nine row pairs are created.
+  The first optimizer chapter will introduce predicate pushdown and move such
+  conditions closer to their scans.
 - There is no join reordering or cost-based choice.
 - Bound column slots are local to one plan and are not durable catalog IDs.
 - Repeated output labels remain valid final results. Positional result-schema
   identity arrives before projected rows can become inputs to another query.
 
 These limits leave a compact join implementation whose behavior is visible.
-The exercises below vary its names, predicate, and optional filter without
+The exercises below vary its qualifiers, projection, and predicate without
 introducing later join syntax or algorithms.
 
 ## 7.12 Try it
 
-Run the prompt and predict which stage handles each change:
+Run the prompt and predict the result of each change:
 
 1. Remove both output aliases.
-2. Replace `e.name` with unqualified `name`.
-3. Replace `d.name` with `x.name`.
-4. Give both input tables the alias `e`.
-5. Remove `WHERE` and predict the number and order of output rows.
-6. Restore `WHERE`, change its predicate to `e.id = d.id`, and predict the
+2. Remove the input aliases and qualify columns with the full table names,
+   such as `employees.name` and `departments.name`.
+3. Replace the select list with `*` and predict the order of its six output
+   columns.
+4. Add `e.salary > 50000 AND` before the existing join predicate. Predict both
+   the final rows and the number of candidate pairs created by `Join`.
+5. Change the join predicate to `e.id = d.id` and predict the
    surviving rows.
 
 <details>
 <summary>Check your reasoning</summary>
 
 1. Both fields are labelled `name`; repeated result labels remain valid.
-2. Binding reports `ambiguous column: name` because both inputs define it.
-3. Binding reports `unknown table or alias: x`.
-4. Binding reports `duplicate table or alias: e`.
-5. All nine pairs survive in left-row then right-row order.
-6. No rows survive because employee IDs are `1`, `2`, and `3`, while
+2. The query returns the same three rows. Without aliases, each table name is
+   its accepted qualifier.
+3. The columns follow input and catalog order: the four employee columns,
+   then the two department columns. The repeated `id` and `name` labels are
+   preserved.
+4. Ada and Grace remain. `Join` still creates all nine candidate pairs because
+   the complete predicate is evaluated by the `Filter` above it.
+5. No rows survive because employee IDs are `1`, `2`, and `3`, while
    department IDs are `10`, `20`, and `30`.
 
 </details>
