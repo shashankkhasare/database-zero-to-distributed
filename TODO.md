@@ -168,7 +168,7 @@ multi-relation runtime row abstraction before another feature needs one.
 
 ---
 
-# Planned milestone: 008, Join Syntax and Row Preservation
+# Current milestone: 008, Join Syntax and Row Preservation
 
 Chapter 8 will keep the multi-table binding and straightforward execution from
 Chapter 7 while adding explicit join syntax and the rule that outer joins retain
