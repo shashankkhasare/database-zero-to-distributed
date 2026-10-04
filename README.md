@@ -465,6 +465,11 @@ series reaches a declared stable release, lesson tags become immutable.
 
 The evolution of the codebase is part of the curriculum.
 
+Completed seasons also receive immutable `season-NN` tags and GitHub Releases.
+A season release points at its final verified lesson commit and collects the
+chapter range, published reading path, runnable demo, and known limitations in
+one stable checkpoint. Volume releases remain separate publication milestones.
+
 ---
 
 # The book

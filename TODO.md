@@ -168,7 +168,7 @@ multi-relation runtime row abstraction before another feature needs one.
 
 ---
 
-# Planned milestone: 008, Join Syntax and Row Preservation
+# Current milestone: 008, Join Syntax and Row Preservation
 
 Chapter 8 will keep the multi-table binding and straightforward execution from
 Chapter 7 while adding explicit join syntax and the rule that outer joins retain
@@ -507,6 +507,8 @@ book-link verifier at `lesson-005`.
 # Release and maintenance
 
 - [x] Define temporary lesson branches, forward-merged corrections, and one movable tag per lesson
+- [x] Define immutable season tags and GitHub Releases as stable checkpoints
+- [ ] Publish `season-01` after Chapters 1–11 and their complete book path are verified
 - [ ] Add continuous integration after the Cargo project exists
 - [ ] Check formatting, Clippy, tests, demos, links, and generated artifacts in CI
 - [ ] Document supported development platforms
