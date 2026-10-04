@@ -97,7 +97,7 @@ images:
   - id: nested-loops-reset-inner-scan
     kind: generated-raster
     output: book/images/007-nested-loops-reset-inner-scan.png
-    placement: section 7.8 after the nested-loop execution arm
+    placement: section 7.6.2 after the nested-loop execution arm
     alt: Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.
     prompt: >-
       Use case: scientific-educational. Asset type: execution-mechanics

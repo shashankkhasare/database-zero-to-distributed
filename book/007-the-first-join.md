@@ -548,7 +548,14 @@ BoundExpr::Column { index, name } =>
 Bound columns can now retrieve the correct value after two rows are combined.
 The plan still needs an operation that creates that combined row.
 
-## 7.6 Add the logical join
+## 7.6 Add and execute the first join
+
+The plan needs both a logical representation of the new operation and an
+execution rule for this first implementation. Adding them together keeps the
+`Plan::execute()` match exhaustive before the binder begins constructing join
+plans.
+
+### 7.6.1 Add the logical `Join`
 
 The plan gains a `Join` node with left and right input plans. For this chapter's
 comma-separated `FROM` list, the node produces every pair of input rows. The
@@ -576,9 +583,51 @@ Join {
 },
 ```
 
-The plan can now represent two inputs and their Cartesian product. The binder
-must next assemble the scans, joins, optional filter, and projection in the
-correct order.
+`Join` gives the plan a way to represent two inputs and their Cartesian
+product. The new variant must now receive an execution arm.
+
+### 7.6.2 Execute it with nested loops
+
+The first execution rule is intentionally direct: execute both children, then
+combine every left row with every right row. Three employees and three
+departments create nine rows. Without `WHERE`, all nine reach projection and
+become the query result. With the representative predicate, the filter keeps
+the three pairs whose identifiers match.
+
+This is materialized execution, just like the earlier plan nodes. A later
+chapter will separate logical and physical plans and give the database a choice
+between nested-loop and hash join algorithms.
+
+`src/plan.rs`: add the `Join` arm to `Plan::execute()` after `Scan`
+
+```rust
+Plan::Join { left, right } => {
+    let left_rows = left.execute()?;
+    let right_rows = right.execute()?;
+    let mut output = Vec::new();
+
+    for left_row in &left_rows {
+        for right_row in &right_rows {
+            output.push(left_row.combine(right_row));
+        }
+    }
+
+    Ok(output)
+}
+```
+
+<figure class="book-illustration book-diagram">
+  <img src="images/007-nested-loops-reset-inner-scan.png" alt="Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.">
+  <figcaption>The inner scan restarts for each held outer row: three department visits per employee produce nine pairs.</figcaption>
+</figure>
+
+The outer loop fixes one left row while the inner loop visits every right row.
+Their order makes the output deterministic: all department pairs for Ada come
+first, followed by all pairs for Linus, then all pairs for Grace.
+
+The plan can now represent and execute a Cartesian product. The binder must
+next assemble the scans, joins, optional filter, and projection in the correct
+order.
 
 ## 7.7 Assemble the bound plan
 
@@ -789,49 +838,10 @@ sees columns from every input. `Project` is always the root because it shapes
 the final result whether or not the query contains `WHERE`.
 
 Binding can now produce the complete checked plan for queries with or without
-`WHERE`. The new `Join` node still needs an execution rule that produces its
-combined rows.
+`WHERE`. Its `Join` nodes already know how to produce combined rows; the final
+application must now reconnect parsing, binding, and execution.
 
-## 7.8 Execute the nested loops
-
-The first execution rule is intentionally direct: execute both children, then
-combine every left row with every right row. Three employees and three
-departments create nine rows. Without `WHERE`, all nine reach projection and
-become the query result. With the representative predicate, the filter keeps
-the three pairs whose identifiers match.
-
-This is materialized execution, just like the earlier plan nodes. A later
-chapter will separate logical and physical plans and give the database a choice
-between nested-loop and hash join algorithms.
-
-`src/plan.rs`: add the `Join` arm to `Plan::execute()` after `Scan`
-
-```rust
-Plan::Join { left, right } => {
-    let left_rows = left.execute()?;
-    let right_rows = right.execute()?;
-    let mut output = Vec::new();
-
-    for left_row in &left_rows {
-        for right_row in &right_rows {
-            output.push(left_row.combine(right_row));
-        }
-    }
-
-    Ok(output)
-}
-```
-
-<figure class="book-illustration book-diagram">
-  <img src="images/007-nested-loops-reset-inner-scan.png" alt="Ada, Linus, and Grace are held one at a time while the inner loop scans Engineering, Systems, and Research from the beginning, producing three pairs per employee and nine pairs in total.">
-  <figcaption>The inner scan restarts for each held outer row: three department visits per employee produce nine pairs.</figcaption>
-</figure>
-
-The outer loop fixes one left row while the inner loop visits every right row.
-Their order makes the output deterministic: all department pairs for Ada come
-first, followed by all pairs for Linus, then all pairs for Grace.
-
-## 7.9 Reconnect the application
+## 7.8 Reconnect the application
 
 The parser checkpoint has served its purpose. Restore the complete application,
 add `department_id` to the employee schema, and register the departments table.
@@ -995,7 +1005,7 @@ The filtered query prints a `Project` above a `Filter`, whose input is a
 line `catalog.bind(query)?.execute()` so ordinary prompt results contain only
 rows.
 
-## 7.10 Observe the product, then filter it
+## 7.9 Observe the product, then filter it
 
 Start the prompt:
 
@@ -1046,7 +1056,7 @@ cargo run --quiet
 The product and filtered query establish the successful path. We should also
 confirm that invalid and ambiguous multi-table names stop during binding.
 
-## 7.11 Inspect binding failures
+## 7.10 Inspect binding failures
 
 The prompt should distinguish missing and ambiguous names before scanning any
 rows. Representative failures include an unknown table, duplicate input alias,
@@ -1091,7 +1101,7 @@ The successful queries, binding failures, and execution order are now
 verified. We can state the boundaries that keep this first join deliberately
 small.
 
-## 7.12 What we deliberately did not build
+## 7.11 What we deliberately did not build
 
 - Join syntax is limited to comma-separated inputs. An optional `WHERE`
   predicate may filter their Cartesian product.
@@ -1107,7 +1117,7 @@ These limits leave a compact join implementation whose behavior is visible.
 The exercises below vary its names, predicate, and optional filter without
 introducing later join syntax or algorithms.
 
-## 7.13 Try it
+## 7.12 Try it
 
 Run the prompt and predict which stage handles each change:
 
@@ -1132,7 +1142,7 @@ Run the prompt and predict which stage handles each change:
 
 </details>
 
-## 7.14 Some joins preserve unmatched rows
+## 7.13 Some joins preserve unmatched rows
 
 The database can now combine two relations. Omitting `WHERE` exposes exactly
 what the logical `Join` produces: every possible row pair. Adding a predicate
