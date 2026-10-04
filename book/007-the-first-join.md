@@ -1131,18 +1131,16 @@ FROM employees AS e, departments AS e;
 error: duplicate table or alias: e
 ```
 
-The source tests cover parsing with and without `WHERE`, input aliases,
-ambiguous names, positional lookup, Cartesian-product order, filtering, and
-the complete query. Keep those tests in the Rust files rather than copying
-them into the chapter. Run them now:
+Run the retained tests to check that the join changes have not broken behavior
+from earlier chapters:
 
 ```bash
 cargo test
 ```
 
-The successful queries, binding failures, and execution order are now
-verified. We can state the boundaries that keep this first join deliberately
-small.
+The completed `lesson-007` checkpoint also includes tests for the new join
+behavior; their code remains outside the build-along narration. We can now
+state the boundaries that keep this first join deliberately small.
 
 ## 7.11 What we deliberately did not build
 
