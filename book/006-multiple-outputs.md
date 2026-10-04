@@ -187,6 +187,8 @@ select_item       = "*" | qualified_star | expression alias? ;
 qualified_star    = identifier "." "*" ;
 ```
 
+### 6.3.1 Parse one selected item
+
 At a select-item boundary, a leading `*` is an unqualified wildcard. The three
 tokens `identifier`, `.`, and `*` form a qualified wildcard. These checks must
 happen before expression parsing because the expression parser would otherwise
@@ -212,14 +214,6 @@ alias, or a comma because none is an expression operator. The existing
 `src/parser.rs`: add before `parse_alias()`
 
 ```rust
-fn parse_select_list(&mut self) -> Result<Vec<SelectItem>, ParseError> {
-    let mut expressions = vec![self.parse_select_item()?];
-    while self.consume(&Token::Comma) {
-        expressions.push(self.parse_select_item()?);
-    }
-    Ok(expressions)
-}
-
 fn parse_select_item(&mut self) -> Result<SelectItem, ParseError> {
     if self.consume(&Token::Star) {
         return Ok(SelectItem::Wildcard { qualifier: None });
@@ -241,13 +235,42 @@ fn parse_select_item(&mut self) -> Result<SelectItem, ParseError> {
 }
 ```
 
+The two early returns handle the wildcard alternatives. Reaching the final
+branch means the item begins with an expression; the parser preserves that
+expression together with any output alias that follows it.
+
+### 6.3.2 Parse the complete select list
+
+The `select_list` production requires one item, followed by zero or more
+comma-item pairs:
+
+```text
+select_list = select_item ("," select_item)* ;
+```
+
+`src/parser.rs`: add before `parse_select_item()`
+
+```rust
+fn parse_select_list(&mut self) -> Result<Vec<SelectItem>, ParseError> {
+    let mut expressions = vec![self.parse_select_item()?];
+    while self.consume(&Token::Comma) {
+        expressions.push(self.parse_select_item()?);
+    }
+    Ok(expressions)
+}
+```
+
 The first call before the loop implements the required first `select_item`.
 Each successful comma consumption implements one repetition of
 `("," select_item)*`. If there is no comma, the loop ends without consuming
 `FROM`.
 
+### 6.3.3 Connect the list to the query parser
+
 The outer query parser should now ask for the complete list rather than one
-expression.
+expression. Only the first line of the existing query shape changes: `SELECT`
+now produces a vector of items before parsing continues with `FROM`, the table,
+and the filter.
 
 `src/parser.rs`: replace `parse_query()`
 
@@ -415,6 +438,8 @@ The binder reuses this scope for every selected item. It validates `e.name`
 and `e.salary + 1000` against the scope, then uses the same catalog columns to
 expand `e.*`.
 
+### 6.5.1 Share qualifier validation
+
 Import the new select-item type before changing the binder.
 
 `src/catalog.rs`: replace the parser import
@@ -461,6 +486,11 @@ fn require_qualifier(qualifier: Option<&str>, scope: &Scope<'_>)
 ```rust
 require_qualifier(qualifier.as_deref(), scope)?;
 ```
+
+Both column references and wildcards now apply the same rule before either
+path consults the columns in the scope.
+
+### 6.5.2 Bind expression items and expand wildcards
 
 Expression items and wildcard expansion both append checked outputs. Keep that
 small construction step in one function.
@@ -563,6 +593,13 @@ chapter, so its rows are displayed rather than rebound by another query.
 unnamed computations may both use the temporary label `expression`. A later
 result-schema representation will need positional identity when projected rows
 can become another query's input.
+
+### 6.5.3 Assemble the plan
+
+After the projection loop has produced every `ProjectExpression`, the remaining
+part of `bind()` follows the Chapter 5 path. It binds the `WHERE` expression,
+requires a Boolean or null result, and places the complete projection vector
+above `Filter` and `Scan`.
 
 The resulting plan keeps its existing shape:
 
