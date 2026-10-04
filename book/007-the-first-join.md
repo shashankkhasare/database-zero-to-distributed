@@ -125,6 +125,12 @@ its table list and the possible absence of a filter.
 
 ## 7.2 Preserve the input list in the AST
 
+The parser change has three parts. First the AST must represent several table
+references and an optional filter. Then `parse_query()` must recognize that
+outer shape, and two smaller methods must parse the table list itself.
+
+### 7.2.1 Represent tables and an optional filter
+
 `Query` already stores a collection of selected expressions. Replace its
 single table fields with a vector of table references. The filter becomes
 `Option<Expr>`: `Some` preserves the parsed predicate, while `None` records
@@ -146,6 +152,53 @@ pub struct TableReference {
     pub alias: Option<String>,
 }
 ```
+
+The AST can now hold the new information. Before the outer parser can populate
+it, add the methods that consume the new table-list grammar.
+
+### 7.2.2 Parse the table list
+
+The next two methods implement the productions that make up `table_list`:
+
+```text
+table_list      = table_reference ("," table_reference)* ;
+table_reference = identifier alias? ;
+alias           = "AS"? identifier ;
+```
+
+The list parser reads one required table reference, then consumes each comma
+followed by another reference. Requiring the first table keeps `FROM ;`
+invalid. A table reference reads the table name and delegates its optional
+alias to the existing `parse_alias()` method.
+
+`src/parser.rs`: add before `parse_alias()`
+
+```rust
+fn parse_table_list(&mut self) -> Result<Vec<TableReference>, ParseError> {
+    let mut tables = vec![self.parse_table_reference()?];
+    while self.consume(&Token::Comma) {
+        tables.push(self.parse_table_reference()?);
+    }
+    Ok(tables)
+}
+
+fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
+    Ok(TableReference {
+        name: self.identifier("expected a table name")?,
+        alias: self.parse_alias()?,
+    })
+}
+```
+
+The same `parse_alias()` method now serves two grammar positions. After a
+selected expression, it records an output alias. After a table name, it
+records the alias used to qualify that table, which we call an input alias.
+
+The table-list parser stops when the next token is not a comma. At that point,
+the outer parser can decide whether the query continues with `WHERE` or ends
+with a semicolon.
+
+### 7.2.3 Parse the outer query
 
 `parse_query()` implements the updated outer production:
 
@@ -186,41 +239,10 @@ fn parse_query(&mut self) -> Result<Query, ParseError> {
 }
 ```
 
-The next two methods implement the productions that make up `table_list`:
-
-```text
-table_list      = table_reference ("," table_reference)* ;
-table_reference = identifier alias? ;
-alias           = "AS"? identifier ;
-```
-
-The list parser reads one required table reference, then consumes each comma
-followed by another reference. Requiring the first table keeps `FROM ;`
-invalid. A table reference reads the table name and delegates its optional
-alias to the existing `parse_alias()` method.
-
-`src/parser.rs`: add before `parse_alias()`
-
-```rust
-fn parse_table_list(&mut self) -> Result<Vec<TableReference>, ParseError> {
-    let mut tables = vec![self.parse_table_reference()?];
-    while self.consume(&Token::Comma) {
-        tables.push(self.parse_table_reference()?);
-    }
-    Ok(tables)
-}
-
-fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
-    Ok(TableReference {
-        name: self.identifier("expected a table name")?,
-        alias: self.parse_alias()?,
-    })
-}
-```
-
-The same `parse_alias()` method now serves two grammar positions. After a
-selected expression, it records an output alias. After a table name, it
-records the alias used to qualify that table, which we call an input alias.
+The call to `parse_table_list()` leaves the cursor at either `WHERE` or the
+semicolon. That makes the optional clause explicit: consuming `WHERE` requires
+an expression and produces `Some`, while seeing the semicolon preserves
+`None`.
 
 The existing parser tests inspect Chapter 6's singular `table`, `table_alias`,
 and required `filter` fields. Remove the `#[cfg(test)] mod tests` block from
@@ -402,6 +424,8 @@ execution reads the checked slots.
   <figcaption>Binding replaces each qualified name with a stable position in the combined row.</figcaption>
 </figure>
 
+### 7.5.1 Represent a bound column by slot
+
 `src/expression.rs`: replace the `BoundExpr::Column` variant
 
 ```rust
@@ -410,6 +434,12 @@ Column {
     name: String,
 },
 ```
+
+This representation records the result that binding must produce. The next
+step changes column lookup so both qualified and unqualified names resolve to
+one of these absolute positions.
+
+### 7.5.2 Resolve a column to its slot
 
 `bind_column()` receives the qualifier preserved by the parser, the column
 name, and the completed query scope. It returns both the checked column node
@@ -489,6 +519,12 @@ Delegate the column arm of the recursive binder to that lookup.
 ```rust
 Expr::Column { qualifier, name } => bind_column(qualifier, name, scope),
 ```
+
+Every parsed column now follows the same lookup path and emerges with a stable
+slot. Evaluation must use that slot, and the joined row must preserve the
+left-to-right layout on which the slot calculation depends.
+
+### 7.5.3 Read slots from combined rows
 
 Execution now needs positional access. Begin the row changes with the checked
 slot lookup.
