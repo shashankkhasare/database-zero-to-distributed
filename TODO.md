@@ -507,6 +507,8 @@ book-link verifier at `lesson-005`.
 # Release and maintenance
 
 - [x] Define temporary lesson branches, forward-merged corrections, and one movable tag per lesson
+- [x] Define immutable season tags and GitHub Releases as stable checkpoints
+- [ ] Publish `season-01` after Chapters 1–11 and their complete book path are verified
 - [ ] Add continuous integration after the Cargo project exists
 - [ ] Check formatting, Clippy, tests, demos, links, and generated artifacts in CI
 - [ ] Document supported development platforms

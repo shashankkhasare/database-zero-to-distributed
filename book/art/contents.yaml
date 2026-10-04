@@ -1,0 +1,57 @@
+page: contents
+style: book/art/STYLE.md
+
+images:
+  - id: database-works-map
+    kind: generated-raster
+    output: book/images/contents-database-works-map.png
+    placement: after the landing-page introduction and before the starting link
+    alt: A cutaway map of the complete series follows rows through reading and planning, durable storage and transactions, distributed data, and the completed database system.
+    prompt: >-
+      Use case: scientific-educational. Asset type: wide series-header map for
+      a technical book about building a database from first principles. Create
+      an iconic curriculum map that functions like a book-wide orientation
+      image, but do not use a mountain, hiking paths, or imitate any existing
+      book illustration.
+
+      Show one large cutaway "database works" occupying the full wide
+      composition. Repeated small row tiles travel through the entire system
+      and visually connect four regions.
+
+      Upper-left region: heading exactly "READ ROWS". A sheet marked exactly
+      "SQL" feeds a small branching plan tree, then a visible operator
+      pipeline. Place the exact labels "PLAN", "EXECUTE", "OPTIMIZE",
+      "PARALLEL", and "DISTRIBUTE" beside distinct connected stages. Show the
+      flow widening from one pipeline into several workers and network links.
+
+      Lower-left underground region: heading exactly "STORE & WRITE". Show
+      stacked data pages, a compact tree index, a buffer-like tray, a log
+      strip, and transaction gates. Place the exact labels "PAGES", "INDEX",
+      "WAL", and "TRANSACTIONS" beside those structures. Row tiles descend
+      from execution into pages and the log.
+
+      Right region: heading exactly "DISTRIBUTE DATA". Show three separate
+      database sites connected by restrained network lines, with copied and
+      divided row tiles moving between them. Place the exact labels
+      "REPLICATE", "SHARD", and "CONSENSUS" beside the relevant connections.
+
+      At the far upper-right, where every route reconnects, place one final
+      clean structure headed exactly "COMPLETE SYSTEM". It should visually
+      receive paths from query execution, durable storage, and distributed
+      data.
+
+      Permitted text only: "READ ROWS", "SQL", "PLAN", "EXECUTE", "OPTIMIZE",
+      "PARALLEL", "DISTRIBUTE", "STORE & WRITE", "PAGES", "INDEX", "WAL",
+      "TRANSACTIONS", "DISTRIBUTE DATA", "REPLICATE", "SHARD", "CONSENSUS",
+      and "COMPLETE SYSTEM". Render each label exactly, clearly, and at a
+      readable size. Do not add, repeat, misspell, merge, or abbreviate text.
+
+      Follow book/art/STYLE.md: original hand-drawn charcoal ink contours,
+      restrained gouache and watercolor fills, lightly textured warm ivory
+      paper, subtle print texture, deep database teal, muted turquoise, ochre
+      gold, and very small rust-red accents. Friendly, intelligent, technical,
+      and editorial. Strong silhouette, generous margins, wide landscape
+      composition, and legible at book-column width. No title of the book
+      inside the image, people, mountain, hiking trail, logos, watermark,
+      photorealism, glossy 3D, interface chrome, neon, decorative fantasy
+      machinery, tiny labels, or crossed connectors.

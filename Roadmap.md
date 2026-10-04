@@ -24,6 +24,12 @@ The complete curriculum is published as four volumes backed by one evolving
 repository and one Rust codebase. Volume boundaries are publication milestones,
 not forks: lesson tags continue in one sequence across all four volumes.
 
+Each completed season becomes a stable public checkpoint. After all lessons in
+a season are verified on `master`, publish an immutable `season-NN` tag and a
+GitHub Release that summarizes its learning arc and points to the corresponding
+book and demo. These releases complement the incremental `lesson-NNN` tags;
+they do not create another codebase or branch.
+
 # The course in three ideas
 
 At the highest level, a database must:

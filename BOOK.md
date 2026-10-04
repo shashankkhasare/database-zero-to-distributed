@@ -590,6 +590,13 @@ macOS, Linux, Android, and iOS.
 ## Contents and navigation
 
 - Organize the contents page into the roadmap's seasons and numbered chapters.
+- Open with a concise statement of the series journey and one visual overview
+  that connects query processing, execution, distribution, and storage.
+- Give each season a short outcome-focused description. Link only chapters
+  whose implementation or manuscript has begun; do not publish empty chapter
+  placeholders.
+- Mark the active season or chapter plainly so readers can distinguish current
+  work from the longer curriculum.
 - Show optional essays, design notes, and appendices as visually subordinate
   entries.
 - Provide previous chapter, contents, and next chapter navigation on every
@@ -598,6 +605,19 @@ macOS, Linux, Android, and iOS.
   sidebar.
 - Make heading anchors linkable and easy to copy.
 - Support keyboard navigation without interfering with browser shortcuts.
+
+## Release checkpoints
+
+Lesson tags preserve the code at individual chapter boundaries. When every
+lesson in a season is complete and verified on `master`, create an immutable
+`season-NN` tag and GitHub Release at the final lesson commit. The release notes
+should summarize the season's learning arc, link to the published book, name
+the included chapter range, provide the demo command, and record important
+limitations carried into the next season.
+
+Unlike lesson tags during active development, a published season tag never
+moves. Volume completion may additionally receive a semantic-version release;
+it does not replace the season checkpoints.
 
 ## Code and database material
 

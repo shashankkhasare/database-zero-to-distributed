@@ -865,6 +865,13 @@ build it; a movable lesson tag is not sufficient provenance by itself.
 
 The evolution between lesson tags is part of the learning material.
 
+When every lesson in a season is complete and verified on `master`, create one
+immutable `season-NN` tag and GitHub Release at the final lesson commit. Include
+the chapter range, published book link, demo command, and known limitations in
+the release notes. Unlike lesson tags during active development, never move or
+replace a published season tag. A later volume release may use semantic
+versioning without replacing season checkpoints.
+
 ---
 
 # 36. Comments
