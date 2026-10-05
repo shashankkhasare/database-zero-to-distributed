@@ -1,0 +1,73 @@
+lesson: "008"
+style: book/art/STYLE.md
+
+images:
+  - id: join-kinds-preserve-different-rows
+    kind: generated-raster
+    output: book/images/008-join-kinds-preserve-different-rows.png
+    placement: after the chapter epigraph and before the opening prose
+    alt: Four panels compare the same matched pairs, unmatched employee, and unmatched department, highlighting the rows retained by inner, left, right, and full joins.
+    prompt: >-
+      Use case: scientific-educational. Asset type: opening educational
+      database comparison diagram. Create a literal row-preservation diagram,
+      not a metaphor and not overlapping circles.
+
+      Use a wide landscape two-by-two grid of four equal panels headed exactly
+      "INNER", "LEFT", "RIGHT", and "FULL". Every panel repeats the same
+      three horizontally aligned result regions in the same order: a left
+      region labelled "Edsger | NULL", a center region labelled "3 MATCHES",
+      and a right region labelled "NULL | Operations".
+
+      Use color and opacity alone to show preservation. In every panel,
+      "3 MATCHES" is filled muted turquoise. In INNER, both unmatched regions
+      are pale outlines. In LEFT, "Edsger | NULL" is filled deep teal and the
+      Operations region is a pale outline. In RIGHT, the Edsger region is a
+      pale outline and "NULL | Operations" is filled ochre. In FULL, all three
+      regions are filled with those same colors. Keep discarded regions
+      visible but clearly inactive; do not use crosses or deletion marks.
+
+      Permitted text only: "INNER", "LEFT", "RIGHT", "FULL",
+      "Edsger | NULL", "3 MATCHES", and "NULL | Operations". Repetition is
+      required across the four panels. Render every label exactly and legibly.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained watercolor and gouache texture, deep teal, muted turquoise,
+      ochre, generous margins, strict alignment, and large readable labels. No
+      people, buildings, Venn circles, SQL code, extra rows, prose paragraphs,
+      arrows, icons, logos, watermark, photorealism, interface chrome, glossy
+      3D, gradients, crossed lines, or unlisted text.
+
+  - id: on-before-where
+    kind: generated-raster
+    output: book/images/008-on-before-where.png
+    placement: Section 8.11, after the query and before its explanation
+    alt: A left join first produces three matched rows and one null-extended Edsger row; a subsequent WHERE filter removes only the Edsger row.
+    prompt: >-
+      Use case: scientific-educational. Asset type: educational database
+      execution-flow diagram. Show that an outer join preserves an unmatched
+      row before a later WHERE filter may remove it.
+
+      Use a wide landscape composition with two large horizontal stages
+      connected by one clear downward arrow. The upper stage is headed exactly
+      "LEFT JOIN ... ON" and contains four aligned result rows in a compact
+      two-column table: "Ada | Engineering", "Linus | Systems",
+      "Grace | Research", and "Edsger | NULL". Use muted turquoise for the
+      three matched rows and deep teal for the null-extended Edsger row.
+
+      Between the stages, place the exact label
+      "WHERE d.name IS NOT NULL" beside the downward arrow. The lower stage is
+      headed exactly "OUTPUT ROWS" and contains only the three matched rows:
+      "Ada | Engineering", "Linus | Systems", and "Grace | Research". Show
+      the removed "Edsger | NULL" row once beside the filter boundary as a
+      pale faded row, without a cross or deletion icon.
+
+      Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
+      restrained watercolor and gouache texture, deep teal, muted turquoise,
+      ochre accent only where useful, generous margins, strict alignment, and
+      large readable labels. The dataflow must read from top to bottom.
+      Permitted text only: "LEFT JOIN ... ON", "WHERE d.name IS NOT NULL",
+      "OUTPUT ROWS", "Ada | Engineering", "Linus | Systems",
+      "Grace | Research", and "Edsger | NULL". Repetition of the three matched
+      rows across the two stages is required. No people, buildings, Venn
+      circles, SQL prompt text, extra prose, extra arrows, icons, logos,
+      watermark, photorealism, interface chrome, glossy 3D, or gradients.

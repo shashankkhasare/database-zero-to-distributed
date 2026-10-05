@@ -53,6 +53,8 @@ that adds new meaning. They should not bold and redefine it as new vocabulary.
 | wildcard | Chapter 6, §6.1 | `*` or a qualified form such as `e.*`, expanded during binding into the visible catalog columns in schema order |
 | column slot | Chapter 7, §7.5 | A bound column's zero-based position in the combined row produced from the query inputs |
 | Cartesian product | Chapter 7, §7.6.2 | Every possible pairing of one row from the left input with one row from the right input |
+| outer join | Chapter 8, §8.1 | A join that retains unmatched rows from one or both designated input sides |
+| null extension | Chapter 8, §8.1 | Filling the missing side of a preserved joined row with one `NULL` value per expected column |
 
 ## Maintenance rule
 

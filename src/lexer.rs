@@ -13,6 +13,13 @@ pub enum Token {
     Null,
     True,
     False,
+    Inner,
+    Left,
+    Right,
+    Full,
+    Outer,
+    Join,
+    On,
     Identifier(String),
     Integer(i64),
     String(String),
@@ -149,6 +156,13 @@ fn word_token(word: String) -> Token {
         "NULL" => Token::Null,
         "TRUE" => Token::True,
         "FALSE" => Token::False,
+        "INNER" => Token::Inner,
+        "LEFT" => Token::Left,
+        "RIGHT" => Token::Right,
+        "FULL" => Token::Full,
+        "OUTER" => Token::Outer,
+        "JOIN" => Token::Join,
+        "ON" => Token::On,
         _ => Token::Identifier(word),
     }
 }
@@ -189,6 +203,21 @@ mod tests {
         assert_eq!(
             tokenize("TRUE FALSE").unwrap(),
             vec![Token::True, Token::False]
+        );
+    }
+
+    #[test]
+    fn tokenizes_explicit_join_words() {
+        assert_eq!(
+            tokenize("LEFT OUTER JOIN departments ON TRUE").unwrap(),
+            vec![
+                Token::Left,
+                Token::Outer,
+                Token::Join,
+                Token::Identifier("departments".into()),
+                Token::On,
+                Token::True,
+            ]
         );
     }
 

@@ -52,6 +52,15 @@ impl Row {
         values.extend(right.values.iter().cloned());
         Row { values }
     }
+
+    pub fn nulls(columns: &[String]) -> Row {
+        Row {
+            values: columns
+                .iter()
+                .map(|column| (column.clone(), Value::Null))
+                .collect(),
+        }
+    }
 }
 
 impl fmt::Display for Row {
@@ -116,5 +125,13 @@ mod tests {
             row.value_at(0, "salary").unwrap_err(),
             "bound column mismatch at position 0: expected salary, found name"
         );
+    }
+
+    #[test]
+    fn null_row_preserves_the_supplied_column_shape() {
+        let row = Row::nulls(&["id".into(), "name".into()]);
+
+        assert_eq!(row.value_at(0, "id"), Ok(&Value::Null));
+        assert_eq!(row.value_at(1, "name"), Ok(&Value::Null));
     }
 }

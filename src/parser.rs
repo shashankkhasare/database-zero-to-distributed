@@ -13,8 +13,29 @@ pub struct Query {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TableReference {
+    pub first: TablePrimary,
+    pub joins: Vec<JoinClause>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct TablePrimary {
     pub name: String,
     pub alias: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct JoinClause {
+    pub kind: JoinKind,
+    pub right: TablePrimary,
+    pub condition: Expr,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum JoinKind {
+    Inner,
+    Left,
+    Right,
+    Full,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -140,9 +161,47 @@ impl Parser {
     }
 
     fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
-        Ok(TableReference {
+        let first = self.parse_table_primary()?;
+        let mut joins = Vec::new();
+        while matches!(
+            self.peek(),
+            Some(Token::Inner | Token::Left | Token::Right | Token::Full | Token::Join)
+        ) {
+            joins.push(self.parse_join_clause()?);
+        }
+        Ok(TableReference { first, joins })
+    }
+
+    fn parse_table_primary(&mut self) -> Result<TablePrimary, ParseError> {
+        Ok(TablePrimary {
             name: self.identifier("expected a table name")?,
             alias: self.parse_alias()?,
+        })
+    }
+
+    fn parse_join_clause(&mut self) -> Result<JoinClause, ParseError> {
+        let kind = if self.consume(&Token::Inner) {
+            JoinKind::Inner
+        } else if self.consume(&Token::Left) {
+            self.consume(&Token::Outer);
+            JoinKind::Left
+        } else if self.consume(&Token::Right) {
+            self.consume(&Token::Outer);
+            JoinKind::Right
+        } else if self.consume(&Token::Full) {
+            self.consume(&Token::Outer);
+            JoinKind::Full
+        } else {
+            JoinKind::Inner
+        };
+        self.expect(Token::Join, "expected JOIN")?;
+        let right = self.parse_table_primary()?;
+        self.expect(Token::On, "expected ON after joined table")?;
+        let condition = self.parse_expression()?;
+        Ok(JoinClause {
+            kind,
+            right,
+            condition,
         })
     }
 
@@ -335,7 +394,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use super::{SelectItem, parse};
+    use super::{JoinKind, SelectItem, parse};
     use crate::expression::{BinaryOp, Expr};
 
     #[test]
@@ -364,8 +423,8 @@ mod tests {
     #[test]
     fn parses_aliases_qualified_columns_and_null_predicates() {
         let query = parse("SELECT e.name FROM employees AS e WHERE e.name IS NOT NULL;").unwrap();
-        assert_eq!(query.tables[0].name, "employees");
-        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[0].first.name, "employees");
+        assert_eq!(query.tables[0].first.alias.as_deref(), Some("e"));
         assert!(matches!(
             query.filter,
             Some(Expr::IsNull { negated: true, .. })
@@ -424,8 +483,8 @@ mod tests {
             SelectItem::Expression { alias: Some(alias), .. } if alias == "department_name"
         ));
         assert_eq!(query.tables.len(), 2);
-        assert_eq!(query.tables[0].alias.as_deref(), Some("e"));
-        assert_eq!(query.tables[1].alias.as_deref(), Some("d"));
+        assert_eq!(query.tables[0].first.alias.as_deref(), Some("e"));
+        assert_eq!(query.tables[1].first.alias.as_deref(), Some("d"));
     }
 
     #[test]
@@ -453,5 +512,38 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn parses_explicit_join_kinds_and_conditions() {
+        let query = parse(
+            "SELECT e.name, d.name FROM employees AS e \
+             FULL OUTER JOIN departments AS d ON e.department_id = d.id;",
+        )
+        .unwrap();
+
+        assert_eq!(query.tables.len(), 1);
+        assert_eq!(query.tables[0].first.name, "employees");
+        assert_eq!(query.tables[0].joins.len(), 1);
+        assert_eq!(query.tables[0].joins[0].kind, JoinKind::Full);
+        assert_eq!(query.tables[0].joins[0].right.name, "departments");
+        assert!(matches!(
+            query.tables[0].joins[0].condition,
+            Expr::Binary {
+                op: BinaryOp::Equal,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn bare_join_means_inner_join() {
+        let query = parse(
+            "SELECT e.name FROM employees AS e \
+             JOIN departments AS d ON e.department_id = d.id;",
+        )
+        .unwrap();
+
+        assert_eq!(query.tables[0].joins[0].kind, JoinKind::Inner);
     }
 }

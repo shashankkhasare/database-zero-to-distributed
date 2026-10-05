@@ -21,12 +21,15 @@ fn main() {
     }
 }
 
-fn employee(id: i64, name: &str, salary: i64, department_id: i64) -> Row {
+fn employee(id: i64, name: &str, salary: i64, department_id: Option<i64>) -> Row {
     Row::new(vec![
         ("id", Value::Integer(id)),
         ("name", Value::Text(name.into())),
         ("salary", Value::Integer(salary)),
-        ("department_id", Value::Integer(department_id)),
+        (
+            "department_id",
+            department_id.map_or(Value::Null, Value::Integer),
+        ),
     ])
 }
 
@@ -60,9 +63,10 @@ fn employee_catalog() -> Catalog {
                 },
             ],
             rows: vec![
-                employee(1, "Ada", 70_000, 10),
-                employee(2, "Linus", 50_000, 20),
-                employee(3, "Grace", 72_000, 30),
+                employee(1, "Ada", 70_000, Some(10)),
+                employee(2, "Linus", 50_000, Some(20)),
+                employee(3, "Grace", 72_000, Some(30)),
+                employee(4, "Edsger", 65_000, None),
             ],
         },
         Table {
@@ -81,6 +85,7 @@ fn employee_catalog() -> Catalog {
                 department(10, "Engineering"),
                 department(20, "Systems"),
                 department(30, "Research"),
+                department(40, "Operations"),
             ],
         },
     ])
@@ -93,8 +98,8 @@ fn execute_sql(sql: &str, catalog: &Catalog) -> Result<Vec<Row>, String> {
 
 fn run_demo(catalog: &Catalog) {
     let sql = "SELECT e.name AS employee_name, d.name AS department_name \
-        FROM employees AS e, departments AS d \
-        WHERE e.department_id = d.id;";
+        FROM employees AS e \
+        LEFT JOIN departments AS d ON e.department_id = d.id;";
     let rows = execute_sql(sql, catalog).expect("the lesson query should execute");
     println!("Employees and their departments:");
     for row in rows {
@@ -217,6 +222,99 @@ mod tests {
     }
 
     #[test]
+    fn left_join_preserves_an_employee_without_a_department() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.name AS employee_name, d.name AS department_name \
+                 FROM employees AS e \
+                 LEFT JOIN departments AS d ON e.department_id = d.id;",
+                &employee_catalog(),
+            )
+            .unwrap(),
+            vec![
+                Row::new(vec![
+                    ("employee_name", Value::Text("Ada".into())),
+                    ("department_name", Value::Text("Engineering".into())),
+                ]),
+                Row::new(vec![
+                    ("employee_name", Value::Text("Linus".into())),
+                    ("department_name", Value::Text("Systems".into())),
+                ]),
+                Row::new(vec![
+                    ("employee_name", Value::Text("Grace".into())),
+                    ("department_name", Value::Text("Research".into())),
+                ]),
+                Row::new(vec![
+                    ("employee_name", Value::Text("Edsger".into())),
+                    ("department_name", Value::Null),
+                ]),
+            ]
+        );
+    }
+
+    #[test]
+    fn right_and_full_joins_preserve_their_unmatched_sides() {
+        let right = execute_sql(
+            "SELECT e.name AS employee_name, d.name AS department_name \
+             FROM employees AS e \
+             RIGHT JOIN departments AS d ON e.department_id = d.id;",
+            &employee_catalog(),
+        )
+        .unwrap();
+        assert_eq!(
+            right.last(),
+            Some(&Row::new(vec![
+                ("employee_name", Value::Null),
+                ("department_name", Value::Text("Operations".into())),
+            ]))
+        );
+
+        let full = execute_sql(
+            "SELECT e.name AS employee_name, d.name AS department_name \
+             FROM employees AS e \
+             FULL JOIN departments AS d ON e.department_id = d.id;",
+            &employee_catalog(),
+        )
+        .unwrap();
+        assert_eq!(full.len(), 5);
+        assert_eq!(
+            full[3].value_at(0, "employee_name"),
+            Ok(&Value::Text("Edsger".into()))
+        );
+        assert_eq!(
+            full[4].value_at(1, "department_name"),
+            Ok(&Value::Text("Operations".into()))
+        );
+    }
+
+    #[test]
+    fn where_filters_rows_after_outer_join_preservation() {
+        let rows = execute_sql(
+            "SELECT e.name AS employee_name, d.name AS department_name \
+             FROM employees AS e \
+             LEFT JOIN departments AS d ON e.department_id = d.id \
+             WHERE d.name IS NOT NULL;",
+            &employee_catalog(),
+        )
+        .unwrap();
+
+        assert_eq!(rows.len(), 3);
+    }
+
+    #[test]
+    fn on_must_be_boolean() {
+        assert_eq!(
+            execute_sql(
+                "SELECT e.name FROM employees AS e \
+                 JOIN departments AS d ON e.department_id + d.id;",
+                &employee_catalog(),
+            )
+            .unwrap_err(),
+            "ON expression must be Boolean"
+        );
+    }
+
+    #[test]
     fn unnamed_computations_may_share_a_display_label() {
         assert_eq!(
             execute_sql(
@@ -240,7 +338,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(rows.len(), 9);
+        assert_eq!(rows.len(), 16);
         assert_eq!(
             rows.first(),
             Some(&Row::new(vec![
@@ -251,8 +349,8 @@ mod tests {
         assert_eq!(
             rows.last(),
             Some(&Row::new(vec![
-                ("employee_name", Value::Text("Grace".into())),
-                ("department_name", Value::Text("Research".into())),
+                ("employee_name", Value::Text("Edsger".into())),
+                ("department_name", Value::Text("Operations".into())),
             ]))
         );
     }

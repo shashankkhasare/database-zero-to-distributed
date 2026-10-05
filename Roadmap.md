@@ -348,7 +348,7 @@ the logical/physical-plan separation lesson.
 
 ---
 
-## 008 — Join Syntax and Row Preservation
+## 008 — Outer Joins Preserve Unmatched Rows
 
 Introduce:
 

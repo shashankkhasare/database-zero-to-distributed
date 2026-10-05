@@ -1,5 +1,5 @@
 use crate::expression::{BinaryOp, BoundExpr, DataType, Expr, UnaryOp};
-use crate::parser::{Query, SelectItem};
+use crate::parser::{JoinKind, Query, SelectItem, TablePrimary};
 use crate::plan::{Plan, ProjectExpression};
 use crate::row::Row;
 
@@ -237,39 +237,101 @@ fn expand_wildcard(
     Ok(())
 }
 
+fn scope_columns(scope: &Scope<'_>) -> Vec<String> {
+    scope
+        .tables
+        .iter()
+        .flat_map(|table| table.columns.iter().map(|column| column.name.clone()))
+        .collect()
+}
+
+fn add_table_to_scope<'a>(
+    catalog: &'a Catalog,
+    table_primary: TablePrimary,
+    scope: &mut Scope<'a>,
+) -> Result<&'a Table, String> {
+    let table = catalog
+        .tables
+        .iter()
+        .find(|table| table.name == table_primary.name)
+        .ok_or_else(|| format!("unknown table: {}", table_primary.name))?;
+    let qualifier = table_primary.alias.unwrap_or(table_primary.name);
+    if scope
+        .tables
+        .iter()
+        .any(|table| table.qualifier == qualifier)
+    {
+        return Err(format!("duplicate table or alias: {qualifier}"));
+    }
+    let offset = scope.tables.iter().map(|table| table.columns.len()).sum();
+    scope.tables.push(ScopeTable {
+        qualifier,
+        columns: &table.columns,
+        offset,
+    });
+    Ok(table)
+}
+
 impl Catalog {
     pub fn bind(&self, query: Query) -> Result<Plan, String> {
-        let mut input_tables = Vec::new();
-        let mut scope_tables = Vec::new();
-        let mut offset = 0;
+        let Query {
+            projections,
+            tables,
+            filter,
+        } = query;
+        let mut scope = Scope { tables: Vec::new() };
+        let mut input = None;
 
-        for table_reference in query.tables {
-            let table = self
-                .tables
+        for table_reference in tables {
+            let left_columns = scope_columns(&scope);
+            let table = add_table_to_scope(self, table_reference.first, &mut scope)?;
+            let right_columns: Vec<String> = table
+                .columns
                 .iter()
-                .find(|table| table.name == table_reference.name)
-                .ok_or_else(|| format!("unknown table: {}", table_reference.name))?;
-            let qualifier = table_reference.alias.unwrap_or(table_reference.name);
-            if scope_tables
-                .iter()
-                .any(|table: &ScopeTable<'_>| table.qualifier == qualifier)
-            {
-                return Err(format!("duplicate table or alias: {qualifier}"));
-            }
-            scope_tables.push(ScopeTable {
-                qualifier,
-                columns: &table.columns,
-                offset,
+                .map(|column| column.name.clone())
+                .collect();
+            let scan = Plan::Scan {
+                rows: table.rows.clone(),
+            };
+            input = Some(match input {
+                None => scan,
+                Some(left) => Plan::Join {
+                    kind: JoinKind::Inner,
+                    condition: None,
+                    left_columns,
+                    right_columns,
+                    left: Box::new(left),
+                    right: Box::new(scan),
+                },
             });
-            offset += table.columns.len();
-            input_tables.push(table);
+
+            for join in table_reference.joins {
+                let left_columns = scope_columns(&scope);
+                let table = add_table_to_scope(self, join.right, &mut scope)?;
+                let right_columns = table
+                    .columns
+                    .iter()
+                    .map(|column| column.name.clone())
+                    .collect();
+                let (condition, condition_type) = bind_expression(join.condition, &scope)?;
+                if !matches!(condition_type, DataType::Boolean | DataType::Null) {
+                    return Err("ON expression must be Boolean".to_string());
+                }
+                input = Some(Plan::Join {
+                    kind: join.kind,
+                    condition: Some(condition),
+                    left_columns,
+                    right_columns,
+                    left: Box::new(input.expect("a join always has a left input")),
+                    right: Box::new(Plan::Scan {
+                        rows: table.rows.clone(),
+                    }),
+                });
+            }
         }
 
-        let scope = Scope {
-            tables: scope_tables,
-        };
         let mut expressions = Vec::new();
-        for selected in query.projections {
+        for selected in projections {
             match selected {
                 SelectItem::Expression { expression, alias } => {
                     let (expression, _) = bind_expression(expression, &scope)?;
@@ -285,7 +347,7 @@ impl Catalog {
             }
         }
 
-        let predicate = match query.filter {
+        let predicate = match filter {
             Some(filter) => {
                 let (predicate, predicate_type) = bind_expression(filter, &scope)?;
                 if !matches!(predicate_type, DataType::Boolean | DataType::Null) {
@@ -296,21 +358,8 @@ impl Catalog {
             None => None,
         };
 
-        let mut inputs = input_tables.into_iter();
-        let first = inputs
-            .next()
-            .ok_or_else(|| "query requires at least one input table".to_string())?;
-        let mut input = Plan::Scan {
-            rows: first.rows.clone(),
-        };
-        for table in inputs {
-            input = Plan::Join {
-                left: Box::new(input),
-                right: Box::new(Plan::Scan {
-                    rows: table.rows.clone(),
-                }),
-            };
-        }
+        let mut input =
+            input.ok_or_else(|| "query requires at least one input table".to_string())?;
         if let Some(predicate) = predicate {
             input = Plan::Filter {
                 predicate,
