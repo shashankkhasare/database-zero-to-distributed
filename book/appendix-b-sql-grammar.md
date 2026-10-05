@@ -260,7 +260,7 @@ because no early chapter needs it.
 | Catalog binding, basic expression types, and three-valued evaluation | `lesson-005` | Parsed names resolve before execution, invalid operand types fail during binding, and `NULL` behavior is tested. |
 | Multiple selected expressions, output aliases, `*`, and qualified wildcards | Chapter 6 | Projection produces several labelled values, repeated labels remain valid, and wildcard items expand from the catalog in one-table scope. |
 | Multiple table references, optional `WHERE`, Cartesian products, and comma-plus-`WHERE` inner joins | Chapter 7 | Multi-table binding, ambiguity errors, unfiltered row combinations, and the first logical join are executable. |
-| `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 8 | Each join form has defined row-preservation and execution semantics. |
+| `INNER`, `LEFT`, `RIGHT`, and `FULL JOIN ... ON` | Chapter 8 | Join conditions bind when both inputs are visible; each form has executable row-preservation semantics. |
 | Aggregate calls, `GROUP BY`, and `HAVING` | Chapter 9 | Aggregate and grouping behavior is executable and tested. |
 | `DISTINCT`, `ALL`, ordering, null ordering, `LIMIT`, and `OFFSET` | Chapter 10 | Ordering and duplicate behavior is explicit. |
 | Scalar, `IN`, and `EXISTS` subqueries, derived tables, and non-recursive common table expressions | Chapter 11 | Name scope and subquery execution are visible. |

@@ -168,7 +168,7 @@ multi-relation runtime row abstraction before another feature needs one.
 
 ---
 
-# Current milestone: 008, Join Syntax and Row Preservation
+# Current milestone: 008, Outer Joins Preserve Unmatched Rows
 
 Chapter 8 will keep the multi-table binding and straightforward execution from
 Chapter 7 while adding explicit join syntax and the rule that outer joins retain
@@ -312,7 +312,7 @@ book-link verifier at `lesson-005`.
 - [x] 005 — Binding Gives Names Meaning
 - [x] 006 — Multiple Outputs
 - [x] 007 — The First Join
-- [ ] 008 — Join Syntax and Row Preservation
+- [ ] 008 — Outer Joins Preserve Unmatched Rows
 - [ ] 009 — GROUP BY and Aggregation
 - [ ] 010 — Sort, DISTINCT and LIMIT
 - [ ] 011 — Subqueries Are Plans Inside Plans
