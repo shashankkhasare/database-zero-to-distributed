@@ -1,62 +1,62 @@
 @font-face {
-  font-family: "Computer Modern Serif";
-  src: url("../../theme/fonts/computer-modern/cmunrm.woff") format("woff");
+  font-family: "New Computer Modern Book";
+  src: url("../../theme/fonts/computer-modern/NewCM10-Book.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Computer Modern Serif";
-  src: url("../../theme/fonts/computer-modern/cmunbx.woff") format("woff");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Computer Modern Serif";
-  src: url("../../theme/fonts/computer-modern/cmunti.woff") format("woff");
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Computer Modern Serif";
-  src: url("../../theme/fonts/computer-modern/cmunbi.woff") format("woff");
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Computer Modern Typewriter";
-  src: url("../../theme/fonts/computer-modern/cmuntt.woff") format("woff");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Computer Modern Typewriter";
-  src: url("../../theme/fonts/computer-modern/cmuntb.woff") format("woff");
+  font-family: "New Computer Modern Book";
+  src: url("../../theme/fonts/computer-modern/NewCM10-Bold.woff2") format("woff2");
   font-style: normal;
   font-weight: 700;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Computer Modern Typewriter";
-  src: url("../../theme/fonts/computer-modern/cmunit.woff") format("woff");
+  font-family: "New Computer Modern Book";
+  src: url("../../theme/fonts/computer-modern/NewCM10-BookItalic.woff2") format("woff2");
   font-style: italic;
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Computer Modern Typewriter";
-  src: url("../../theme/fonts/computer-modern/cmuntx.woff") format("woff");
+  font-family: "New Computer Modern Book";
+  src: url("../../theme/fonts/computer-modern/NewCM10-BoldItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "New Computer Modern Mono Book";
+  src: url("../../theme/fonts/computer-modern/NewCMMono10-Book.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "New Computer Modern Mono Book";
+  src: url("../../theme/fonts/computer-modern/NewCMMono10-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "New Computer Modern Mono Book";
+  src: url("../../theme/fonts/computer-modern/NewCMMono10-BookItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "New Computer Modern Mono Book";
+  src: url("../../theme/fonts/computer-modern/NewCMMono10-BoldOblique.woff2") format("woff2");
   font-style: italic;
   font-weight: 700;
   font-display: swap;
@@ -64,7 +64,7 @@
 
 :root {
   --content-max-width: 740px;
-  --mono-font: "Computer Modern Typewriter", "Cascadia Code",
+  --mono-font: "New Computer Modern Mono Book", "Cascadia Code",
     "SFMono-Regular", Consolas, monospace;
   --page: #f4efe5;
   --paper: #fffdf7;
@@ -90,7 +90,7 @@ html.rust {
 }
 
 body {
-  font-family: "Computer Modern Serif", Georgia, "Times New Roman", serif;
+  font-family: "New Computer Modern Book", Georgia, "Times New Roman", serif;
   line-height: 1.72;
 }
 
@@ -106,7 +106,7 @@ h1,
 h2,
 h3 {
   color: var(--ink);
-  font-family: "Computer Modern Serif", Georgia, "Times New Roman", serif;
+  font-family: "New Computer Modern Book", Georgia, "Times New Roman", serif;
   line-height: 1.18;
 }
 
