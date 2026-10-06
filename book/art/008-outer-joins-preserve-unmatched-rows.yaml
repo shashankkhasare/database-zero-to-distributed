@@ -6,36 +6,51 @@ images:
     kind: generated-raster
     output: book/images/008-join-kinds-preserve-different-rows.png
     placement: after the chapter epigraph and before the opening prose
-    alt: Four panels compare the same matched pairs, unmatched employee, and unmatched department, highlighting the rows retained by inner, left, right, and full joins.
+    alt: Employee and department rows form three matching pairs, leaving Edsger and Operations unmatched; a preservation key shows which unmatched sides survive each join kind with NULLs for the absent side.
     prompt: >-
       Use case: scientific-educational. Asset type: opening educational
-      database comparison diagram. Create a literal row-preservation diagram,
+      database diagram. Explain the mechanism of outer joins rather than
+      showing four repetitive result tables. Create a literal data diagram,
       not a metaphor and not overlapping circles.
 
-      Use a wide landscape two-by-two grid of four equal panels headed exactly
-      "INNER", "LEFT", "RIGHT", and "FULL". Every panel repeats the same
-      three horizontally aligned result regions in the same order: a left
-      region labelled "Edsger | NULL", a center region labelled "3 MATCHES",
-      and a right region labelled "NULL | Operations".
+      Use a wide landscape composition with two compact input tables across
+      the upper half. The left table is headed exactly "EMPLOYEES" and has
+      four rows: "Ada | 10", "Linus | 20", "Grace | 30", and
+      "Edsger | NULL". The right table is headed exactly "DEPARTMENTS" and
+      has four rows: "10 | Engineering", "20 | Systems",
+      "30 | Research", and "40 | Operations". Fill employee rows deep teal
+      and department rows ochre. Draw exactly three clean charcoal connector
+      lines between the rows with identifiers 10, 20, and 30. Leave Edsger
+      and Operations visibly unmatched, with their rows slightly separated
+      from the three matched rows.
 
-      Use color and opacity alone to show preservation. In every panel,
-      "3 MATCHES" is filled muted turquoise. In INNER, both unmatched regions
-      are pale outlines. In LEFT, "Edsger | NULL" is filled deep teal and the
-      Operations region is a pale outline. In RIGHT, the Edsger region is a
-      pale outline and "NULL | Operations" is filled ochre. In FULL, all three
-      regions are filled with those same colors. Keep discarded regions
-      visible but clearly inactive; do not use crosses or deletion marks.
+      Beneath the two inputs, place the exact centered statement
+      "ON FINDS 3 MATCHES". Below it, show one compact four-row preservation
+      key rather than four panels. Its rows must read exactly:
+      "INNER  | matches only"
+      "LEFT   | + Edsger | NULL"
+      "RIGHT  | + NULL | Operations"
+      "FULL   | + both unmatched rows"
+      Use muted turquoise behind the common matches idea, deep teal beside
+      the preserved-left addition, ochre beside the preserved-right addition,
+      and both colors beside FULL. The visual hierarchy must make the causal
+      sequence obvious: ON finds pairs first; the join kind then decides which
+      unmatched rows survive with NULLs for the absent side.
 
-      Permitted text only: "INNER", "LEFT", "RIGHT", "FULL",
-      "Edsger | NULL", "3 MATCHES", and "NULL | Operations". Repetition is
-      required across the four panels. Render every label exactly and legibly.
+      Render all text exactly and legibly. Permitted text only:
+      "EMPLOYEES", "DEPARTMENTS", "Ada | 10", "Linus | 20",
+      "Grace | 30", "Edsger | NULL", "10 | Engineering",
+      "20 | Systems", "30 | Research", "40 | Operations",
+      "ON FINDS 3 MATCHES", "INNER", "matches only", "LEFT",
+      "+ Edsger | NULL", "RIGHT", "+ NULL | Operations", "FULL", and
+      "+ both unmatched rows".
 
       Follow book/art/STYLE.md: warm ivory paper, hand-drawn charcoal ink,
       restrained watercolor and gouache texture, deep teal, muted turquoise,
       ochre, generous margins, strict alignment, and large readable labels. No
       people, buildings, Venn circles, SQL code, extra rows, prose paragraphs,
       arrows, icons, logos, watermark, photorealism, interface chrome, glossy
-      3D, gradients, crossed lines, or unlisted text.
+      3D, gradients, crossed connector lines, or unlisted text.
 
   - id: on-before-where
     kind: generated-raster

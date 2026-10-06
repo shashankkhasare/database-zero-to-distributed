@@ -15,14 +15,15 @@ also retains one employee without a department, a right join retains one
 department without an employee, and a full join retains both unmatched rows.
 -->
 
-> An outer join records which missing rows must not disappear.
+> A join kind decides whether an unmatched row disappears or survives with
+> `NULL`s for the absent side.
 
 <figure class="book-illustration">
-  <img src="images/008-join-kinds-preserve-different-rows.png" alt="Four panels compare the same matched pairs, unmatched employee, and unmatched department, highlighting the rows retained by inner, left, right, and full joins.">
-  <figcaption>The join condition finds the same three matches; the join kind decides which unmatched rows also survive.</figcaption>
+  <img src="images/008-join-kinds-preserve-different-rows.png" alt="Employee and department rows form three matching pairs, leaving Edsger and Operations unmatched; a preservation key shows which unmatched sides survive each join kind with NULLs for the absent side.">
+  <figcaption><code>ON</code> finds matching pairs first; the join kind then decides which unmatched rows survive with <code>NULL</code>s for the absent side.</figcaption>
 </figure>
 
-Chapter 7 creates every possible pair and lets `WHERE` discard the pairs that
+Chapter 7 created every possible pair and let `WHERE` discard the pairs that
 do not match:
 
 ```sql
@@ -31,9 +32,12 @@ FROM employees AS e, departments AS d
 WHERE e.department_id = d.id;
 ```
 
-That is enough for an inner join. A row without a match simply disappears. It
-cannot express a different request: retain the employee even when no department
-matches, and fill the missing department fields with `NULL`.
+That is enough when a report needs only employees who belong to a department.
+A staffing report may need to expose the gaps as well: employees who have not
+been assigned to any department, departments that currently have no employees,
+or both. The inner-join result cannot show those cases because a row without a
+match disappears. An outer join preserves the requested unmatched rows and
+fills the columns from the absent side with `NULL`.
 
 This chapter will make that distinction visible by adding one unmatched row to
 each input:
@@ -103,10 +107,13 @@ Both forms retain only matching pairs. The second form places the matching rule
 beside the operation that combines the tables, which becomes essential for an
 outer join.
 
-`WHERE` receives rows only after its input plan has produced them. If an
-ordinary join has already discarded Edsger because no department matched,
-placing a filter above that join cannot bring his row back. A left join must
-notice the absence of a match while it is combining the two inputs and emit:
+A plan passes rows upward. The join therefore decides which combined rows
+exist before `WHERE` sees any of them. An inner join emits only matching pairs,
+so Edsger never reaches the filter. Because `WHERE` can only keep or discard
+rows it receives, it cannot recreate his missing row.
+
+Preservation must instead happen inside the join. After a left join has tried
+Edsger against every department and found no match, it emits one combined row:
 
 ```text
 employee values + NULL department values
@@ -128,7 +135,7 @@ We will preserve that order in the grammar, AST, logical plan, and executor.
 
 ### 8.2.1 Describe explicit joins
 
-Chapter 7 treats `FROM` as a comma-separated list of simple table references.
+Chapter 7 treated `FROM` as a comma-separated list of simple table references.
 The expanded grammar lets each table reference carry explicit joins.
 [Appendix B](appendix-b-sql-grammar.md) places this addition in the larger SQL
 grammar:
@@ -245,20 +252,8 @@ source order. We can now teach the parser to construct that shape.
 
 ## 8.4 Parse table primaries and join clauses
 
-The parser follows the new productions directly:
-
-```text
-parse_table_reference()
-    ↓ first table_primary
-parse_table_primary()
-    ↓ zero or more join_clause values
-parse_join_clause()
-    ↓ join kind, right table_primary, ON expression
-```
-
-`parse_table_reference()` first parses one required table primary. It then
-loops while the next token can begin a join. The loop matters because a query
-may build a left-deep chain:
+The three new parser methods follow the three productions introduced above. A
+table reference may build a left-deep chain:
 
 ```sql
 FROM employees AS e
@@ -270,6 +265,10 @@ This chapter's demonstration uses two tables, but the AST does not need a
 special two-table shape.
 
 ### 8.4.1 Parse one table reference
+
+```text
+table_reference = table_primary join_clause* ;
+```
 
 `parse_table_reference()` reads the required first table, then consumes every
 join that follows it. Each loop iteration implements the `join_clause*` part
@@ -294,6 +293,10 @@ fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
 
 ### 8.4.2 Parse one table primary
 
+```text
+table_primary = identifier alias? ;
+```
+
 The `table_primary` production contains the name-and-alias behavior that the
 old `parse_table_reference()` handled by itself.
 
@@ -309,6 +312,14 @@ fn parse_table_primary(&mut self) -> Result<TablePrimary, ParseError> {
 ```
 
 ### 8.4.3 Parse one join clause
+
+```text
+join_clause = ("INNER"
+              | "LEFT" "OUTER"?
+              | "RIGHT" "OUTER"?
+              | "FULL" "OUTER"?)?
+              "JOIN" table_primary "ON" expression ;
+```
 
 The join parser treats an omitted kind as `Inner`. For an outer join it also
 accepts, but does not require, the noise word `OUTER`. After the right table it
@@ -391,7 +402,7 @@ types make the request valid.
 
 ## 8.5 Put matching and preservation in the logical plan
 
-Chapter 7's logical `Join` only means "combine every left row with every right
+Chapter 7's logical `Join` meant "combine every left row with every right
 row." The new node must also record which pairs match and which unmatched sides
 survive.
 
@@ -443,8 +454,8 @@ representation in place, the binder can construct the new node.
 
 ### 8.6.1 Establish the binding order
 
-Chapter 7 builds one scope containing every comma-separated input before it
-binds projection and `WHERE`. An explicit join needs a more precise moment for
+Chapter 7 built one scope containing every comma-separated input before it
+bound projection and `WHERE`. An explicit join needs a more precise moment for
 its condition.
 
 For:
@@ -483,7 +494,7 @@ ordinary operator type checks remain the same as Chapter 7.
 After the complete `FROM` input is bound, projection and the optional `WHERE`
 expression use the full resulting scope.
 
-### 8.6.2 Record the current input shape
+### 8.6.2 Maintain the growing scope
 
 The binder first needs the new AST types.
 
@@ -511,10 +522,8 @@ fn scope_columns(scope: &Scope<'_>) -> Vec<String> {
 These names later let execution construct a correctly shaped null row even
 when the corresponding input contains no rows.
 
-### 8.6.3 Add one table to the scope
-
-The next function resolves one table against the catalog, rejects a repeated
-qualifier, and assigns the table the next available column offset.
+The companion function resolves one table against the catalog, rejects a
+repeated qualifier, and assigns the table the next available column offset.
 
 `src/catalog.rs`: add after `scope_columns()`
 
@@ -549,7 +558,7 @@ fn add_table_to_scope<'a>(
 The returned `Table` supplies the scan rows and right-input schema. The new
 `ScopeTable` makes that table available to subsequent expression binding.
 
-### 8.6.4 Build the first input and comma joins
+### 8.6.3 Build the first input and comma joins
 
 Now change the beginning of `Catalog::bind()`. Destructuring `Query` separates
 the input, projection, and optional-filter phases. The outer loop begins each
@@ -587,7 +596,7 @@ The first table becomes the first scan. A later comma-separated table becomes
 an unconditional inner `Join`: `condition: None` tells execution that every
 candidate pair matches.
 
-### 8.6.5 Bind each explicit join
+### 8.6.4 Bind each explicit join
 
 Still inside the outer loop, process each explicit join after its left input
 exists. Capture the left shape first, add the right table, and only then bind
@@ -596,7 +605,6 @@ the `ON` expression in the enlarged scope.
 `src/catalog.rs`: continue the table-reference loop
 
 ```rust
-
     for join in table_reference.joins {
         let left_columns = scope_columns(&scope);
         let table = add_table_to_scope(
@@ -628,7 +636,7 @@ the `ON` expression in the enlarged scope.
 An explicit join stores `Some(condition)`. Because later tables have not yet
 entered the scope, an earlier `ON` expression cannot refer to them.
 
-### 8.6.6 Finish projection and filter binding
+### 8.6.5 Finish projection and filter binding
 
 The remainder of binding uses the renamed local fields. Iterate over
 `projections` instead of `query.projections`, and match on `filter` instead of
