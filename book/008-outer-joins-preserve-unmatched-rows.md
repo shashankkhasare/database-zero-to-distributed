@@ -19,8 +19,8 @@ department without an employee, and a full join retains both unmatched rows.
 > `NULL`s for the absent side.
 
 <figure class="book-illustration">
-  <img src="images/008-join-kinds-preserve-different-rows.png" alt="Four panels compare the same matched pairs, unmatched employee, and unmatched department, highlighting the rows retained by inner, left, right, and full joins.">
-  <figcaption>The join condition finds the same three matches; the join kind decides which unmatched rows also survive.</figcaption>
+  <img src="images/008-join-kinds-preserve-different-rows.png" alt="Employee and department rows form three matching pairs, leaving Edsger and Operations unmatched; a preservation key shows which unmatched sides survive each join kind with NULLs for the absent side.">
+  <figcaption><code>ON</code> finds matching pairs first; the join kind then decides which unmatched rows survive with <code>NULL</code>s for the absent side.</figcaption>
 </figure>
 
 Chapter 7 created every possible pair and let `WHERE` discard the pairs that
