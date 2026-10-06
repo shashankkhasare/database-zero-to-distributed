@@ -32,9 +32,12 @@ FROM employees AS e, departments AS d
 WHERE e.department_id = d.id;
 ```
 
-That is enough for an inner join. A row without a match simply disappears. It
-cannot express a different request: retain the employee even when no department
-matches, and fill the missing department fields with `NULL`.
+That is enough when a report needs only employees who belong to a department.
+A staffing report may need to expose the gaps as well: employees who have not
+been assigned to any department, departments that currently have no employees,
+or both. The inner-join result cannot show those cases because a row without a
+match disappears. An outer join preserves the requested unmatched rows and
+fills the columns from the absent side with `NULL`.
 
 This chapter will make that distinction visible by adding one unmatched row to
 each input:
