@@ -107,10 +107,13 @@ Both forms retain only matching pairs. The second form places the matching rule
 beside the operation that combines the tables, which becomes essential for an
 outer join.
 
-`WHERE` receives rows only after its input plan has produced them. If an
-ordinary join has already discarded Edsger because no department matched,
-placing a filter above that join cannot bring his row back. A left join must
-notice the absence of a match while it is combining the two inputs and emit:
+A plan passes rows upward. The join therefore decides which combined rows
+exist before `WHERE` sees any of them. An inner join emits only matching pairs,
+so Edsger never reaches the filter. Because `WHERE` can only keep or discard
+rows it receives, it cannot recreate his missing row.
+
+Preservation must instead happen inside the join. After a left join has tried
+Edsger against every department and found no match, it emits one combined row:
 
 ```text
 employee values + NULL department values
