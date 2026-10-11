@@ -406,13 +406,25 @@ The printed AST makes three facts visible:
 That tree preserves the request. The binder must now decide which names and
 types make the request valid.
 
-## 8.5 Put matching and preservation in the logical plan
+## 8.5 Teach the logical plan which rows to preserve
 
-Chapter 7's logical `Join` meant "combine every left row with every right
-row." The new node must also record which pairs match and which unmatched sides
-survive.
+Chapter 7 needed a `Join` to hold two input plans, so its variant recorded only
+those children:
 
-Import the join kind, then replace the old two-child `Join` variant.
+```rust
+Join {
+    left: Box<Plan>,
+    right: Box<Plan>,
+}
+```
+
+That representation means "combine every left row with every right row." It
+cannot record the `ON` condition that decides whether a pair matches, the join
+kind that decides which unmatched rows survive, or the shape needed to fill a
+missing side with correctly labelled `NULL` values.
+
+The logical plan must now carry all three facts alongside its two inputs.
+Import the join kind, then replace the old `Join` variant.
 
 `src/plan.rs`: add with the imports
 
