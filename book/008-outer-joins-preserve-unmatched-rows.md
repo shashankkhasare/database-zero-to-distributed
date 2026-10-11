@@ -161,9 +161,9 @@ join_clause      = ("INNER"
                    "JOIN" table_primary "ON" expression ;
 ```
 
-`table_primary` is still deliberately small: one catalog table with an
-optional alias. Subqueries and parenthesized table expressions remain later
-work.
+The grammar calls one unjoined input a `table_primary`. In this chapter, that
+means one catalog table with an optional alias. Subqueries and parenthesized
+table expressions remain later work.
 
 The optional prefix makes bare `JOIN` mean `INNER JOIN`. `OUTER` is optional in
 `LEFT OUTER JOIN`, `RIGHT OUTER JOIN`, and `FULL OUTER JOIN`; it does not change
@@ -249,20 +249,20 @@ For the representative query, `first` stores `employees AS e`. Its one
 tree for `e.department_id = d.id`.
 
 The outer `Vec<TableReference>` preserves comma-separated inputs. Each
-`TableReference` now represents one table primary followed by any explicit
-join clauses attached to it.
+`TableReference` now starts with one table and carries any explicit join
+clauses attached to it.
 
 This representation also permits a chain such as `a JOIN b ON ... JOIN c ON
 ...`: `first` stores `a`, and `joins` stores the clauses for `b` and `c` in
 source order. We can now teach the parser to construct that shape.
 
-## 8.4 Parse table primaries and join clauses
+## 8.4 Parse table references and join clauses
 
 The parser will construct the nested AST from the outside inward. We will first
-parse a complete table reference, then separate the table-primary and
-join-clause productions into their own methods. An AST checkpoint will finish
-the section by showing that the join kind, right input, and `ON` expression
-landed in the intended nodes.
+parse a complete table reference and its required first table, then parse each
+join clause attached to it. An AST checkpoint will finish the section by
+showing that the join kind, right input, and `ON` expression landed in the
+intended nodes.
 
 A table reference may build a left-deep chain:
 
@@ -275,15 +275,16 @@ INNER JOIN locations AS l ON d.location_id = l.id
 This chapter's demonstration uses two tables, but the AST does not need a
 special two-table shape.
 
-### 8.4.1 Parse one table reference
+### 8.4.1 Parse the first table in a table reference
 
 ```text
 table_reference = table_primary join_clause* ;
+table_primary   = identifier alias? ;
 ```
 
-`parse_table_reference()` reads the required first table, then consumes every
-join that follows it. Each loop iteration implements the `join_clause*` part
-of the grammar.
+`parse_table_reference()` begins with the required first table, then consumes
+every join that follows it. Each loop iteration implements the `join_clause*`
+part of the grammar.
 
 `src/parser.rs`: replace `parse_table_reference()`
 
@@ -302,14 +303,8 @@ fn parse_table_reference(&mut self) -> Result<TableReference, ParseError> {
 }
 ```
 
-### 8.4.2 Parse one table primary
-
-```text
-table_primary = identifier alias? ;
-```
-
-The `table_primary` production contains the name-and-alias behavior that the
-old `parse_table_reference()` handled by itself.
+The delegated `table_primary` production contains the name-and-alias behavior
+that the old `parse_table_reference()` handled by itself.
 
 `src/parser.rs`: add after `parse_table_reference()`
 
@@ -322,7 +317,7 @@ fn parse_table_primary(&mut self) -> Result<TablePrimary, ParseError> {
 }
 ```
 
-### 8.4.3 Parse one join clause
+### 8.4.2 Parse one join clause
 
 ```text
 join_clause = ("INNER"
@@ -362,7 +357,7 @@ fn parse_join_clause(&mut self) -> Result<JoinClause, ParseError> {
 }
 ```
 
-### 8.4.4 Inspect the join AST
+### 8.4.3 Inspect the join AST
 
 Changing `TableReference` temporarily makes the Chapter 7 binder stale. As in
 the previous frontend checkpoint, isolate the parser before updating the
@@ -1051,8 +1046,8 @@ source remains in the Rust files rather than the build-along narration.
 - The logical and physical plan representations are still combined.
 - There is no hash join, merge join, join reordering, or cost-based choice.
 - `NATURAL JOIN`, `USING`, lateral inputs, and semi/anti joins are absent.
-- A table primary is still a catalog table, not a subquery or parenthesized
-  table expression.
+- The grammar's `table_primary` is still a catalog table, not a subquery or
+  parenthesized table expression.
 - Conditions are not pushed below joins.
 
 These limits keep the chapter focused on one semantic distinction: matching a
