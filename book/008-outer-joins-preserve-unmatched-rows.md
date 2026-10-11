@@ -242,9 +242,9 @@ For the representative query, `first` stores `employees AS e`. Its one
 `JoinClause` stores `Left`, `departments AS d`, and the unresolved expression
 tree for `e.department_id = d.id`.
 
-The outer `Vec<TableReference>` remains useful. A comma between two table
-references still requests the Cartesian combination introduced in Chapter 7;
-an explicit join inside one table reference carries a join kind and condition.
+The outer `Vec<TableReference>` preserves comma-separated inputs. Each
+`TableReference` now represents one table primary followed by any explicit
+join clauses attached to it.
 
 This representation also permits a chain such as `a JOIN b ON ... JOIN c ON
 ...`: `first` stores `a`, and `joins` stores the clauses for `b` and `c` in
