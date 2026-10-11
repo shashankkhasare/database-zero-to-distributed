@@ -466,11 +466,19 @@ Project(employee_name, department_name)
 
 There is no `Filter` unless the SQL also contains `WHERE`. The match condition
 belongs to `Join` because row preservation depends on it. With this
-representation in place, the binder can construct the new node.
+representation in place, the binder can construct the expanded `Plan::Join`
+node.
 
 ## 8.6 Bind `ON` when both inputs are visible
 
-Binding must follow the left-to-right structure recorded in each
+The parser has produced `TableReference` nodes containing table names, join
+kinds, and unresolved `ON` expressions. The logical plan now has an expanded
+`Plan::Join` variant ready to hold checked information. The binder must bridge
+those representations: resolve each table, add its columns to the scope,
+convert each `ON` expression from `Expr` to `BoundExpr`, and assemble the
+corresponding `Scan` and `Join` plan nodes.
+
+That work must follow the left-to-right structure recorded in each
 `TableReference`. This section first establishes when an `ON` expression may
 see each input. It then adds the scope operations needed to preserve that
 boundary, builds the first input and any comma joins, binds each explicit join,
