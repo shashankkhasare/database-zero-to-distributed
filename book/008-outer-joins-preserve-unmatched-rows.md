@@ -242,9 +242,9 @@ For the representative query, `first` stores `employees AS e`. Its one
 `JoinClause` stores `Left`, `departments AS d`, and the unresolved expression
 tree for `e.department_id = d.id`.
 
-The outer `Vec<TableReference>` remains useful. A comma between two table
-references still requests the Cartesian combination introduced in Chapter 7;
-an explicit join inside one table reference carries a join kind and condition.
+The outer `Vec<TableReference>` preserves comma-separated inputs. Each
+`TableReference` now represents one table primary followed by any explicit
+join clauses attached to it.
 
 This representation also permits a chain such as `a JOIN b ON ... JOIN c ON
 ...`: `first` stores `a`, and `joins` stores the clauses for `b` and `c` in
@@ -1040,6 +1040,27 @@ Run the prompt and predict each result before executing it:
 5. Change `ON e.department_id = d.id` to `ON FALSE` for each join kind.
 6. Restore the left join and add `WHERE d.name IS NOT NULL`.
 7. Use `ON e.department_id + d.name` and predict which stage rejects it.
+8. Use the same catalog table under another alias to build an `a JOIN b JOIN
+   c` chain:
+
+   ```sql
+   SELECT e.name AS employee, d.name AS department,
+          coworker.name AS coworker
+   FROM employees AS e
+   JOIN departments AS d ON e.department_id = d.id
+   JOIN employees AS coworker ON coworker.department_id = d.id;
+   ```
+
+9. Place a comma after an explicit join so its three matching rows form a
+   Cartesian product with all four departments:
+
+   ```sql
+   SELECT e.name AS employee, d.name AS department,
+          all_departments.name AS compared_department
+   FROM employees AS e
+   JOIN departments AS d ON e.department_id = d.id,
+        departments AS all_departments;
+   ```
 
 <details>
 <summary>Check your reasoning</summary>
@@ -1055,6 +1076,12 @@ Run the prompt and predict each result before executing it:
 6. The join creates Edsger's null-extended row, then `WHERE` removes it.
 7. Binding rejects the expression because arithmetic requires integers before
    it checks whether the complete `ON` result is Boolean.
+8. The parser creates one `TableReference` whose `joins` vector contains two
+   clauses. Each department currently has one employee, so the chain produces
+   three rows in which `employee` and `coworker` have the same name.
+9. The first `TableReference` produces three employee-department matches. The
+   comma combines those rows with the four-row `all_departments` input, so the
+   result contains `3 × 4 = 12` rows.
 
 </details>
 
