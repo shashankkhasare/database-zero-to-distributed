@@ -133,6 +133,12 @@ We will preserve that order in the grammar, AST, logical plan, and executor.
 
 ## 8.2 Extend the join grammar
 
+The syntax change has two layers. First we will extend the grammar to describe
+explicit join kinds, their right inputs, and their `ON` expressions. Then we
+will add the fixed-word tokens that let the lexer distinguish that syntax from
+ordinary identifiers. The parser can construct the join AST only after both
+layers are in place.
+
 ### 8.2.1 Describe explicit joins
 
 Chapter 7 treated `FROM` as a comma-separated list of simple table references.
@@ -252,8 +258,13 @@ source order. We can now teach the parser to construct that shape.
 
 ## 8.4 Parse table primaries and join clauses
 
-The three new parser methods follow the three productions introduced above. A
-table reference may build a left-deep chain:
+The parser will construct the nested AST from the outside inward. We will first
+parse a complete table reference, then separate the table-primary and
+join-clause productions into their own methods. An AST checkpoint will finish
+the section by showing that the join kind, right input, and `ON` expression
+landed in the intended nodes.
+
+A table reference may build a left-deep chain:
 
 ```sql
 FROM employees AS e
@@ -451,6 +462,12 @@ belongs to `Join` because row preservation depends on it. With this
 representation in place, the binder can construct the new node.
 
 ## 8.6 Bind `ON` when both inputs are visible
+
+Binding must follow the left-to-right structure recorded in each
+`TableReference`. This section first establishes when an `ON` expression may
+see each input. It then adds the scope operations needed to preserve that
+boundary, builds the first input and any comma joins, binds each explicit join,
+and finally binds projection and `WHERE` against the completed scope.
 
 ### 8.6.1 Establish the binding order
 
@@ -736,6 +753,12 @@ choose another physical strategy.
 
 ## 8.10 Assemble all four join kinds
 
+The preceding sections established how inner joins match pairs and how the two
+outer sides are preserved. We can now assemble those rules in the
+`Plan::Join` execution arm. We will compare the four join kinds first, then
+build the arm in execution order: prepare its inputs, test candidate pairs,
+preserve unmatched left rows, and preserve unmatched right rows.
+
 ### 8.10.1 Compare their preservation rules
 
 A full join combines the two preservation rules. It emits unmatched left rows
@@ -907,6 +930,12 @@ inner-join equivalence shown earlier. Moving conditions between `ON` and
 `WHERE` can change the result.
 
 ## 8.12 Reconnect the application
+
+The parser checkpoint still occupies `main.rs`, while the catalog and executor
+now support the complete join path. Reconnection has three parts: restore the
+application and add unmatched sample rows, point the fixed demonstration at
+the representative left join, and run the connected path before returning to
+the prompt.
 
 ### 8.12.1 Restore the application and extend its data
 
